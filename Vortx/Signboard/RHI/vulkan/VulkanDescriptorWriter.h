@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Common/VulkanFwd.h"
-#include "renderSystem/RHI/common/DescriptorTypes.h"
+#include "Signboard/RHI/common/DescriptorTypes.h"
 
 #include <vector>
 

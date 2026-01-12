@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Common/VulkanFwd.h"
-#include "renderSystem/RHI/common/RenderPassTypes.h"
+#include "Signboard/RHI/common/RenderPassTypes.h"
 
 class VulkanDevice;
 

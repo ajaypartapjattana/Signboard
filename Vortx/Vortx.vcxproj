@@ -53,7 +53,7 @@
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <EnableASAN>true</EnableASAN>
+    <EnableASAN>false</EnableASAN>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -132,13 +132,13 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>EnableAllWarnings</WarningLevel>
+      <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir);C:\Ext_Libraries\json-develop;C:\Users\ajayp\source\repos\imgui;C:\Ext_Libraries\tinyobjloader;C:\Ext_Libraries\glm-master;C:\Ext_Libraries\glfw-3.4.bin.WIN64\include;C:\VulkanSDK\1.4.321.1\Include;C:\Ext_Libraries\stb_Image;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);C:\Ext_Libraries\json-develop;C:\Users\ajayp\source\repos\imgui;C:\Ext_Libraries\tinyobjloader;C:\Ext_Libraries\glfw-3.4.bin.WIN64\include;C:\VulkanSDK\1.4.321.1\Include;C:\Ext_Libraries\stb_Image;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
@@ -148,43 +148,38 @@
       <AdditionalLibraryDirectories>C:\Users\ajayp\source\repos\imgui;C:\Ext_Libraries\glfw-3.4.bin.WIN64\lib-vc2015;C:\VulkanSDK\1.4.321.1\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <Profile>true</Profile>
-      <GenerateMapFile>true</GenerateMapFile>
+      <GenerateMapFile>false</GenerateMapFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="configLoader\ConfigLoader.cpp" />
-    <ClCompile Include="configLoader\XMLLoader\XMLConfigLoader.cpp" />
-    <ClCompile Include="Controllers\Camera.cpp" />
-    <ClCompile Include="Controllers\SensorListner.cpp" />
-    <ClCompile Include="Controllers\transformController.cpp" />
-    <ClCompile Include="Controllers\Utilities\vecMath.cpp" />
-    <ClCompile Include="Signboard\RendererCore\RenderBackend\vulkan\VulkanRenderBackend.cpp" />
-    <ClCompile Include="Signboard\RendererCore\RenderBackend\vulkan\VulkanRenderBackend.h" />
-    <ClCompile Include="Signboard\RendererCore\Renderer_core.cpp" />
+    <ClCompile Include="Signboard\Assets\configLoader\ConfigLoader.cpp" />
+    <ClCompile Include="Signboard\Assets\configLoader\XMLLoader\XMLConfigLoader.cpp" />
+    <ClCompile Include="Signboard\Assets\ResourceLoaders\TextureLoader.cpp" />
+    <ClCompile Include="Signboard\Assets\Utility\convStr.cpp" />
+    <ClCompile Include="Signboard\Core\Time\Time.cpp" />
+    <ClCompile Include="Signboard\ECS\commandDispatch\AppCommandDispatch.cpp" />
+    <ClCompile Include="Signboard\Editor\Controllers\Camera.cpp" />
+    <ClCompile Include="Signboard\Editor\Controllers\SensorListner.cpp" />
+    <ClCompile Include="Signboard\Editor\Controllers\transformController.cpp" />
+    <ClCompile Include="Signboard\Editor\Controllers\Utilities\vecMath.cpp" />
+    <ClCompile Include="Signboard\Platform\EventHandler\EventPoller.cpp" />
+    <ClCompile Include="Signboard\ECS\commandDispatch\InputResolve\InputResolver.cpp" />
+    <ClCompile Include="Signboard\UI\GuiLayer.cpp" />
+    <ClCompile Include="Signboard\Assets\ResourceLoaders\ModelLoader.cpp" />
+    <ClCompile Include="Signboard\ECS\Systems\world.cpp" />
+    <ClCompile Include="Signboard\Renderer\Renderer_core.cpp" />
     <ClCompile Include="Signboard\resources\ResourceAPI.cpp" />
     <ClCompile Include="Signboard\resources\resourceSystems\MaterialSystem.cpp" />
     <ClCompile Include="Signboard\resources\resourceSystems\MeshSystem.cpp" />
     <ClCompile Include="Signboard\resources\resourceSystems\PipelineSystem.cpp" />
-    <ClCompile Include="Signboard\resources\scene\ObjectSystem.cpp" />
-    <ClCompile Include="Signboard\RendererCore\RenderGraph\ForwardPass\ForwardPass.cpp" />
+    <ClCompile Include="Signboard\resources\resourceSystems\ResourceHash\PipelineHash.cpp" />
+    <ClCompile Include="Signboard\Scene\ObjectSystem.cpp" />
     <ClCompile Include="Signboard\resources\resourceSystems\primitive\Mesh.cpp" />
-    <ClCompile Include="core\dataDef\VertexLayout.cpp" />
-    <ClCompile Include="entityHandlers\world.cpp" />
+    <ClCompile Include="Signboard\Renderer\Mesh\VertexLayout.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="GuiLayer.cpp" />
-    <ClCompile Include="imgui\backends\imgui_impl_glfw.cpp" />
-    <ClCompile Include="imgui\backends\imgui_impl_vulkan.cpp" />
-    <ClCompile Include="imgui\imgui.cpp" />
-    <ClCompile Include="imgui\imgui_draw.cpp" />
-    <ClCompile Include="imgui\imgui_tables.cpp" />
-    <ClCompile Include="imgui\imgui_widgets.cpp" />
-    <ClCompile Include="Controllers\Input.cpp" />
-    <ClCompile Include="entityHandlers\model.cpp" />
-    <ClCompile Include="entityHandlers\ModelManager.cpp" />
     <ClCompile Include="Signboard\resources\resourceSystems\primitive\Texture.cpp" />
-    <ClCompile Include="Signboard\RendererCore\Renderer_core_d.cpp" />
     <ClCompile Include="Signboard\resources\resourceSystems\ResourceHash\RenderPassHash.h" />
-    <ClCompile Include="Signboard\resources\scene\ViewStateSystem.cpp" />
+    <ClCompile Include="Signboard\Scene\ViewStateSystem.cpp" />
     <ClCompile Include="Signboard\RHI\common\DeviceTypes.h" />
     <ClCompile Include="Signboard\RHI\VulkanRHI.cpp" />
     <ClCompile Include="Signboard\RHI\vulkan\TypeMap\VulkanRenderPassTypeMap.h" />
@@ -208,25 +203,35 @@
     <ClCompile Include="Signboard\RHI\vulkan\VulkanSwapchain.cpp" />
     <ClCompile Include="Signboard\resources\resourceSystems\TextureSystem.cpp" />
     <ClCompile Include="Signboard\Signboard.cpp" />
-    <ClCompile Include="Signboard\utility\VulkanUtils.cpp" />
-    <ClCompile Include="Signboard\RendererCore\RenderGraph\common\pipelines.cpp" />
-    <ClCompile Include="Signboard\RendererCore\Renderer_draw.cpp" />
     <ClCompile Include="Signboard\resources\resourceSystems\SamplerSystem.cpp" />
-    <ClCompile Include="Signboard\window\WindowEventProxy.cpp" />
-    <ClCompile Include="Signboard\window\windowSurface.cpp" />
+    <ClCompile Include="Signboard\Platform\window\WindowEventProxy.cpp" />
+    <ClCompile Include="Signboard\Platform\window\windowSurface.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="configLoader\ConfigLoader.h" />
-    <ClInclude Include="configLoader\ReadTypes\EngineReadTypes.h" />
-    <ClInclude Include="configLoader\XMLLoader\XMLReadTypes\XMLTypes.h" />
-    <ClInclude Include="configLoader\XMLLoader\XMLConfigLoader.h" />
-    <ClInclude Include="Controllers\Camera.h" />
-    <ClInclude Include="Controllers\SensorListner.h" />
-    <ClInclude Include="core\resource.h" />
-    <ClInclude Include="Signboard\RendererCore\RenderBackend\RenderBackend.h" />
-    <ClInclude Include="Signboard\RendererCore\Renderer.h" />
-    <ClInclude Include="Signboard\RendererCore\RenderGraph\RenderGraph.h" />
-    <ClInclude Include="Signboard\RendererCore\RenderGraph\RenderGraphTypes.h" />
+    <ClInclude Include="Deprecated\core\resource.h" />
+    <ClInclude Include="Signboard\Assets\configLoader\ConfigLoader.h" />
+    <ClInclude Include="Signboard\Assets\configLoader\ReadTypes\ApplicationReadTypes.h" />
+    <ClInclude Include="Signboard\Core\Frame\commandQueue.h" />
+    <ClInclude Include="Signboard\Core\Interfaces\appInterfaceTypes.h" />
+    <ClInclude Include="Signboard\Core\Interfaces\KeyMappingConfigType.h" />
+    <ClInclude Include="Signboard\Core\Time\Time.h" />
+    <ClInclude Include="Signboard\ECS\commandDispatch\AppCommandDisptach.h" />
+    <ClInclude Include="Signboard\Editor\Controllers\Camera.h" />
+    <ClInclude Include="Signboard\Editor\Controllers\SensorListner.h" />
+    <ClInclude Include="Signboard\Editor\Controllers\transformController.h" />
+    <ClInclude Include="Signboard\Editor\Controllers\Utilities\vecMath.h" />
+    <ClInclude Include="Signboard\ECS\commandDispatch\InputResolve\InputResolver.h" />
+    <ClInclude Include="Signboard\Platform\EventHandler\EventPoll.h" />
+    <ClInclude Include="Signboard\Core\Interfaces\startupConfigType.h" />
+    <ClInclude Include="Signboard\Assets\configLoader\XMLLoader\XMLConfigLoader.h" />
+    <ClInclude Include="Signboard\Assets\configLoader\common\MLTypes.h" />
+    <ClInclude Include="Signboard\Assets\Utility\convStr.h" />
+    <ClInclude Include="Signboard\UI\GuiLayer.h" />
+    <ClInclude Include="Signboard\Core\Threading\threadCommProtocol.h" />
+    <ClInclude Include="Signboard\Assets\FastNoiseLite.h" />
+    <ClInclude Include="Signboard\Assets\ResourceLoaders\ModelLoader.h" />
+    <ClInclude Include="Signboard\ECS\Systems\world.h" />
+    <ClInclude Include="Signboard\Renderer\Renderer.h" />
     <ClInclude Include="Signboard\resources\DescriptorSchema.h" />
     <ClInclude Include="Signboard\resources\common\MaterialSystemTypes.h" />
     <ClInclude Include="Signboard\resources\common\MeshSystemTypes.h" />
@@ -236,7 +241,7 @@
     <ClInclude Include="Signboard\resources\common\TextureSystemType.h" />
     <ClInclude Include="Signboard\resources\ResourceAPI.h" />
     <ClInclude Include="Signboard\resources\resourceSystems\PipelineSystem.h" />
-    <ClInclude Include="Signboard\resources\scene\ViewStateSystem.h" />
+    <ClInclude Include="Signboard\Scene\ViewStateSystem.h" />
     <ClInclude Include="Signboard\RHI\common\frameBufferTypes.h" />
     <ClInclude Include="Signboard\RHI\common\PipelineTypes.h" />
     <ClInclude Include="Signboard\RHI\common\BufferTypes.h" />
@@ -262,10 +267,7 @@
     <ClInclude Include="Signboard\RHI\vulkan\Common\VulkanFwd.h" />
     <ClInclude Include="Signboard\RHI\vulkan\Common\VulkanCommon.h" />
     <ClInclude Include="Signboard\resources\resourceSystems\MeshSystem.h" />
-    <ClInclude Include="Signboard\resources\scene\ObjectSystem.h" />
-    <ClInclude Include="Signboard\RendererCore\RenderGraph\ForwardPass\ForwardPass.h" />
-    <ClInclude Include="Signboard\RendererCore\RenderGraph\ForwardPass\batch.h" />
-    <ClInclude Include="Signboard\RendererCore\RenderGraph\RenderPassBase.h" />
+    <ClInclude Include="Signboard\Scene\ObjectSystem.h" />
     <ClInclude Include="Signboard\RHI\vulkan\VulkanDescriptorLayout.h" />
     <ClInclude Include="Signboard\RHI\vulkan\VulkanDescriptorPool.h" />
     <ClInclude Include="Signboard\RHI\vulkan\VulkanDescriptorSet.h" />
@@ -285,33 +287,19 @@
     <ClInclude Include="Signboard\RHI\vulkan\VulkanImage.h" />
     <ClInclude Include="Signboard\resources\resourceSystems\TextureSystem.h" />
     <ClInclude Include="Signboard\resources\resourceSystems\MaterialSystem.h" />
-    <ClInclude Include="core\dataDef\VertexLayout.h" />
+    <ClInclude Include="Signboard\Renderer\Mesh\VertexLayout.h" />
     <ClInclude Include="Signboard\resources\resourceSystems\primitive\Texture.h" />
     <ClInclude Include="Signboard\resources\resourceSystems\primitive\Mesh.h" />
-    <ClInclude Include="Controllers\transformController.h" />
-    <ClInclude Include="Controllers\Utilities\vecMath.h" />
-    <ClInclude Include="entityHandlers\FastNoiseLite.h" />
-    <ClInclude Include="core\dataDef\stb_image_write.h" />
-    <ClInclude Include="entityHandlers\world.h" />
-    <ClInclude Include="GuiLayer.h" />
-    <ClInclude Include="Controllers\Input.h" />
-    <ClInclude Include="entityHandlers\model.h" />
-    <ClInclude Include="entityHandlers\ModelManager.h" />
-    <ClInclude Include="entityHandlers\commProtocols\threadCommProtocol.h" />
-    <ClInclude Include="core\dataDef\Vertex.h" />
+    <ClInclude Include="Deprecated\core\dataDef\stb_image_write.h" />
+    <ClInclude Include="Signboard\Renderer\Mesh\Vertex.h" />
     <ClInclude Include="Signboard\Signboard.h" />
-    <ClInclude Include="Signboard\utility\VulkanUtils.h" />
-    <ClInclude Include="Signboard\RendererCore\RenderGraph\common\pipelines.h" />
-    <ClInclude Include="Signboard\RendererCore\Renderer_d.h" />
     <ClInclude Include="Signboard\resources\resourceSystems\SamplerSystem.h" />
-    <ClInclude Include="Signboard\window\WindowEventProxy.h" />
-    <ClInclude Include="Signboard\window\windowSurface.h" />
+    <ClInclude Include="Signboard\Assets\ResourceLoaders\TextureLoader.h" />
+    <ClInclude Include="Signboard\Platform\window\WindowEventProxy.h" />
+    <ClInclude Include="Signboard\Platform\window\windowSurface.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ShaderBuild.targets" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="configLoader\renderConfig\routine_1.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <Import Project="$(MSBuildProjectDirectory)\ShaderBuild.targets" />

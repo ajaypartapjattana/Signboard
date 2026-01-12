@@ -1,21 +1,28 @@
 #pragma once
 
-#include "window/windowSurface.h"
-#include "window/WindowEventProxy.h"
+#include "Core/Interfaces/appInterfaceTypes.h"
+
+#include "Platform/window/windowSurface.h"
+
 #include "RHI/VulkanRHI.h"
 #include "resources/ResourceAPI.h"
-#include "RendererCore/Renderer.h"
+#include "renderer/Renderer.h"
 
-class GLFWwindow;
+struct GLFWwindow;
 
 class Signboard {
 public:
 	Signboard();
 
+	void run();
+
 private:
+	StartupConfig loadBaseAppConfiguration();
+
+private:
+	StartupConfig baseConfig;
+
 	WindowSurface window;
-	WindowEventProxy windowEvents;
-	
 	VulkanRHI vulkanRHI;
 	
 	ResourceAPI resources;

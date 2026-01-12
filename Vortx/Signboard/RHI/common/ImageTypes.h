@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/Flag_type.h"
+#include "DeviceTypes.h"
 
 struct ImageExtent2D {
 	uint32_t width;

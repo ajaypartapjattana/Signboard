@@ -5,7 +5,7 @@
 
 #include <utility>
 
-Mesh::Mesh(std::unique_ptr<VulkanBuffer> vbo, std::unique_ptr<VulkanBuffer> ibo, uint32_t indexCount = 0)	
+Mesh::Mesh(std::unique_ptr<VulkanBuffer> vbo, std::unique_ptr<VulkanBuffer> ibo, uint32_t indexCount)	
 	: vertexBuffer(std::move(vbo)), indexBuffer(std::move(ibo)), indexCount(indexCount) {}
 
 Mesh::~Mesh() = default;

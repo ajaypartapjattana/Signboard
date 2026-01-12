@@ -11,7 +11,7 @@ struct MeshDesc {
 
 	const uint32_t* p_indexData;
 	uint32_t indexCount;
-	IndexType indexType;
+	//IndexType indexType;
 };
 
 struct MeshHandle {

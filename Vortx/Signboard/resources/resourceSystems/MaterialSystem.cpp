@@ -67,16 +67,8 @@ MaterialHandle MaterialSystem::allocateSlot() {
 }
 
 void MaterialSystem::destroy(MaterialHandle handle) {
-    if (!handle.isValid())
-        return;
-
     uint32_t index = handle.index;
-    if (index >= slots.size())
-        return;
-
     MaterialSlot& slot = slots[index];
-    if (slot.generation != handle.generation || !slot.alive)
-        return;
 
     slot.alive = false;
     pendingDeletes.push_back(index);
@@ -97,12 +89,7 @@ const MaterialSlot& MaterialSystem::get(MaterialHandle handle) const {
         throw std::runtime_error("invalid handle!");
 
     uint32_t index = handle.index;
-    if (index >= slots.size())
-        return;
-
     const MaterialSlot& slot = slots[index];
-    if (slot.generation != handle.generation || !slot.alive)
-        return;
 
     return slot;
 }

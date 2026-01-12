@@ -1,0 +1,33 @@
+#pragma once
+
+#include "Signboard/Assets/configLoader/common/MLTypes.h"
+
+#include <string>
+
+class XMLConfigLoader {
+public:
+	XMLConfigLoader(const std::string& path);
+	
+	ML_Node root;
+
+private:
+	std::string readFile(const std::string& path);
+	void parse();
+
+	char Peek() const { return m_text[m_pos]; }
+	char Get() { return m_text[m_pos++]; }
+
+	void SkipWhitespace();
+
+	ML_Node ParseNode();
+
+	std::string ParseIdentifier();
+	std::vector<ML_Attribute> ParseAttributes();
+	std::string ParseQuotedString();
+
+	bool StartsWith(const std::string& s) const;
+
+private:
+	std::string m_text;
+	size_t m_pos = 0;
+};

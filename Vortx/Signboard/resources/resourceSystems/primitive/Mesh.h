@@ -3,6 +3,7 @@
 #include <memory>
 
 class VulkanBuffer;
+class VulkanCommandBuffer;
 
 class Mesh {
 public:

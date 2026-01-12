@@ -6,8 +6,8 @@
 struct PipelineKey {
 	PipelineType type;
 
-	VkPipelineLayout layout;
-	VkRenderPass renderPass;
+	uint64_t layout;
+	uint64_t renderPass;
 
 	ImageFormat colorFormat;
 	ImageFormat depthForamt;
@@ -34,26 +34,7 @@ struct PipelineKeyHash {
 	size_t operator()(const PipelineKey& key) const {
 		return hashPipelineKey(key);
 	}
+	static size_t hashPipelineKey(const PipelineKey& key);
+	static uint64_t hashShaderFile(const std::string& path);
 };
 
-size_t hashPipelineKey(const PipelineKey& key) {
-	size_t hash = 0;
-	hashCombine(hash, key.type);
-	hashCombine(hash, key.layout);
-	hashCombine(hash, key.renderPass);
-	hashCombine(hash, key.colorFormat);
-	hashCombine(hash, key.depthForamt);
-
-	hashCombineRange(hash, key.shadersHashes.data(), key.shadersHashes.size());
-
-	hashCombine(hash, key.raster);
-	hashCombine(hash, key.blend);
-
-	return hash;
-}
-
-uint64_t hashShaderFile(const std::string& path) {
-	auto bytes = readBinaryFile(path.c_str());
-
-	return fnv1a64(bytes.data(), bytes.size());
-}

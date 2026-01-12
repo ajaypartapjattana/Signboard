@@ -95,15 +95,15 @@ PipelineKey PipelineSystem::makeKey(VulkanPipelineLayout& layout, const Pipeline
 
 	key.type = desc.type;
 
-	key.layout = layout.getHandle();
-	key.renderPass = renderPass.getHandle();
+	key.layout = 1;
+	key.renderPass = 1;
 
 	key.colorFormat = desc.colorFormat;
 	key.depthForamt = desc.depthForamt;
 
 	key.shadersHashes.reserve(desc.shaders.size());
 	for (const ShaderDesc& shader : desc.shaders) {
-		key.shadersHashes.push_back(hashShaderFile(shader.path));
+		key.shadersHashes.push_back(PipelineKeyHash::hashShaderFile(shader.path));
 	}
 
 	key.raster = desc.raster;

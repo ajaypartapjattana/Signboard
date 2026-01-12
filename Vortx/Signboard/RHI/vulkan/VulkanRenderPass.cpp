@@ -20,7 +20,7 @@ VulkanRenderPass::VulkanRenderPass(VulkanDevice& device, const RenderPassDesc& d
 		attachment.loadOp = toVkAttachmentLoadOp(att.load);
 		attachment.storeOp = toVkAttachmentStoreOp(att.store);
 		attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		attachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
 		impl->attachments.push_back(attachment);
 
@@ -54,12 +54,22 @@ VulkanRenderPass::VulkanRenderPass(VulkanDevice& device, const RenderPassDesc& d
 	subpass.pColorAttachments = impl->colorRefs.data();
 	subpass.pDepthStencilAttachment = impl->hasDepth ? &impl->depthRef : nullptr;
 
+	VkSubpassDependency dependency{};
+	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependency.dstSubpass = 0;
+	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.srcAccessMask = 0;
+	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
 	VkRenderPassCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 	createInfo.attachmentCount = static_cast<uint32_t>(impl->attachments.size());
 	createInfo.pAttachments = impl->attachments.data();
 	createInfo.subpassCount = 1;
 	createInfo.pSubpasses = &subpass;
+	createInfo.dependencyCount = 1;
+	createInfo.pDependencies = &dependency;
 
 	if (vkCreateRenderPass(device.getDevice(), &createInfo, nullptr, &renderPass) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create render pass!");

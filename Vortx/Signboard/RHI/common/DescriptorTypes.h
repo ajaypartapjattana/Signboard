@@ -3,6 +3,8 @@
 #include "base/Flag_type.h"
 #include "DeviceTypes.h"
 
+#include<vector>
+
 enum class DescriptorType {
 	CombinedImageSampler,
 	UniformBuffer,
