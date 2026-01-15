@@ -14,7 +14,8 @@ VkBufferUsageFlags toVkBufferUsageFlags(BufferUsageFlags usage) {
 		{BufferUsage::Uniform,				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT},
 		{BufferUsage::Storage,				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT},
 		{BufferUsage::Vertex,				VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
-		{BufferUsage::Index,				VK_BUFFER_USAGE_INDEX_BUFFER_BIT}
+		{BufferUsage::Index,				VK_BUFFER_USAGE_INDEX_BUFFER_BIT},
+		{BufferUsage::IndirectDraw,			VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT}
 	};
 
 	VkBufferUsageFlags flags = 0;

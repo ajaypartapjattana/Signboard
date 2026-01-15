@@ -1,13 +1,34 @@
 #include "MeshSystem.h"
 #include "primitive/Mesh.h"
 
-#include "Signboard/RHI/vulkan/VulkanBuffer.h"
-
 #include <stdexcept>
 #include <cassert>
 
 MeshSystem::MeshSystem(VulkanDevice& device)
-	: device(device) {}
+	: device(device),
+	vertexBuffer(createVertexBuffer()), 
+	indexBuffer(createIndexBuffer())
+{
+	
+}
+
+VulkanBuffer MeshSystem::createVertexBuffer() {
+	BufferDesc vertB;
+	vertB.size = 256 * 1024 * 1024;
+	vertB.usageFlags.set(BufferUsage::Vertex, BufferUsage::TransferDestination);
+	vertB.memoryFlags = MemoryProperty::DeviceLocal;
+
+	return VulkanBuffer(device, vertB);
+}
+
+VulkanBuffer MeshSystem::createIndexBuffer() {
+	BufferDesc vertB;
+	vertB.size = 64 * 1024 * 1024;
+	vertB.usageFlags.set(BufferUsage::Index, BufferUsage::TransferDestination);
+	vertB.memoryFlags = MemoryProperty::DeviceLocal;
+
+	return VulkanBuffer(device, vertB);
+}
 
 MeshSystem::~MeshSystem() {
 	slots.clear();
@@ -32,8 +53,6 @@ MeshHandle MeshSystem::allocateSlot(std::unique_ptr<Mesh> mesh) {
 }
 
 const Mesh& MeshSystem::get(MeshHandle handle) const {
-	assert(handle.index < slots.size());
-
 	const Slot& slot = slots[handle.index];
 
 	assert(slot.mesh && "MeshHandle refers to destroyed mesh");
@@ -44,9 +63,6 @@ const Mesh& MeshSystem::get(MeshHandle handle) const {
 
 void MeshSystem::destroy(MeshHandle handle) {
 	uint32_t index = handle.index;
-	if (index == INVALID_MESH.index)
-		return;
-	assert(index < slots.size());
 
 	Slot& slot = slots[index];
 	if (slot.generation != handle.generation)
@@ -74,6 +90,15 @@ MeshHandle MeshSystem::createMesh(VulkanCommandBuffer& cmd, const MeshDesc& desc
 	uint64_t vertexBufferSize = desc.vertexCount * desc.vertexSize;
 	uint64_t indexBufferSize = desc.indexCount * sizeof(uint32_t);
 
+	uint64_t vertexOffset = alignUp(vertexCursor, 16);
+	uint64_t indexOffset = alignUp(indexCursor, 4);
+
+	if (vertexCursor + vertexBufferSize > vertexBuffer.getSize() || indexCursor + indexBufferSize > indexBuffer.getSize())
+		return INVALID_MESH;
+
+	vertexCursor += vertexBufferSize;
+	indexCursor += indexBufferSize;
+
 	BufferDesc stagingVertexDesc{};
 	stagingVertexDesc.size = vertexBufferSize;
 	stagingVertexDesc.memoryFlags.set(MemoryProperty::HostVisible, MemoryProperty::HostCoherent);
@@ -88,26 +113,16 @@ MeshHandle MeshSystem::createMesh(VulkanCommandBuffer& cmd, const MeshDesc& desc
 	stagingIndexDesc.usageFlags = BufferUsage::TransferSource;
 
 	VulkanBuffer stagingIndex(device, stagingIndexDesc);
-	stagingIndex.upload(desc.p_vertexData, indexBufferSize);
+	stagingIndex.upload(desc.p_indexData, indexBufferSize);
 
-	BufferDesc vertexDesc{};
-	vertexDesc.size = vertexBufferSize;
-	vertexDesc.memoryFlags = MemoryProperty::DeviceLocal;
-	vertexDesc.usageFlags.set(BufferUsage::TransferDestination, BufferUsage::Vertex);
+	vertexBuffer.copyFrom(cmd, stagingVertex, vertexBufferSize, 0, vertexOffset);
+	indexBuffer.copyFrom(cmd, stagingIndex, indexBufferSize, 0, indexOffset);
 
-	VulkanBuffer vertexBuffer(device, vertexDesc);
-
-	BufferDesc indexDesc{};
-	indexDesc.size = indexBufferSize;
-	indexDesc.memoryFlags = MemoryProperty::DeviceLocal;
-	indexDesc.usageFlags.set(BufferUsage::TransferDestination, BufferUsage::Index);
-
-	VulkanBuffer indexBuffer(device, indexDesc);
-
-	vertexBuffer.copyFrom(cmd, stagingVertex, vertexBufferSize);
-	indexBuffer.copyFrom(cmd, stagingIndex, indexBufferSize);
-
-	auto mesh = std::make_unique<Mesh>(vertexBuffer, indexBuffer, desc.indexCount);
+	auto mesh = std::make_unique<Mesh>(vertexOffset, indexOffset, desc.vertexCount, desc.indexCount);
 
 	return allocateSlot(std::move(mesh));
+}
+
+constexpr uint64_t alignUp(uint64_t value, uint64_t alignment) {
+	return (value + alignment - 1) & ~(alignment - 1);
 }

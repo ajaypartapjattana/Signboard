@@ -5,6 +5,7 @@
 
 #include <GLFW/glfw3.h>
 #include <vector>
+#include <set>
 #include <cstring>
 
 VulkanDevice::VulkanDevice(VkInstance instance, GLFWwindow* window)
@@ -69,6 +70,8 @@ bool VulkanDevice::isDeviceSuitable(VkPhysicalDevice device) const {
 	return false;
 }
 
+#include <optional>
+
 void VulkanDevice::accquireQueueFamilies(VkPhysicalDevice device) {
 	uint32_t queueFamilyCount = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
@@ -76,25 +79,47 @@ void VulkanDevice::accquireQueueFamilies(VkPhysicalDevice device) {
 	std::vector<VkQueueFamilyProperties> families(queueFamilyCount);
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, families.data());
 
+	std::optional<uint32_t> graphics;
+	std::optional<uint32_t> transfer;
+	std::optional<uint32_t> present;
+
 	for (uint32_t i = 0; i < queueFamilyCount; i++) {
-		if (families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-			graphicsQueueFamily = i;
+		if (!graphics && (families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)) {
+			graphics = i;
 		}
 
 		VkBool32  presentSupported = VK_FALSE;
 		vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &presentSupported);
-		if (presentSupported) {
+		if (!present && presentSupported) {
 			presentQueueFamily = i;
 		}
 	}
-	throw std::runtime_error("failed to find graphics queue family!");
+
+	for (uint32_t i = 0; i < queueFamilyCount; i++) {
+		const auto& flags = families[i].queueFlags;
+
+		if ((flags & VK_QUEUE_TRANSFER_BIT) && !(flags & VK_QUEUE_GRAPHICS_BIT) && !(flags & VK_QUEUE_COMPUTE_BIT)) {
+			transfer = i;
+			break;
+		}
+	}
+
+	if (!transfer)
+		transfer = graphics;
+
+	if(!graphics || !present || !transfer)
+		throw std::runtime_error("failed to find graphics queue family!");
+
+	graphicsQueueFamily = *graphics;
+	transferQueueFamily = *transfer;
+	presentQueueFamily = *present;
 }
 
 void VulkanDevice::createLogicalDevice() {
-	float priority = 1.0f;
+	std::set<uint32_t> uniqueFamilies = { graphicsQueueFamily, transferQueueFamily, presentQueueFamily };
 
+	float priority = 1.0f;
 	std::vector<VkDeviceQueueCreateInfo> queueInfos;
-	std::vector<uint32_t> uniqueFamilies = { graphicsQueueFamily, presentQueueFamily };
 
 	for (uint32_t family : uniqueFamilies) {
 		VkDeviceQueueCreateInfo queueInfo{};
@@ -119,6 +144,11 @@ void VulkanDevice::createLogicalDevice() {
 
 	vkGetDeviceQueue(device, graphicsQueueFamily, 0, &graphicsQueue);
 	vkGetDeviceQueue(device, presentQueueFamily, 0, &presentQueue);
+
+	if (transferQueueFamily == graphicsQueueFamily)
+		transferQueue = graphicsQueue;
+	else
+		vkGetDeviceQueue(device, transferQueueFamily, 0, &transferQueue);
 }
 
 uint32_t VulkanDevice::findMemoryType(uint32_t typeFilter, MemoryPropertyFlags properties) const {

@@ -1,32 +1,10 @@
 #pragma once
 
-#include <memory>
+#include <cstdint>
 
-class VulkanBuffer;
-class VulkanCommandBuffer;
-
-class Mesh {
-public:
-	Mesh(const Mesh&) = delete;
-	Mesh& operator=(const Mesh&) = delete;
-
-	Mesh(Mesh&& other) noexcept;
-	Mesh& operator=(Mesh&& other) noexcept;
-
-	~Mesh();
-
-	uint32_t getIndexCount() const { return indexCount; }
-
-	void bind(VulkanCommandBuffer& cmd) const;
-	void draw(VulkanCommandBuffer& cmd) const;
-	
-private:
-	friend class Renderer;
-	Mesh(std::unique_ptr<VulkanBuffer> vertexBuffer, std::unique_ptr<VulkanBuffer> indexBuffer, uint32_t indexCount = 0);
-
-private:
-	std::unique_ptr<VulkanBuffer> vertexBuffer;
-	std::unique_ptr<VulkanBuffer> indexBuffer;
-
-	uint32_t indexCount = 0;
+struct Mesh {
+	uint32_t vertexOffset;
+	uint32_t indexOffset;
+	uint32_t vertexCount;
+	uint32_t indexCount;
 };

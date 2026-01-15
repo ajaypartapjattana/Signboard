@@ -7,14 +7,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <array>
 
-struct objectUniformAllocation {
-	VulkanDescriptorSet descriptor;
-	VulkanBuffer UBO;
-	void* mapped;
-
-	objectUniformAllocation(VulkanDevice& device, const BufferDesc& desc) : UBO(device, desc) {}
-};
-
 ObjectSystem::ObjectSystem(VulkanDevice& device, VulkanDescriptorSet& objectSet, uint32_t objectBufferBinding, uint32_t maxObjectCount)
 	: device(device), objectSet(objectSet), objectBufferBinding(objectBufferBinding), maxObjectCount(maxObjectCount), objectBuffer(createObjectStoragebuffer())
 {
@@ -47,12 +39,12 @@ ObjectHandle ObjectSystem::createObject(MeshHandle mesh, MaterialHandle material
 	uint32_t index = handle.index;
 	ObjectSlot& slot = slots[index];
 	slot.generation++;
+	slot.mesh = mesh;
 	slot.alive = true;
 
 	GPUObject& gpu = mapped[index];
-	gpu.meshIndex = mesh.index;
-	gpu.materialIndex = material.index;
 	gpu.model = transform;
+	gpu.materialIndex = material.index;
 
 	return ObjectHandle{ index, slot.generation };
 }

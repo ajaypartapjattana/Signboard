@@ -9,7 +9,9 @@ CommandDispatcher::CommandDispatcher(GLFWwindow* window, const InputMapping& map
 
 }
 
-void CommandDispatcher::dispatch() {
+#include "Signboard/Core/Frame/FrameCommand.h"
+
+void CommandDispatcher::dispatch(std::vector<FrameCommand>& appEventQueue) {
 	platformEvents.poll();
 
 	auto& events = m_resolver.getFrameEvents();
@@ -22,7 +24,10 @@ void CommandDispatcher::dispatch() {
 
 	for (const InputBinding& binding : m_mapping) {
 		if(istriggered(binding)) {
-			appFrameQueue.push_back(binding.command);
+			FrameCommand cmd;
+			cmd.payload = ResourceCommand{ResourceType::Model, ResourceAction::LOAD, "assets_data/models/Femhand.obj"};
+
+			appEventQueue.push_back(cmd);
 		}
 	}
 }

@@ -6,11 +6,13 @@
 #include "vulkan/VulkanSwapchain.h"
 
 #include "vulkan/VulkanCommandPool.h"
+#include "vulkan/VulkanDescriptorPool.h"
 
 struct RHIView {
 	VulkanDevice& device;
 	VulkanSwapchain& swapchain;
 	VulkanCommandPool& commandPool;
+	VulkanDescriptorPool& descriptorPool;
 };
 
 class GLFWwindow;
@@ -23,6 +25,10 @@ public:
 	RHIView getRHIView();
 
 	VulkanDevice& getDevice() { return device; }
+	VulkanDescriptorPool& getDescriptorPool() { return descriptorPool; }
+
+private:
+	VulkanDescriptorPool createDescriptorPool();
 
 private:
 	VulkanContext vulkanContext;
@@ -31,4 +37,5 @@ private:
 	VulkanSwapchain swapchain;
 
 	VulkanCommandPool graphicsCommandPool;
+	VulkanDescriptorPool descriptorPool;
 };

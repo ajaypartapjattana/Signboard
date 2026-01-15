@@ -12,11 +12,16 @@ struct ObjectHandle {
 };
 static constexpr ObjectHandle INVALID_OBJECT{ UINT32_MAX, UINT32_MAX };
 
+struct MeshInfo {
+	uint32_t firstIndex;
+	uint32_t indexCount;
+	int32_t vertexOffset;
+};
+
 struct GPUObject {
 	glm::mat4 model;
 	uint32_t materialIndex;
-	uint32_t meshIndex;
-	uint32_t _pad[2];
+	uint32_t _pad[3];
 };
 
 struct ObjectParams {

@@ -128,7 +128,7 @@ void VulkanBuffer::allocateMemory(MemoryPropertyFlags memoryProperties) {
 	VkMemoryAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize = memReq.size;
-	allocInfo.memoryTypeIndex = device.findMemoryType(memReq.memoryTypeBits, toVkMemoryPropertyFlags(memoryProperties));
+	allocInfo.memoryTypeIndex = device.findMemoryType(memReq.memoryTypeBits, memoryProperties);
 
 	if (vkAllocateMemory(vkDevice, &allocInfo, nullptr, &memory) != VK_SUCCESS) {
 		throw std::runtime_error("failed to allocate memory to a buffer");

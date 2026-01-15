@@ -9,7 +9,8 @@ enum class BufferUsage {
 	Uniform				= 1 << 2,
 	Storage				= 1 << 3,
 	Vertex				= 1 << 4,
-	Index				= 1 << 5
+	Index				= 1 << 5,
+	IndirectDraw		= 1 << 6
 };
 
 using BufferUsageFlags = Flags<BufferUsage>;

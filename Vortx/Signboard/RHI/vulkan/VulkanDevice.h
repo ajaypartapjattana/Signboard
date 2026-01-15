@@ -3,8 +3,6 @@
 #include "Common/VulkanFwd.h"
 #include "Signboard/RHI/common/DeviceTypes.h"
 
-#include <vector>
-
 struct GLFWwindow;
 
 class VulkanDevice {
@@ -21,6 +19,8 @@ public:
 	uint32_t getGraphicsQueueFamily() const { return graphicsQueueFamily; }
 	VkQueue getPresentQueue() const { return presentQueue; }
 	uint32_t getPresentQueueFamily() const { return presentQueueFamily; }
+	VkQueue getTransferQueue() const { return transferQueue; }
+	uint32_t getTransferQueueFamily() const { return transferQueueFamily; }
 
 	VkSurfaceKHR getSurface() const { return surface; }
 
@@ -46,6 +46,10 @@ private:
 	VkQueue graphicsQueue = nullptr;
 	uint32_t graphicsQueueFamily = UINT32_MAX;
 
+	VkQueue transferQueue = nullptr;
+	uint32_t transferQueueFamily = UINT32_MAX;
+
 	VkQueue presentQueue = nullptr;
 	uint32_t presentQueueFamily = UINT32_MAX;
+
 };

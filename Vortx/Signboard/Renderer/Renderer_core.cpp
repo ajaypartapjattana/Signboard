@@ -1,9 +1,20 @@
 #include "Renderer.h"
 
-Renderer::Renderer(RHIView& HInterface, ResourceView resources, SceneView& scene)
-	: HInterface(HInterface), resources(resources), scene(scene), renderPass(createRenderPass())
+#include "DescriptorSchema.h"
+
+Renderer::Renderer(RHIView& HInterface, ResourceView resources, SceneView scene)
+	: HInterface(HInterface), resources(resources), scene(scene), IndirectDrawBuffer(createIndirectDrawBuffer()), renderPass(createRenderPass())
 {
 	frames.resize(FRAMES_IN_FLIGHT);
+}
+
+VulkanBuffer Renderer::createIndirectDrawBuffer() {
+	BufferDesc drawB;
+	drawB.size = 20 * DESCRIPTOR_SCHEMA::OBJECT_STATE::MAX_OBJECT_COUNT;
+	drawB.memoryFlags.set(MemoryProperty::HostCoherent, MemoryProperty::HostVisible);
+	drawB.usageFlags = BufferUsage::IndirectDraw;
+
+	return VulkanBuffer(HInterface.device, drawB);
 }
 
 VulkanRenderPass Renderer::createRenderPass() {
@@ -25,19 +36,25 @@ VulkanRenderPass Renderer::createRenderPass() {
 	return VulkanRenderPass{HInterface.device, pass};
 }
 
-void Renderer::beginFrame() {
+bool Renderer::prepareFrame() {
 	Frame& currentFrame = frames[currentFrameIndex];
 
 	SwapchainImageAcquire acquire =  HInterface.swapchain.accquireNextImage(currentFrame.imageAvailable);
 
 	if (acquire.result == SwapchianAcquireResult::OutOfDate || acquire.result == SwapchianAcquireResult::SurfaceLost) {
 		resize();
-		return;
+		return false;
 	}
 
 	acquiredImageIndex = acquire.imageIndex;
 
 	currentFrame.cmd.begin();
+
+	return true;
+}
+
+void Renderer::configureDraws() {
+
 }
 
 void Renderer::renderFrame() {

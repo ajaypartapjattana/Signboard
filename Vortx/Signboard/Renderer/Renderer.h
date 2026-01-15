@@ -5,10 +5,11 @@
 #include "Signboard/RHI/vulkan/VulkanSemaphore.h"
 #include "Signboard/RHI/vulkan/VulkanRenderPass.h"
 
-#include "Signboard/RHI/VulkanRHI.h"
-#include "Signboard/resources/ResourceAPI.h"
+#include "Signboard/RHI/vulkan/VulkanBuffer.h"
 
-#include "RenderGraph/RenderGraph.h"
+#include "Signboard/RHI/VulkanRHI.h"
+#include "Signboard/Resources/Resource.h"
+#include "Signboard/Scene/Scene.h"
 
 #include <array>
 #include <vector>
@@ -27,41 +28,33 @@ class VulkanRenderPass;
 
 class Renderer {
 public:
-	explicit Renderer(RHIView& HInterface, ResourceView resources, SceneView& scene);
+	explicit Renderer(RHIView& HInterface, ResourceView resources, SceneView scene);
 	~Renderer();
 
-	void beginFrame();
-	void submitScene(const SceneView& scene);
+	bool prepareFrame();
+	void configureDraws();
 	void renderFrame();
 	void endFrame();
 
 	void resize();
 
 private:
+	VulkanBuffer createIndirectDrawBuffer();
 	VulkanRenderPass createRenderPass();
-
-	void buildGraph();
-	void drawScene(CommandList& cmd);
-	void drawUI(CommandList& cmd);
 
 private:
 	RHIView HInterface;
 	ResourceView resources;
 	SceneView scene;
 
+	VulkanBuffer IndirectDrawBuffer;
+
 	VulkanRenderPass renderPass;
-	RenderGraph graph;
 
 	uint32_t currentFrameIndex;
 	uint32_t acquiredImageIndex;
 
 	bool graphDirty = true;
-
-	FrameUnions frameData;
-	BufferHandle frameUniformBuffer;
-
-	pass forwardPass;
-	pass uiPass;
 
 	struct Frame {
 		VulkanCommandBuffer cmd;

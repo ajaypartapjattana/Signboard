@@ -8,7 +8,6 @@
 #include <memory>
 
 class VulkanDevice;
-class VulkanDescriptorPool;
 class VulkanDescriptorSetLayout;
 class VulkanDescriptorSet;
 
@@ -23,6 +22,8 @@ public:
 
 	void destroy(ObjectHandle handle);
 	void flushDeletes();
+
+	const std::vector<Mesh>& getObjectDrawData() const { return objectDrawData; }
 
 private:
 	VulkanBuffer createObjectStoragebuffer();
@@ -39,12 +40,15 @@ private:
 
 	VulkanBuffer objectBuffer;
 	GPUObject* mapped = nullptr;
-
+	
 	struct ObjectSlot {
 		uint32_t generation = 0;
 		bool alive = false;
 	};
-	
+
 	std::vector<ObjectSlot> slots;
 	std::vector<uint32_t> freeList;
+
+	std::vector<Mesh> objectDrawData;
+
 };
