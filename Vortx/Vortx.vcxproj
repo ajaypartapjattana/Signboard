@@ -211,6 +211,14 @@
     <ClInclude Include="Deprecated\core\resource.h" />
     <ClInclude Include="Signboard\Assets\configLoader\ConfigLoader.h" />
     <ClInclude Include="Signboard\Assets\configLoader\ReadTypes\ApplicationReadTypes.h" />
+    <ClInclude Include="Signboard\Core\Containers\storage\detail\storage_detail.h" />
+    <ClInclude Include="Signboard\Core\Containers\storage\storage_handle.h" />
+    <ClInclude Include="Signboard\Core\Containers\storage\detail\storage_detail_iterator.h" />
+    <ClInclude Include="Signboard\Core\Containers\storage\storage_library.h" />
+    <ClInclude Include="Signboard\Core\Containers\storage\storage_library_accessor.h" />
+    <ClInclude Include="Signboard\Core\Containers\storage\storage.h" />
+    <ClInclude Include="Signboard\Core\Containers\storage\storage_vault.h" />
+    <ClInclude Include="Signboard\Core\Containers\storage\storage_vault_accessor.h" />
     <ClInclude Include="Signboard\Core\Frame\FrameCommand.h" />
     <ClInclude Include="Signboard\Core\Interfaces\appInterfaceTypes.h" />
     <ClInclude Include="Signboard\Core\Interfaces\KeyMappingConfigType.h" />
