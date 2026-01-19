@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Signboard/startupConfigType.h"
+#include "Signboard/Core/Interfaces/startupConfigType.h"
 
 #include <vector>
 #include <string>

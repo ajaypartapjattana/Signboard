@@ -6,7 +6,7 @@ namespace storage {
 
 	namespace detail {
 
-		template <typename Storage, typename T> class StorageReadIterator;
+		template <typename Storage, typename T> class storage_readIterator;
 
 	}
 

@@ -7,13 +7,13 @@
 
 namespace storage {
 
-	template<typename T> class VaultReadAccessor;
-	template<typename T> class VaultWriteAccessor;
+	template<typename T> class vault_readAccessor;
+	template<typename T> class vault_writeAccessor;
 
 	template <typename T>
-	class Vault {
+	class vault {
 	public:
-		Vault(uint32_t capacity = 0) {
+		vault(uint32_t capacity = 0) {
 			slots.reserve(capacity);
 			freeList.reserve(capacity);
 		}
@@ -28,11 +28,11 @@ namespace storage {
 		std::vector<Slot> slots;
 		std::vector<uint32_t> freeList;
 
-		friend class VaultWriteAccessor<T>;
-		friend class VaultReadAccessor<T>;
+		friend class vault_writeAccessor<T>;
+		friend class vault_readAccessor<T>;
 
 		template <typename Storage, typename U> 
-		friend class detail::StorageReadIterator;
+		friend class detail::storage_readIterator;
 
 	};
 

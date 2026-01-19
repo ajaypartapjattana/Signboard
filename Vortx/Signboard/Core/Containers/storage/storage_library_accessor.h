@@ -6,16 +6,16 @@
 namespace storage {
 
 	template <typename T>
-	class LibraryWriteAccessor {
+	class library_writeAccessor {
 	public:
-		explicit LibraryWriteAccessor(Library<T>& library)
+		explicit library_writeAccessor(library<T>& library)
 			: m_library(library) {}
 
-		LibraryWriteAccessor(const LibraryWriteAccessor&) = delete;
-		LibraryWriteAccessor& operator=(const LibraryWriteAccessor&) = delete;
+		library_writeAccessor(const library_writeAccessor&) = delete;
+		library_writeAccessor& operator=(const library_writeAccessor&) = delete;
 
 		template <typename... Args>
-		Handle findOrCreate(uint64_t hash, Args&&... args) {
+		storage_handle findOrCreate(uint64_t hash, Args&&... args) {
 			auto it = m_library.hashMap.find(hash);
 			if (it != m_library.hashMap.end())
 				return it->second;
@@ -36,13 +36,13 @@ namespace storage {
 			slot.hash = hash;
 			slot.alive = true;
 
-			Handle h{ index, slot.generation };
+			storage_handle h{ index, slot.generation };
 			m_library.hashMap[hash] = h;
 
 			return h;
 		}
 
-		void destroy(Handle h) {
+		void destroy(storage_handle h) {
 			auto& slot = m_library.slots[h.index];
 
 			if (!slot.alive || slot.generation != h.generation)
@@ -56,19 +56,19 @@ namespace storage {
 		}
 
 	private:
-		Library<T>& m_library;
+		library<T>& m_library;
 	};
 
 	template <typename T>
-	class LibraryReadAccessor {
+	class library_readAccessor {
 	public:
-		LibraryReadAccessor(const Library<T>& library)
+		library_readAccessor(const library<T>& library)
 			: m_library(library) {}
 
-		LibraryReadAccessor(const LibraryReadAccessor&) = delete;
-		LibraryReadAccessor& operator=(const LibraryReadAccessor&) = delete;
+		library_readAccessor(const library_readAccessor&) = delete;
+		library_readAccessor& operator=(const library_readAccessor&) = delete;
 
-		const T* get(Handle h) const {
+		const T* get(storage_handle h) const {
 			auto& slot = m_library.slots[h.index];
 
 			if (!slot.alive || slot.generation != h.generation)
@@ -77,11 +77,11 @@ namespace storage {
 			return &slot.object;
 		}
 
-		auto begin() const { return detail::StorageReadIterator<Library<T>, T>(m_library, 0); }
-		auto end() const { return detail::StorageReadIterator<Library<T>, T>(m_library, m_library.slots.size()); }
+		auto begin() const { return detail::storage_readIterator<library<T>, T>(m_library, 0); }
+		auto end() const { return detail::storage_readIterator<library<T>, T>(m_library, m_library.slots.size()); }
 
 	private:
-		const Library<T>& m_library;
+		const library<T>& m_library;
 
 	};
 

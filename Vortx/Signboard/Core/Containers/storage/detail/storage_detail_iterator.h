@@ -5,9 +5,9 @@ namespace storage {
 	namespace detail {
 
 		template <typename Storage, typename T>
-		class StorageReadIterator {
+		class storage_readIterator {
 		public:
-			StorageReadIterator(const Storage& storage, size_t index)
+			storage_readIterator(const Storage& storage, size_t index)
 				: m_storage(storage), m_index(index)
 			{
 				skipDead();
@@ -17,13 +17,13 @@ namespace storage {
 				return m_storage.slots[m_index].object;
 			}
 
-			StorageReadIterator& operator++() {
+			storage_readIterator& operator++() {
 				++m_index;
 				skipDead();
 				return *this;
 			}
 
-			bool operator!=(const StorageReadIterator& other) const {
+			bool operator!=(const storage_readIterator& other) const {
 				return m_index != other.m_index;
 			}
 

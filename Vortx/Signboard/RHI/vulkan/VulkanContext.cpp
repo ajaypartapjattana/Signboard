@@ -5,7 +5,7 @@
 
 #include <GLFW/glfw3.h>
 
-VulkanContext::VulkanContext(GLFWwindow* window)
+VulkanContext::VulkanContext()
 	: enableValidationLayers(DEBUG_MODE)
 {
 	configureExtensionsAndLayers();

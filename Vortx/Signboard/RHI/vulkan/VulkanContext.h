@@ -17,7 +17,7 @@ class VulkanSwapchain;
 
 class VulkanContext {
 public:
-	VulkanContext(GLFWwindow* window);
+	VulkanContext();
 	~VulkanContext();
 
 	VkInstance getInstance() const { return instance; }

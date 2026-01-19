@@ -8,13 +8,13 @@
 
 namespace storage {
 
-	template <typename T> class LibraryWriteAccessor;
-	template <typename T> class LibraryReadAccessor;
+	template <typename T> class library_writeAccessor;
+	template <typename T> class library_readAccessor;
 
 	template <typename T>
-	class Library {
+	class library {
 	public:
-		Library(uint32_t capacity = 0) {
+		library(uint32_t capacity = 0) {
 			slots.reserve(capacity);
 			freeList.reserve(capacity);
 		}
@@ -29,13 +29,13 @@ namespace storage {
 
 		std::vector<HashedSlot> slots;
 		std::vector<uint32_t> freeList;
-		std::unordered_map<uint64_t, storage::Handle> hashMap;
+		std::unordered_map<uint64_t, storage::storage_handle> hashMap;
 
-		friend class LibraryWriteAccessor<T>;
-		friend class LibraryReadAccessor<T>;
+		friend class library_writeAccessor<T>;
+		friend class library_readAccessor<T>;
 
 		template <typename Storage, typename U>
-		friend class detail::StorageReadIterator;
+		friend class detail::storage_readIterator;
 
 	};
 

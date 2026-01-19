@@ -6,17 +6,17 @@
 namespace storage {
 
 	template <typename T>
-	class VaultWriteAccessor {
+	class vault_writeAccessor {
 	public:
-		VaultWriteAccessor(Vault<T>& vault)
+		vault_writeAccessor(vault<T>& vault)
 			: m_vault(vault) {
 		}
 
-		VaultWriteAccessor(const VaultWriteAccessor&) = delete;
-		VaultWriteAccessor& operator=(const VaultWriteAccessor&) = delete;
+		vault_writeAccessor(const vault_writeAccessor&) = delete;
+		vault_writeAccessor& operator=(const vault_writeAccessor&) = delete;
 
 		template <typename... Args>
-		Handle create(Args&&... args) {
+		storage_handle create(Args&&... args) {
 			uint32_t index;
 
 			if (!m_vault.freeList.empty()) {
@@ -35,7 +35,7 @@ namespace storage {
 			return { index, slot.generation };
 		}
 
-		void destroy(Handle h) {
+		void destroy(storage_handle h) {
 			auto& slot = m_vault.slots[h.index];
 
 			if (!slot.alive || slot.generation != h.generation)
@@ -47,20 +47,20 @@ namespace storage {
 		}
 
 	private:
-		Vault<T>& m_vault;
+		vault<T>& m_vault;
 	};
 
 	template <typename T>
-	class VaultReadAccessor {
+	class vault_readAccessor {
 	public:
-		explicit VaultReadAccessor(const Vault<T>& vault)
+		explicit vault_readAccessor(const vault<T>& vault)
 			: m_vault(vault) {
 		}
 
-		VaultReadAccessor(const VaultReadAccessor&) = delete;
-		VaultReadAccessor& operator=(const VaultReadAccessor&) = delete;
+		vault_readAccessor(const vault_readAccessor&) = delete;
+		vault_readAccessor& operator=(const vault_readAccessor&) = delete;
 
-		const T* get(Handle h) const {
+		const T* get(storage_handle h) const {
 			const auto& slot = m_vault.slots[h.index];
 
 			if (!slot.alive || slot.generation != h.generation)
@@ -69,11 +69,11 @@ namespace storage {
 			return &slot.object;
 		}
 
-		auto begin() const { return detail::StorageReadIterator<Vault<T>, T>(m_vault, 0); }
-		auto end() const { return detail::StorageReadIterator<Vault<T>, T>(m_vault, m_vault.slots.size()); }
+		auto begin() const { return detail::storage_readIterator<vault<T>, T>(m_vault, 0); }
+		auto end() const { return detail::storage_readIterator<vault<T>, T>(m_vault, m_vault.slots.size()); }
 
 	private:
-		const Vault<T>& m_vault;
+		const vault<T>& m_vault;
 
 	};
 
