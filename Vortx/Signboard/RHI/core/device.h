@@ -36,6 +36,7 @@ namespace rhi::core {
 			void* queue;
 			uint32_t family;
 			uint32_t capabilities;
+			bool present_supported;
 		};
 		std::vector<queue_entry> m_queues;
 

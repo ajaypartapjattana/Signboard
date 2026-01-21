@@ -164,11 +164,17 @@
     <ClCompile Include="Signboard\Editor\Controllers\Utilities\vecMath.cpp" />
     <ClCompile Include="Signboard\Platform\EventHandler\EventPoller.cpp" />
     <ClCompile Include="Signboard\ECS\commandDispatch\InputResolve\InputResolver.cpp" />
+    <ClCompile Include="Signboard\Platform\window\core\context.cpp" />
+    <ClCompile Include="Signboard\Platform\window\primitive\display_window.cpp" />
+    <ClCompile Include="Signboard\Platform\window\procedure\display_window_builder.cpp" />
     <ClCompile Include="Signboard\RHI\core\device.cpp" />
     <ClCompile Include="Signboard\RHI\core\instance.cpp" />
     <ClCompile Include="Signboard\RHI\core\surface.cpp" />
+    <ClCompile Include="Signboard\RHI\core\swapchain.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\device_builder.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\instance_builder.cpp" />
+    <ClCompile Include="Signboard\RHI\procedure\surface_creator.cpp" />
+    <ClCompile Include="Signboard\RHI\procedure\swapchain_builder.cpp" />
     <ClCompile Include="Signboard\Scene\Scene.cpp" />
     <ClCompile Include="Signboard\UI\GuiLayer.cpp" />
     <ClCompile Include="Signboard\Assets\ResourceLoaders\ModelLoader.cpp" />
@@ -209,8 +215,7 @@
     <ClCompile Include="Signboard\Resources\resourceSystems\TextureSystem.cpp" />
     <ClCompile Include="Signboard\Signboard.cpp" />
     <ClCompile Include="Signboard\Resources\resourceSystems\SamplerSystem.cpp" />
-    <ClCompile Include="Signboard\Platform\window\WindowEventProxy.cpp" />
-    <ClCompile Include="Signboard\Platform\window\windowSurface.cpp" />
+    <ClCompile Include="Signboard\Platform\EventHandler\WindowEventProxy.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Deprecated\core\resource.h" />
@@ -239,14 +244,26 @@
     <ClInclude Include="Signboard\Assets\configLoader\XMLLoader\XMLConfigLoader.h" />
     <ClInclude Include="Signboard\Assets\configLoader\common\MLTypes.h" />
     <ClInclude Include="Signboard\Assets\Utility\convStr.h" />
+    <ClInclude Include="Signboard\Platform\platform.h" />
+    <ClInclude Include="Signboard\Platform\window\primitive\display_window_glfwAccess.h" />
+    <ClInclude Include="Signboard\Platform\window\core\window_core.h" />
+    <ClInclude Include="Signboard\Platform\window\core\context.h" />
+    <ClInclude Include="Signboard\Platform\window\primitive\window_primitive.h" />
+    <ClInclude Include="Signboard\Platform\window\procedure\display_window_builder.h" />
+    <ClInclude Include="Signboard\Platform\window\procedure\window_procedure.h" />
+    <ClInclude Include="Signboard\Platform\window\window.h" />
     <ClInclude Include="Signboard\Resources\resourceSystems\Resources.h" />
     <ClInclude Include="Signboard\RHI\core\device.h" />
     <ClInclude Include="Signboard\RHI\core\device_vk.h" />
     <ClInclude Include="Signboard\RHI\core\rhi_core.h" />
     <ClInclude Include="Signboard\RHI\core\surface.h" />
     <ClInclude Include="Signboard\RHI\core\surface_vk.h" />
+    <ClInclude Include="Signboard\RHI\core\swapchain.h" />
+    <ClInclude Include="Signboard\RHI\core\swapchain_vk.h" />
     <ClInclude Include="Signboard\RHI\procedure\device_builder.h" />
     <ClInclude Include="Signboard\RHI\procedure\rhi_procedure.h" />
+    <ClInclude Include="Signboard\RHI\procedure\surface_creator.h" />
+    <ClInclude Include="Signboard\RHI\procedure\swapchain_builder.h" />
     <ClInclude Include="Signboard\RHI\rhi.h" />
     <ClInclude Include="Signboard\RHI\core\instance.h" />
     <ClInclude Include="Signboard\RHI\procedure\instance_builder.h" />
@@ -322,8 +339,8 @@
     <ClInclude Include="Signboard\Signboard.h" />
     <ClInclude Include="Signboard\Resources\resourceSystems\SamplerSystem.h" />
     <ClInclude Include="Signboard\Assets\ResourceLoaders\TextureLoader.h" />
-    <ClInclude Include="Signboard\Platform\window\WindowEventProxy.h" />
-    <ClInclude Include="Signboard\Platform\window\windowSurface.h" />
+    <ClInclude Include="Signboard\Platform\EventHandler\WindowEventProxy.h" />
+    <ClInclude Include="Signboard\Platform\window\primitive\display_window.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ShaderBuild.targets" />

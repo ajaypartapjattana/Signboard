@@ -33,11 +33,6 @@ namespace rhi::procedure {
 	private:
 		friend class physical_device_selector;
 
-		void* m_physicalDevice = nullptr;
-
-	private:
-		const rhi::core::instance& m_instance;
-
 		struct Impl;
 		Impl* impl;
 

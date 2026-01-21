@@ -1,7 +1,7 @@
 #pragma once
 
 namespace rhi::procedure {
-	class surface_builder;
+	class surface_creator;
 }
 
 namespace rhi::core {
@@ -21,7 +21,7 @@ namespace rhi::core {
 		const void* native_surface() const noexcept;
 
 	private:
-		friend class rhi::procedure::surface_builder;
+		friend class rhi::procedure::surface_creator;
 		friend struct surface_vkAccess;
 
 		surface() = default;
