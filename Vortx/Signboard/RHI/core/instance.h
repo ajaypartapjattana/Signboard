@@ -4,6 +4,8 @@ namespace rhi::procedure {
 	class instance_builder;
 }
 
+#include <vulkan/vulkan.h>
+
 namespace rhi::core {
 
 	struct instance_vkAccess;
@@ -18,7 +20,7 @@ namespace rhi::core {
 
 		~instance() noexcept;
 
-		const void* native_instance() const noexcept;
+		const VkInstance* native_instance() const noexcept;
 
 	private:
 		friend class rhi::procedure::instance_builder;
@@ -26,8 +28,8 @@ namespace rhi::core {
 
 		instance() = default;
 
-		void* m_instance = nullptr;
-		void* m_allocator = nullptr;
+		VkInstance m_instance = nullptr;
+		VkAllocationCallbacks* m_allocator = nullptr;
 
 	};
 

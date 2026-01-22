@@ -1,11 +1,12 @@
 #pragma once
 
-#include <cstdint>
-#include <vector>
-
 namespace rhi::procedure {
 	class device_builder;
 }
+
+#include <vulkan/vulkan.h>
+#include <cstdint>
+#include <vector>
 
 namespace rhi::core {
 
@@ -21,7 +22,7 @@ namespace rhi::core {
 
 		~device() noexcept;
 
-		const void* native_device() const noexcept;
+		const VkDevice* native_device() const noexcept;
 
 	private:
 		friend class rhi::procedure::device_builder;
@@ -29,18 +30,18 @@ namespace rhi::core {
 
 		device() = default;
 
-		void* m_device;
-		void* m_physical;
+		VkDevice m_device;
+		VkPhysicalDevice m_physical;
 
 		struct queue_entry {
-			void* queue;
+			VkQueue queue;
 			uint32_t family;
-			uint32_t capabilities;
+			VkQueueFlags capabilities;
 			bool present_supported;
 		};
 		std::vector<queue_entry> m_queues;
 
-		void* m_allocator;
+		VkAllocationCallbacks* m_allocator;
 
 	};
 

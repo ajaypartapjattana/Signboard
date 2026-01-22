@@ -1,7 +1,7 @@
 #include "device_builder.h"
 
+#include "Signboard/RHI/core/device.h"
 #include "Signboard/RHI/core/instance_vk.h"
-#include "Signboard/RHI/core/device_vk.h"
 #include "Signboard/RHI/core/surface_vk.h"
 
 #include <stdexcept>
@@ -9,35 +9,7 @@
 
 namespace rhi::procedure {
 
-	struct phys_candidate {
-		VkPhysicalDevice phys = VK_NULL_HANDLE;
-		bool suitable = true;
-
-		std::vector<VkQueueFamilyProperties> families;
-		std::vector<VkExtensionProperties> extensions;
-		VkPhysicalDeviceFeatures features;
-
-		struct assigned_queue {
-			uint32_t family;
-			VkQueueFlags caps;
-			bool can_present = false;
-		};
-
-		std::vector<assigned_queue> assigned_queueFamilies;
-		VkPhysicalDeviceFeatures enabledFeatures{};
-
-	};
-
-	struct device_builder::Impl{
-		std::vector<phys_candidate> g_candidates;
-
-		std::vector<const char*> m_requiredExtensions;
-		VkSurfaceKHR surface;
-	};
-
-	device_builder::device_builder(const rhi::core::instance& instance) 
-		: impl(new Impl)
-	{
+	device_builder::device_builder(const rhi::core::instance& instance) {
 		VkInstance vkInstance = rhi::core::instance_vkAccess::get(instance);
 
 		uint32_t count = 0;
@@ -49,10 +21,8 @@ namespace rhi::procedure {
 		std::vector<VkPhysicalDevice> devices(count);
 		vkEnumeratePhysicalDevices(vkInstance, &count, devices.data());
 
-		Impl& build_state = *impl;
-
-		build_state.g_candidates.clear();
-		build_state.g_candidates.reserve(count);
+		m_candidates.clear();
+		m_candidates.reserve(count);
 
 		for (VkPhysicalDevice phys : devices) {
 			phys_candidate c{};
@@ -73,48 +43,47 @@ namespace rhi::procedure {
 			vkGetPhysicalDeviceFeatures(c.phys, &c.features);
 			
 
-			build_state.g_candidates.push_back(c);
+			m_candidates.push_back(c);
 		}
 
 	}
 	
 	device_builder& device_builder::require_graphicsQueue() {
 		physical_device_selector selector;
-		selector.require_Queue(*impl, VK_QUEUE_GRAPHICS_BIT);
+		selector.require_Queue(*this, VK_QUEUE_GRAPHICS_BIT);
 		return *this;
 	}
 
 	device_builder& device_builder::require_computeQueue() {
 		physical_device_selector selector;
-		selector.require_Queue(*impl, VK_QUEUE_COMPUTE_BIT);
+		selector.require_Queue(*this, VK_QUEUE_COMPUTE_BIT);
 		return *this;
 	}
 
 	device_builder& device_builder::require_transferQueue() {
 		physical_device_selector selector;
-		selector.require_Queue(*impl, VK_QUEUE_TRANSFER_BIT);
+		selector.require_Queue(*this, VK_QUEUE_TRANSFER_BIT);
 		return *this;
 	}
 
 	device_builder& device_builder::require_presentQueue(const rhi::core::surface& s) {
 		VkSurfaceKHR surface =  rhi::core::surface_vkAccess::get(s);
-		impl->surface = surface;
+		m_surface = surface;
 
 		physical_device_selector selector;
-		selector.require_presentSupport(*impl);
-		selector.require_extension(*impl, VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+		selector.require_presentSupport(*this);
+		selector.require_extension(*this, VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 		return *this;
 	}
 
 	device_builder& device_builder::enable_anisotropy() {
 		physical_device_selector selector;
-		selector.require_feature(*impl, &VkPhysicalDeviceFeatures::samplerAnisotropy);
+		selector.require_feature(*this, &VkPhysicalDeviceFeatures::samplerAnisotropy);
 		return *this;
 	}
 
 	rhi::core::device device_builder::build() {
-		const Impl& build_state = *impl;
-		const std::vector<phys_candidate>& candidates = build_state.g_candidates;
+		const std::vector<phys_candidate>& candidates = m_candidates;
 
 		auto suited_physical = std::find_if(candidates.begin(), candidates.end(), [](const phys_candidate& c) {return c.suitable; });
 
@@ -142,8 +111,8 @@ namespace rhi::procedure {
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueInfos.size());
 		createInfo.pQueueCreateInfos = queueInfos.data();
-		createInfo.enabledExtensionCount = static_cast<uint32_t>(build_state.m_requiredExtensions.size());
-		createInfo.ppEnabledExtensionNames = build_state.m_requiredExtensions.data();
+		createInfo.enabledExtensionCount = static_cast<uint32_t>(m_requiredExtensions.size());
+		createInfo.ppEnabledExtensionNames = m_requiredExtensions.data();
 		createInfo.pEnabledFeatures = &suited_physical->enabledFeatures;
 
 		VkDevice vkDevice = VK_NULL_HANDLE;
@@ -162,7 +131,7 @@ namespace rhi::procedure {
 		device.m_physical = suited_physical->phys;
 		for (const phys_candidate::assigned_queue& aq : suited_physical->assigned_queueFamilies) {
 			VkQueue vkQueue = queues.at(aq.family);
-			device.m_queues.push_back({ vkQueue, aq.family, static_cast<uint32_t>(aq.caps), aq.can_present });
+			device.m_queues.push_back({ vkQueue, aq.family, aq.caps, aq.can_present });
 		}
 
 		return device;
@@ -170,8 +139,8 @@ namespace rhi::procedure {
 	
 	class physical_device_selector {
 	public:
-		void require_Queue(device_builder::Impl& impl, VkQueueFlags required) {
-			for (phys_candidate& c : impl.g_candidates) {
+		void require_Queue(device_builder& b, VkQueueFlags required) {
+			for (device_builder::phys_candidate& c : b.m_candidates) {
 				if (!c.suitable)
 					continue;
 
@@ -198,15 +167,15 @@ namespace rhi::procedure {
 			}
 		}
 
-		void require_presentSupport(device_builder::Impl& impl) {
-			for (phys_candidate& c : impl.g_candidates) {
+		void require_presentSupport(device_builder& b) {
+			for (device_builder::phys_candidate& c : b.m_candidates) {
 				if (!c.suitable)
 					continue;
 
 				bool found = false;
-				for (phys_candidate::assigned_queue& q : c.assigned_queueFamilies) {
+				for (device_builder::phys_candidate::assigned_queue& q : c.assigned_queueFamilies) {
 					VkBool32 supported = false;
-					vkGetPhysicalDeviceSurfaceSupportKHR(c.phys, q.family, impl.surface, &supported);
+					vkGetPhysicalDeviceSurfaceSupportKHR(c.phys, q.family, b.m_surface, &supported);
 
 					if (supported) {
 						q.can_present = true;
@@ -218,7 +187,7 @@ namespace rhi::procedure {
 				if (!found) {
 					for (uint32_t i = 0; i < c.families.size(); ++i) {
 						VkBool32 supported = false;
-						vkGetPhysicalDeviceSurfaceSupportKHR(c.phys, i, impl.surface, &supported);
+						vkGetPhysicalDeviceSurfaceSupportKHR(c.phys, i, b.m_surface, &supported);
 
 						if (supported) {
 							VkQueueFlags caps = c.families[i].queueFlags;
@@ -234,9 +203,9 @@ namespace rhi::procedure {
 			}
 		}
 
-		void require_extension(device_builder::Impl& impl, const char* name) {
+		void require_extension(device_builder& b, const char* name) {
 			bool supported = false;
-			for (phys_candidate& c : impl.g_candidates) {
+			for (device_builder::phys_candidate& c : b.m_candidates) {
 				if (!c.suitable)
 					continue;
 
@@ -256,11 +225,11 @@ namespace rhi::procedure {
 			if (!supported)
 				throw std::runtime_error("The extension is not supportes by any physical device!");
 
-			impl.m_requiredExtensions.push_back(name);
+			b.m_requiredExtensions.push_back(name);
 		}
 
-		void require_feature(device_builder::Impl& impl, VkBool32 VkPhysicalDeviceFeatures::* member) {
-			for (phys_candidate& c : impl.g_candidates) {
+		void require_feature(device_builder& b, VkBool32 VkPhysicalDeviceFeatures::* member) {
+			for (device_builder::phys_candidate& c : b.m_candidates) {
 				if (!c.suitable)
 					continue;
 

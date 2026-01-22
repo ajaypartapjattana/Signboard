@@ -4,6 +4,8 @@ namespace rhi::procedure {
 	class surface_creator;
 }
 
+#include <vulkan/vulkan.h>
+
 namespace rhi::core {
 
 	struct surface_vkAccess;
@@ -18,7 +20,7 @@ namespace rhi::core {
 
 		~surface() noexcept;
 
-		const void* native_surface() const noexcept;
+		const VkSurfaceKHR* native_surface() const noexcept;
 
 	private:
 		friend class rhi::procedure::surface_creator;
@@ -26,10 +28,10 @@ namespace rhi::core {
 
 		surface() = default;
 
-		void* m_instance = nullptr;
+		VkInstance m_instance;
 
-		void* m_surface = nullptr;
-		void* m_allocator = nullptr;
+		VkSurfaceKHR m_surface;
+		VkAllocationCallbacks* m_allocator = nullptr;
 
 	};
 

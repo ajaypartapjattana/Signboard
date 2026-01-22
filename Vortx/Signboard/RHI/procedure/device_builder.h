@@ -1,13 +1,14 @@
 #pragma once
 
-#include <vector>
-#include <cstdint>
-
 namespace rhi::core {
 	class instance;
 	class device;
 	class surface;
 }
+
+#include <vulkan/vulkan.h>
+#include <vector>
+#include <cstdint>
 
 namespace rhi::procedure {
 
@@ -33,8 +34,28 @@ namespace rhi::procedure {
 	private:
 		friend class physical_device_selector;
 
-		struct Impl;
-		Impl* impl;
+		struct phys_candidate {
+			VkPhysicalDevice phys = VK_NULL_HANDLE;
+			bool suitable = true;
+
+			std::vector<VkQueueFamilyProperties> families;
+			std::vector<VkExtensionProperties> extensions;
+			VkPhysicalDeviceFeatures features;
+
+			struct assigned_queue {
+				uint32_t family;
+				VkQueueFlags caps;
+				bool can_present = false;
+			};
+
+			std::vector<assigned_queue> assigned_queueFamilies;
+			VkPhysicalDeviceFeatures enabledFeatures{};
+		};
+
+		std::vector<phys_candidate> m_candidates;
+
+		std::vector<const char*> m_requiredExtensions;
+		VkSurfaceKHR m_surface;
 
 	};
 

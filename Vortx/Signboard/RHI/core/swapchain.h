@@ -4,6 +4,8 @@ namespace rhi::procedure {
 	class swapchain_builder;
 }
 
+#include <vulkan/vulkan.h>
+
 namespace rhi::core {
 
 	struct swapchain_vkAccess;
@@ -18,7 +20,7 @@ namespace rhi::core {
 
 		~swapchain() noexcept;
 
-		const void* native_swapchain() const noexcept;
+		const VkSwapchainKHR* native_swapchain() const noexcept;
 
 	private:
 		friend class rhi::procedure::swapchain_builder;
@@ -26,10 +28,10 @@ namespace rhi::core {
 
 		swapchain() = default;
 
-		void* m_swapchain;
+		VkSwapchainKHR m_swapchain;
 		
-		void* m_device;
-		void* m_allocator;
+		VkDevice m_device;
+		VkAllocationCallbacks* m_allocator;
 
 	};
 
