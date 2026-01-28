@@ -10,10 +10,6 @@ namespace rhi::core {
 			return s.m_surface;
 		}
 
-		static VkAllocationCallbacks* allocator(const surface& s) noexcept {
-			return s.m_allocator;
-		}
-
 	};
 
 }

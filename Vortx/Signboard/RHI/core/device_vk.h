@@ -21,8 +21,12 @@ namespace rhi::core {
 			}
 		}
 
-		static VkAllocationCallbacks* allocator(const device& d) noexcept {
-			return d.m_allocator;
+		static bool get_featureEnabled(const device& d, const VkBool32 VkPhysicalDeviceFeatures::* feature) {
+			return d.m_enabledfeatures.*feature == VK_TRUE;
+		}
+
+		static const VkPhysicalDeviceProperties& get_properties(const device& d) {
+			return d.m_properties;
 		}
 
 	};

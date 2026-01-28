@@ -20,7 +20,7 @@ namespace rhi::core {
 
 		~swapchain() noexcept;
 
-		const VkSwapchainKHR* native_swapchain() const noexcept;
+		VkSwapchainKHR native_swapchain() const noexcept;
 
 	private:
 		friend class rhi::procedure::swapchain_builder;
@@ -29,9 +29,9 @@ namespace rhi::core {
 		swapchain() = default;
 
 		VkSwapchainKHR m_swapchain;
+		VkFormat m_format;
 		
 		VkDevice m_device;
-		VkAllocationCallbacks* m_allocator;
 
 	};
 

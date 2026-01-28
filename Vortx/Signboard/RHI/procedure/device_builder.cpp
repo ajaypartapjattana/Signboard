@@ -40,8 +40,9 @@ namespace rhi::procedure {
 			c.extensions.resize(extCount);
 			vkEnumerateDeviceExtensionProperties(phys, nullptr, &extCount, c.extensions.data());
 
+			vkGetPhysicalDeviceProperties(phys, &c.properties);
+
 			vkGetPhysicalDeviceFeatures(c.phys, &c.features);
-			
 
 			m_candidates.push_back(c);
 		}
@@ -76,7 +77,7 @@ namespace rhi::procedure {
 		return *this;
 	}
 
-	device_builder& device_builder::enable_anisotropy() {
+	device_builder& device_builder::enable_samplerAnisotropy() {
 		physical_device_selector selector;
 		selector.require_feature(*this, &VkPhysicalDeviceFeatures::samplerAnisotropy);
 		return *this;
@@ -126,15 +127,18 @@ namespace rhi::procedure {
 			queues[family] = q;
 		}
 
-		rhi::core::device device;
-		device.m_device = vkDevice;
-		device.m_physical = suited_physical->phys;
+		rhi::core::device l_device;
+		l_device.m_device = vkDevice;
+		l_device.m_physical = suited_physical->phys;
 		for (const phys_candidate::assigned_queue& aq : suited_physical->assigned_queueFamilies) {
 			VkQueue vkQueue = queues.at(aq.family);
-			device.m_queues.push_back({ vkQueue, aq.family, aq.caps, aq.can_present });
+			l_device.m_queues.push_back({ vkQueue, aq.family, aq.caps, aq.can_present });
 		}
 
-		return device;
+		l_device.m_enabledfeatures = suited_physical->enabledFeatures;
+		l_device.m_properties = suited_physical->properties;
+
+		return l_device;
 	}
 	
 	class physical_device_selector {

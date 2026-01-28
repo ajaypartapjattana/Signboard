@@ -138,7 +138,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir);C:\Ext_Libraries\json-develop;C:\Users\ajayp\source\repos\imgui;C:\Ext_Libraries\tinyobjloader;C:\Ext_Libraries\glfw-3.4.bin.WIN64\include;C:\VulkanSDK\1.4.321.1\Include;C:\Ext_Libraries\stb_Image;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);D:\PROJECT\Vortx\Vortx\Signboard\RHI\detail\vma;C:\Users\ajayp\source\repos\imgui;C:\Ext_Libraries\tinyobjloader;C:\Ext_Libraries\glfw-3.4.bin.WIN64\include;C:\VulkanSDK\1.4.321.1\Include;C:\Ext_Libraries\stb_Image;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
@@ -169,12 +169,26 @@
     <ClCompile Include="Signboard\Platform\window\procedure\display_window_builder.cpp" />
     <ClCompile Include="Signboard\RHI\core\device.cpp" />
     <ClCompile Include="Signboard\RHI\core\instance.cpp" />
+    <ClCompile Include="Signboard\RHI\core\allocator.cpp" />
+    <ClCompile Include="Signboard\RHI\core\allocator_vma.h" />
     <ClCompile Include="Signboard\RHI\core\surface.cpp" />
     <ClCompile Include="Signboard\RHI\core\swapchain.cpp" />
+    <ClCompile Include="Signboard\RHI\primitives\image.cpp" />
+    <ClCompile Include="Signboard\RHI\primitive\buffer.cpp" />
+    <ClCompile Include="Signboard\RHI\primitive\image.cpp" />
+    <ClCompile Include="Signboard\RHI\primitive\renderPass.cpp" />
+    <ClCompile Include="Signboard\RHI\primitive\sampler.cpp" />
+    <ClCompile Include="Signboard\RHI\procedure\bitops.cpp" />
+    <ClCompile Include="Signboard\RHI\procedure\buffer_allocator.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\device_builder.cpp" />
+    <ClCompile Include="Signboard\RHI\procedure\image_allocator.cpp" />
+    <ClCompile Include="Signboard\RHI\procedure\image_wrapper.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\instance_builder.cpp" />
+    <ClCompile Include="Signboard\RHI\procedure\allocator_creator.cpp" />
+    <ClCompile Include="Signboard\RHI\procedure\sampler_creator.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\surface_creator.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\swapchain_builder.cpp" />
+    <ClCompile Include="Signboard\RHI\detail\vma\vma.cpp" />
     <ClCompile Include="Signboard\Scene\Scene.cpp" />
     <ClCompile Include="Signboard\UI\GuiLayer.cpp" />
     <ClCompile Include="Signboard\Assets\ResourceLoaders\ModelLoader.cpp" />
@@ -255,15 +269,35 @@
     <ClInclude Include="Signboard\Resources\resourceSystems\Resources.h" />
     <ClInclude Include="Signboard\RHI\core\device.h" />
     <ClInclude Include="Signboard\RHI\core\device_vk.h" />
+    <ClInclude Include="Signboard\RHI\core\allocator.h" />
     <ClInclude Include="Signboard\RHI\core\rhi_core.h" />
     <ClInclude Include="Signboard\RHI\core\surface.h" />
     <ClInclude Include="Signboard\RHI\core\surface_vk.h" />
     <ClInclude Include="Signboard\RHI\core\swapchain.h" />
     <ClInclude Include="Signboard\RHI\core\swapchain_vk.h" />
+    <ClInclude Include="Signboard\RHI\detail\vma\vma.h" />
+    <ClInclude Include="Signboard\RHI\primitives\image.h" />
+    <ClInclude Include="Signboard\RHI\primitives\image_vk.h" />
+    <ClInclude Include="Signboard\RHI\primitive\buffer.h" />
+    <ClInclude Include="Signboard\RHI\primitive\buffer_vk.h" />
+    <ClInclude Include="Signboard\RHI\primitive\image.h" />
+    <ClInclude Include="Signboard\RHI\primitive\image_vk.h" />
+    <ClInclude Include="Signboard\RHI\primitive\renderPass.h" />
+    <ClInclude Include="Signboard\RHI\primitive\renderPass_vkAccess.h" />
+    <ClInclude Include="Signboard\RHI\primitive\rhi_primitive.h" />
+    <ClInclude Include="Signboard\RHI\primitive\sampler.h" />
+    <ClInclude Include="Signboard\RHI\primitive\sampler_vk.h" />
+    <ClInclude Include="Signboard\RHI\procedure\bitops.h" />
+    <ClInclude Include="Signboard\RHI\procedure\buffer_allocator.h" />
     <ClInclude Include="Signboard\RHI\procedure\device_builder.h" />
+    <ClInclude Include="Signboard\RHI\procedure\image_allocator.h" />
+    <ClInclude Include="Signboard\RHI\procedure\allocator_creator.h" />
+    <ClInclude Include="Signboard\RHI\procedure\image_wrapper.h" />
     <ClInclude Include="Signboard\RHI\procedure\rhi_procedure.h" />
+    <ClInclude Include="Signboard\RHI\procedure\sampler_creator.h" />
     <ClInclude Include="Signboard\RHI\procedure\surface_creator.h" />
     <ClInclude Include="Signboard\RHI\procedure\swapchain_builder.h" />
+    <ClInclude Include="Signboard\RHI\detail\vma\vk_mem_alloc.h" />
     <ClInclude Include="Signboard\RHI\rhi.h" />
     <ClInclude Include="Signboard\RHI\core\instance.h" />
     <ClInclude Include="Signboard\RHI\procedure\instance_builder.h" />

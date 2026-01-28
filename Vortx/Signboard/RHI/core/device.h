@@ -41,7 +41,8 @@ namespace rhi::core {
 		};
 		std::vector<queue_entry> m_queues;
 
-		VkAllocationCallbacks* m_allocator;
+		VkPhysicalDeviceFeatures m_enabledfeatures;
+		VkPhysicalDeviceProperties m_properties;
 
 	};
 

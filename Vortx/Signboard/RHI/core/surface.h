@@ -31,7 +31,6 @@ namespace rhi::core {
 		VkInstance m_instance;
 
 		VkSurfaceKHR m_surface;
-		VkAllocationCallbacks* m_allocator = nullptr;
 
 	};
 

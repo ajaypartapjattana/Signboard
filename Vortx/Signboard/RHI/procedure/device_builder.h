@@ -26,7 +26,7 @@ namespace rhi::procedure {
 		device_builder& require_transferQueue();
 		device_builder& require_presentQueue(const rhi::core::surface& s);
 
-		device_builder& enable_anisotropy();
+		device_builder& enable_samplerAnisotropy();
 
 		rhi::core::device build();
 
@@ -49,6 +49,8 @@ namespace rhi::procedure {
 			};
 
 			std::vector<assigned_queue> assigned_queueFamilies;
+
+			VkPhysicalDeviceProperties properties{};
 			VkPhysicalDeviceFeatures enabledFeatures{};
 		};
 

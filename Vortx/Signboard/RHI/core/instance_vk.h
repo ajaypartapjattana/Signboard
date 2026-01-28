@@ -10,10 +10,6 @@ namespace rhi::core {
 			return i.m_instance;
 		}
 
-		static VkAllocationCallbacks* allocator(const instance& i) noexcept {
-			return i.m_allocator;
-		}
-
 	};
 
 }

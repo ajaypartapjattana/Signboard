@@ -6,10 +6,8 @@ namespace rhi::core {
 
 	instance::instance(instance&& other) noexcept {
 		m_instance = other.m_instance;
-		m_allocator = other.m_allocator;
 
 		other.m_instance = VK_NULL_HANDLE;
-		other.m_allocator = nullptr;
 	}
 
 	instance& instance::operator=(instance&& other) noexcept {
@@ -17,20 +15,18 @@ namespace rhi::core {
 			return *this;
 
 		if (m_instance)
-			vkDestroyInstance(m_instance, m_allocator);
+			vkDestroyInstance(m_instance, nullptr);
 
 		m_instance = other.m_instance;
-		m_allocator = other.m_allocator;
 
 		other.m_instance = VK_NULL_HANDLE;
-		other.m_allocator = nullptr;
 
 		return *this;
 	}
 
 	instance::~instance() noexcept {
 		if (m_instance != VK_NULL_HANDLE)
-			vkDestroyInstance(m_instance, m_allocator);
+			vkDestroyInstance(m_instance, nullptr);
 	}
 
 	const VkInstance* instance::native_instance() const noexcept {

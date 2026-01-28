@@ -29,7 +29,6 @@ namespace rhi::core {
 		instance() = default;
 
 		VkInstance m_instance = nullptr;
-		VkAllocationCallbacks* m_allocator = nullptr;
 
 	};
 

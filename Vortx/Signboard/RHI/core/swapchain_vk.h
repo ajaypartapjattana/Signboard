@@ -10,8 +10,8 @@ namespace rhi::core {
 			return s.m_swapchain;
 		}
 
-		static VkAllocationCallbacks* allocator(const swapchain& s) {
-			return s.m_allocator;
+		static VkFormat get_format(const swapchain& s) {
+			return s.m_format;
 		}
 
 	};
