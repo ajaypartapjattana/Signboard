@@ -5,10 +5,10 @@
 int main() {
     try {
         Signboard board;
-        //board.run();
+        board.run();
     }
     catch (const std::exception& e) {
-        std::cerr << std::endl << e.what() << std::endl << std::endl << "EXECUTION ABORTED" << std::endl;
+        std::cerr << '\n' << e.what() << std::endl;
         return EXIT_FAILURE;
     }
 

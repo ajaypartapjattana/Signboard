@@ -6,14 +6,17 @@ class target_surface {
 public:
 	target_surface();
 
+	bool target_ready();
+
 	const platform::primitive::display_window& native_target() const noexcept;
 
 private:
 	platform::primitive::display_window setup_primiary();
 
 private:
-	platform::core::context m_ctx;
+	platform::core::context m_ctx{};
 
 	platform::primitive::display_window m_primary;
+	platform::primitive::window_eventState m_eventState{};
 
 };

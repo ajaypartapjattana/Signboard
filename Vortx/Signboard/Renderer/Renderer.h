@@ -9,7 +9,7 @@
 
 class Renderer {
 public:
-	Renderer();
+	Renderer(const platform::primitive::display_window& render_target);
 
 	void render();
 
@@ -22,7 +22,6 @@ private:
 	void resize();
 
 private:
-	target_surface m_target;
 	render_interface m_renderInterface;
 
 };

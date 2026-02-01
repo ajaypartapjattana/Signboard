@@ -14,6 +14,7 @@ private:
 	void handleCommand(const FrameCommand& cmd);
 
 private:
+	target_surface m_target{};
 	Renderer m_renderer;
 
 };

@@ -3,12 +3,15 @@
 #include "Assets/configLoader/ConfigLoader.h"
 
 Signboard::Signboard()
+	: m_renderer(m_target.native_target())
 {
 
 }
 
 void Signboard::run() {
+	while (m_target.target_ready()) {
 
+	}
 }
 
 #include "Core/Frame/FrameCommand.h"

@@ -15,12 +15,15 @@ namespace platform {
 	namespace primitive {
 
 		class display_window;
+		class window_eventState;
 
 	}
 
 	namespace procedure {
 
 		class display_window_builder;
+		class eventState_initializer;
+		class window_eventHandler;
 
 	}
 

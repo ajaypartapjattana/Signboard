@@ -3,7 +3,15 @@
 target_surface::target_surface() 
 	: m_primary(setup_primiary())
 {
+	platform::procedure::eventState_initializer l_stateInitializer{ m_eventState };
 
+	l_stateInitializer.attach(m_primary);
+}
+
+bool target_surface::target_ready() {
+	platform::procedure::window_eventHandler l_handler{ m_eventState };
+	l_handler.poll();
+	return l_handler.target_isAlive();
 }
 
 const platform::primitive::display_window& target_surface::native_target() const noexcept {

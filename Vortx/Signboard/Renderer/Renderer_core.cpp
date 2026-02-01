@@ -1,7 +1,7 @@
 #include "Renderer.h"
 
-Renderer::Renderer() 
-	: m_target(), m_renderInterface(m_target.native_target())
+Renderer::Renderer(const platform::primitive::display_window& render_target) 
+	: m_renderInterface(render_target)
 {
 
 }
