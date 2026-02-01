@@ -2,7 +2,7 @@
 
 #include "display_window.h"
 
-namespace window::primitive {
+namespace platform::primitive {
 
 	class display_window;
 

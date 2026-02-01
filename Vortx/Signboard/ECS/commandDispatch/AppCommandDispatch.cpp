@@ -3,8 +3,10 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 
-CommandDispatcher::CommandDispatcher(GLFWwindow* window, const InputMapping& mapping) 
-	: platformEvents(window), m_mapping(mapping)
+#include "Signboard/Platform/primitive/display_window_glfwAccess.h"
+
+CommandDispatcher::CommandDispatcher(const platform::primitive::display_window& window, const InputMapping& mapping) 
+	: platformEvents(platform::primitive::display_window_glfwAccess::get(window)), m_mapping(mapping)
 {
 
 }

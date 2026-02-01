@@ -2,7 +2,7 @@
 
 #include "context.h"
 
-namespace window::core {
+namespace platform::core {
 
 	class context;
 

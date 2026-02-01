@@ -5,6 +5,39 @@
 #include <stdexcept>
 #include <cstring>
 #include <cstdint>
+#include <vector>
+
+namespace {
+
+	const std::vector<VkExtensionProperties>& availableExtensions() {
+		static const std::vector<VkExtensionProperties> extensions = [] {
+
+			uint32_t count = 0;
+			vkEnumerateInstanceExtensionProperties(nullptr, &count, nullptr);
+
+			std::vector<VkExtensionProperties> v(count);
+			vkEnumerateInstanceExtensionProperties(nullptr, &count, v.data());
+			return v;
+			}();
+
+		return extensions;
+	}
+
+	const std::vector<VkLayerProperties>& availableLayers() {
+		static const std::vector<VkLayerProperties> layers = [] {
+
+			uint32_t count = 0;
+			vkEnumerateInstanceLayerProperties(&count, nullptr);
+
+			std::vector<VkLayerProperties> v(count);
+			vkEnumerateInstanceLayerProperties(&count, v.data());
+			return v;
+			}();
+
+		return layers;
+	}
+
+}
 
 namespace rhi::procedure {
 
@@ -80,38 +113,6 @@ namespace rhi::procedure {
 		}
 
 		return false;
-	}
-
-}
-
-namespace {
-
-	const std::vector<VkExtensionProperties>& availableExtensions() {
-		static const std::vector<VkExtensionProperties> extensions = [] {
-
-			uint32_t count = 0;
-			vkEnumerateInstanceExtensionProperties(nullptr, &count, nullptr);
-
-			std::vector<VkExtensionProperties> v(count);
-			vkEnumerateInstanceExtensionProperties(nullptr, &count, v.data());
-			return v;
-		}();
-		
-		return extensions;
-	}
-
-	const std::vector<VkLayerProperties>& availableLayers() {
-		static const std::vector<VkLayerProperties> layers = [] {
-		
-			uint32_t count = 0;
-			vkEnumerateInstanceLayerProperties(&count, nullptr);
-
-			std::vector<VkLayerProperties> v(count);
-			vkEnumerateInstanceLayerProperties(&count, v.data());
-			return v;
-		}();
-		
-		return layers;
 	}
 
 }

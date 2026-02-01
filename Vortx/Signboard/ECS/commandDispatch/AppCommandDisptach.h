@@ -8,9 +8,13 @@
 struct GLFWwindow;
 struct FrameCommand;
 
+namespace platform::primitive {
+	class display_window;
+}
+
 class CommandDispatcher {
 public:
-	CommandDispatcher(GLFWwindow* window, const InputMapping& mapping);
+	CommandDispatcher(const platform::primitive::display_window& window, const InputMapping& mapping);
 
 	void dispatch(std::vector<FrameCommand>& appEventQueue);
 

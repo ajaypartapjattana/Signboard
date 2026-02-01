@@ -9,7 +9,114 @@
 
 namespace rhi::procedure {
 
-	device_builder::device_builder(const rhi::core::instance& instance) {
+	class physical_device_selector {
+	public:
+		void require_Queue(device_builder& b, VkQueueFlags required) {
+			for (device_builder::phys_candidate& c : b.m_candidates) {
+				if (!c.suitable)
+					continue;
+
+				VkQueueFlags remaining = required;
+
+				for (const auto& q : c.assigned_queueFamilies) {
+					VkQueueFlags reused = q.caps & remaining;
+					remaining &= ~reused;
+				}
+
+				for (uint32_t i = 0; i < c.families.size() && remaining; ++i) {
+					VkQueueFlags supported = c.families[i].queueFlags;
+
+					VkQueueFlags matched = supported & remaining;
+					if (matched) {
+						c.assigned_queueFamilies.push_back({ i, matched });
+						remaining &= ~matched;
+					}
+				}
+
+				if (remaining != 0) {
+					c.suitable = false;
+				}
+			}
+		}
+
+		void require_presentSupport(device_builder& b) {
+			for (device_builder::phys_candidate& c : b.m_candidates) {
+				if (!c.suitable)
+					continue;
+
+				bool found = false;
+				for (device_builder::phys_candidate::assigned_queue& q : c.assigned_queueFamilies) {
+					VkBool32 supported = false;
+					vkGetPhysicalDeviceSurfaceSupportKHR(c.phys, q.family, b.m_surface, &supported);
+
+					if (supported) {
+						q.can_present = true;
+						found = true;
+						break;
+					}
+				}
+
+				if (!found) {
+					for (uint32_t i = 0; i < c.families.size(); ++i) {
+						VkBool32 supported = false;
+						vkGetPhysicalDeviceSurfaceSupportKHR(c.phys, i, b.m_surface, &supported);
+
+						if (supported) {
+							VkQueueFlags caps = c.families[i].queueFlags;
+							c.assigned_queueFamilies.push_back({ i, caps, true });
+							found = true;
+							break;
+						}
+					}
+				}
+
+				if (!found)
+					c.suitable = false;
+			}
+		}
+
+		void require_extension(device_builder& b, const char* name) {
+			bool supported = false;
+			for (device_builder::phys_candidate& c : b.m_candidates) {
+				if (!c.suitable)
+					continue;
+
+				bool found = false;
+				for (const VkExtensionProperties& ext : c.extensions) {
+					if (strcmp(ext.extensionName, name) == 0) {
+						found = true;
+						break;
+					}
+				}
+
+				if (!found)
+					c.suitable = false;
+				else
+					supported = true;
+			}
+			if (!supported)
+				throw std::runtime_error("The extension is not supportes by any physical device!");
+
+			b.m_requiredExtensions.push_back(name);
+		}
+
+		void require_feature(device_builder& b, VkBool32 VkPhysicalDeviceFeatures::* member) {
+			for (device_builder::phys_candidate& c : b.m_candidates) {
+				if (!c.suitable)
+					continue;
+
+				if ((c.features.*member))
+					c.enabledFeatures.*member = VK_TRUE;
+				else
+					c.suitable = false;
+			}
+
+		}
+
+	};
+
+	device_builder::device_builder(const rhi::core::instance& instance) 
+	{
 		VkInstance vkInstance = rhi::core::instance_vkAccess::get(instance);
 
 		uint32_t count = 0;
@@ -140,111 +247,5 @@ namespace rhi::procedure {
 
 		return l_device;
 	}
-	
-	class physical_device_selector {
-	public:
-		void require_Queue(device_builder& b, VkQueueFlags required) {
-			for (device_builder::phys_candidate& c : b.m_candidates) {
-				if (!c.suitable)
-					continue;
-
-				VkQueueFlags remaining = required;
-
-				for (const auto& q : c.assigned_queueFamilies) {
-					VkQueueFlags reused = q.caps & remaining;
-					remaining &= ~reused;
-				}
-
-				for (uint32_t i = 0; i < c.families.size() && remaining; ++i) {
-					VkQueueFlags supported = c.families[i].queueFlags;
-
-					VkQueueFlags matched = supported & remaining;
-					if (matched) {
-						c.assigned_queueFamilies.push_back({ i, matched });
-						remaining &= ~matched;
-					}
-				}
-
-				if (remaining != 0) {
-					c.suitable = false;
-				}
-			}
-		}
-
-		void require_presentSupport(device_builder& b) {
-			for (device_builder::phys_candidate& c : b.m_candidates) {
-				if (!c.suitable)
-					continue;
-
-				bool found = false;
-				for (device_builder::phys_candidate::assigned_queue& q : c.assigned_queueFamilies) {
-					VkBool32 supported = false;
-					vkGetPhysicalDeviceSurfaceSupportKHR(c.phys, q.family, b.m_surface, &supported);
-
-					if (supported) {
-						q.can_present = true;
-						found = true;
-						break;
-					}
-				}
-
-				if (!found) {
-					for (uint32_t i = 0; i < c.families.size(); ++i) {
-						VkBool32 supported = false;
-						vkGetPhysicalDeviceSurfaceSupportKHR(c.phys, i, b.m_surface, &supported);
-
-						if (supported) {
-							VkQueueFlags caps = c.families[i].queueFlags;
-							c.assigned_queueFamilies.push_back({i, caps, true});
-							found = true;
-							break;
-						}
-					}
-				}
-
-				if (!found)
-					c.suitable = false;
-			}
-		}
-
-		void require_extension(device_builder& b, const char* name) {
-			bool supported = false;
-			for (device_builder::phys_candidate& c : b.m_candidates) {
-				if (!c.suitable)
-					continue;
-
-				bool found = false;
-				for (const VkExtensionProperties& ext : c.extensions) {
-					if (strcmp(ext.extensionName, name) == 0) {
-						found = true;
-						break;
-					}
-				}
-
-				if (!found)
-					c.suitable = false;
-				else
-					supported = true;
-			}
-			if (!supported)
-				throw std::runtime_error("The extension is not supportes by any physical device!");
-
-			b.m_requiredExtensions.push_back(name);
-		}
-
-		void require_feature(device_builder& b, VkBool32 VkPhysicalDeviceFeatures::* member) {
-			for (device_builder::phys_candidate& c : b.m_candidates) {
-				if (!c.suitable)
-					continue;
-
-				if ((c.features.*member))
-					c.enabledFeatures.*member = VK_TRUE;
-				else
-					c.suitable = false;
-			}
-
-		}
-
-	};
 
 }

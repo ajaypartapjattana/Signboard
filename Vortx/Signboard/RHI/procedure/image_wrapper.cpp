@@ -4,6 +4,8 @@
 #include "Signboard/RHI/core/device_vk.h"
 #include "Signboard/RHI/core/swapchain_vk.h"
 
+#include <stdexcept>
+
 
 namespace rhi::procedure {
 

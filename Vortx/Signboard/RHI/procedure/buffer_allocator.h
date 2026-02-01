@@ -8,7 +8,7 @@ namespace rhi::primitive {
 	class buffer;
 }
 
-#include <vma.h>
+#include "Signboard/RHI/detail/vma/vma.h"
 
 namespace rhi::procedure {
 

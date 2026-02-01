@@ -9,7 +9,7 @@ namespace rhi::primitive {
 	class image;
 }
 
-#include <vma.h>
+#include "Signboard/RHI/detail/vma/vma.h"
 
 namespace rhi::procedure {
 

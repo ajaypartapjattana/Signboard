@@ -5,7 +5,7 @@ namespace rhi::procedure {
 	class image_wrapper;
 }
 
-#include <vma.h>
+#include "Signboard/RHI/detail/vma/vma.h"
 
 namespace rhi::primitive {
 
@@ -35,6 +35,8 @@ namespace rhi::primitive {
 		VkImage m_image = VK_NULL_HANDLE;
 		VmaAllocation m_allocation = VK_NULL_HANDLE;
 		VkImageView m_view = VK_NULL_HANDLE;
+
+		VkFormat m_format = VK_FORMAT_UNDEFINED;
 
 		VkDevice m_device = VK_NULL_HANDLE;
 		VmaAllocator m_allocator = VK_NULL_HANDLE;

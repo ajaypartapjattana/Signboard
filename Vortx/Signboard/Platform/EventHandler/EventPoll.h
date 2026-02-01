@@ -52,6 +52,4 @@ private:
 	static void mouseButtonCallBack(GLFWwindow*, int, int, int);
 	static void cursorMoveCallBack(GLFWwindow*, double, double);
 
-	float getTime();
-
 };

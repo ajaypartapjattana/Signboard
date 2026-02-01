@@ -2,7 +2,7 @@
 
 #include "display_window_builder.h"
 
-namespace window::procedure {
+namespace platform::procedure {
 
 	class display_window_builder;
 

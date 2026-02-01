@@ -1,53 +1,42 @@
 #include "WindowEventProxy.h"
 
-#include "Signboard/RendererCore/Renderer.h"
-#include <GLFW/glfw3.h>
-
-void WindowEventProxy::attachWindow(GLFWwindow* window)
+template <class user_t>
+void WindowEventProxy<user_t>::attachWindow(GLFWwindow* window)
 {
-    this->window = window;
+    this->m_window = window;
 	glfwSetWindowUserPointer(window, this);
 
 	glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 	glfwSetDropCallback(window, fileDropCallback);
 }
 
-void WindowEventProxy::bindRenderer(Renderer* r) {
-    renderer = r;
+template <class user_t>
+void WindowEventProxy<user_t>::bindUser(user_t* user) {
+    m_user = user;
 }
 
-void WindowEventProxy::onFrameBufferResize(
-	int				width, 
-	int				height) 
-{
-    if (renderer) {
+template <class user_t>
+void WindowEventProxy<user_t>::onFrameBufferResize(int width, int height) {
+    if (m_user) {
 
     }
 }
 
-void WindowEventProxy::onFileDrop(
-	int				count, 
-	const char**	paths) 
-{
-    if (renderer) {
+template <class user_t>
+void WindowEventProxy<user_t>::onFileDrop(int count, const char** paths) {
+    if (m_user) {
 
     }
 }
 
-void framebufferResizeCallback(
-    GLFWwindow*     window,
-    int             width,
-    int             height)
-{
-    auto* windowEvent = static_cast<WindowEventProxy*>(glfwGetWindowUserPointer(window));
+template <class user_t>
+void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+    auto* windowEvent = static_cast<WindowEventProxy<user_t>*>(glfwGetWindowUserPointer(window));
     windowEvent->onFrameBufferResize(width, height);
 }
 
-void fileDropCallback(
-    GLFWwindow*     window,
-    int             count,
-    const char**    paths)
-{
-    auto* windowEvent = static_cast<WindowEventProxy*>(glfwGetWindowUserPointer(window));
+template <class user_t>
+void fileDropCallback(GLFWwindow* window, int count, const char** paths) {
+    auto* windowEvent = static_cast<WindowEventProxy<user_t>*>(glfwGetWindowUserPointer(window));
     windowEvent->onFileDrop(count, paths);
 }

@@ -57,7 +57,7 @@ namespace rhi::procedure {
 		std::vector<phys_candidate> m_candidates;
 
 		std::vector<const char*> m_requiredExtensions;
-		VkSurfaceKHR m_surface;
+		VkSurfaceKHR m_surface = VK_NULL_HANDLE;
 
 	};
 

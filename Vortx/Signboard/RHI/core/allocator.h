@@ -4,7 +4,7 @@ namespace rhi::procedure {
 	class allocator_creator;
 }
 
-#include <vma.h>
+#include "Signboard/RHI/detail/vma/vma.h"
 
 namespace rhi::core {
 
@@ -29,6 +29,7 @@ namespace rhi::core {
 		allocator() = default;
 
 		VmaAllocator m_allocator = VK_NULL_HANDLE;
+		VmaVulkanFunctions m_vkfuncs{};
 
 	};
 

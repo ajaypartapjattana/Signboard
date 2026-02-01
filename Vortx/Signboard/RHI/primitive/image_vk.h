@@ -18,6 +18,10 @@ namespace rhi::primitive {
 			return i.m_allocation;
 		}
 
+		static VkFormat get_format(const image& i) {
+			return i.m_format;
+		}
+
 	};
 
 }

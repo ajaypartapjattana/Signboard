@@ -1,6 +1,8 @@
 #pragma once
 
-namespace window::core {
+#include <cstdint>
+
+namespace platform::core {
 
 	class context {
 	public:
@@ -13,6 +15,8 @@ namespace window::core {
 		context& operator=(context&&) = delete;
 
 		~context();
+
+		static const char** native_extensions(uint32_t& count);
 
 	};
 

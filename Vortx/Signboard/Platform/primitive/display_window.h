@@ -1,16 +1,12 @@
 #pragma once
 
-#include "Signboard/Core/Interfaces/startupConfigType.h"
-
-#include <string>
-#include <iostream>
-#include <filesystem>
-
-namespace window::procedure {
+namespace platform::procedure {
     class display_window_builder;
 }
 
-namespace window::primitive {
+#include <GLFW/glfw3.h>
+
+namespace platform::primitive {
 
     struct display_window_glfwAccess;
 
@@ -24,15 +20,15 @@ namespace window::primitive {
 
         ~display_window() noexcept;
 
-        const void* native_window() const noexcept;
+        const GLFWwindow* native_window() const noexcept;
 
     private:
-        friend class window::procedure::display_window_builder;
+        friend class platform::procedure::display_window_builder;
         friend struct display_window_glfwAccess;
 
         display_window() = default;
 
-        void* m_window;
+        GLFWwindow* m_window;
     };
 
 }

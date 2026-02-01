@@ -1,8 +1,10 @@
 #pragma once
 
-namespace window::primitive {
+namespace platform::primitive {
 	class display_window;
 }
+
+#include <vulkan/vulkan.h>
 
 namespace rhi {
 
@@ -15,15 +17,15 @@ namespace rhi {
 
 		class surface_creator {
 		public:
-			explicit surface_creator(const core::instance& instance);
+			surface_creator(const core::instance& instance);
 
 			surface_creator(const surface_creator&) = delete;
 			surface_creator& operator=(const surface_creator&) = delete;
 
-			core::surface create_surface(const window::primitive::display_window& window);
+			core::surface create_surface(const platform::primitive::display_window& window);
 
 		private:
-			const core::instance& m_instance;
+			VkInstance m_instance;
 
 		};
 
