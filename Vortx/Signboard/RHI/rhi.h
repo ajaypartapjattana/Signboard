@@ -12,11 +12,13 @@ namespace rhi {
 		class device;
 		class swapchain;
 		class allocator;
+		class commandPool;
 	}
 
 	namespace primitive {
 		class buffer;
 		class image;
+		class sampler;
 	}
 
 	namespace procedure {
@@ -25,8 +27,11 @@ namespace rhi {
 		class device_builder;
 		class swapchain_builder;
 		class allocator_creator;
+		class commandPool_creator;
 
 		class image_allocator;
+		class buffer_allocator;
+		class sampler_creator;
 	}
 
 	namespace detail {

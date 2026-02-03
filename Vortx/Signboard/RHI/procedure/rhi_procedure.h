@@ -5,6 +5,7 @@
 #include "device_builder.h"
 #include "swapchain_builder.h"
 #include "allocator_creator.h"
+#include "commandPool_creator.h"
 
 #include "image_allocator.h"
 #include "buffer_allocator.h"
@@ -17,6 +18,7 @@ namespace rhi::procedure {
 	class device_builder;
 	class swapchain_builder;
 	class allocator_creator;
+	class commandPool_creator;
 
 	class image_allocator;
 	class buffer_allocator;

@@ -13,6 +13,9 @@ namespace rhi::core {
 	}
 
 	surface& surface::operator=(surface&& other) noexcept {
+		if (this == &other)
+			return *this;
+
 		vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
 
 		m_surface = other.m_surface;
@@ -20,6 +23,8 @@ namespace rhi::core {
 
 		other.m_surface = VK_NULL_HANDLE;
 		other.m_instance = VK_NULL_HANDLE;
+
+		return *this;
 	}
 
 	surface::~surface() noexcept {

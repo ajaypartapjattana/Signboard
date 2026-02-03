@@ -14,11 +14,16 @@ namespace rhi::core {
 			return d.m_physical;
 		}
 
-		static VkQueue get_queue(const device& d, VkQueueFlags capability) noexcept {
+		static const device::queue_entry* get_queue(const device& d, VkQueueFlags capability) noexcept {
 			for (const device::queue_entry& e : d.m_queues) {
-				if (e.capabilities == capability)
-					return e.queue;
+				if ((e.capabilities & capability) == capability)
+					return &e;
 			}
+			return nullptr;
+		}
+
+		static const std::vector<device::queue_entry>& get_queues(const device& d) noexcept {
+			return d.m_queues;
 		}
 
 		static bool get_featureEnabled(const device& d, const VkBool32 VkPhysicalDeviceFeatures::* feature) {

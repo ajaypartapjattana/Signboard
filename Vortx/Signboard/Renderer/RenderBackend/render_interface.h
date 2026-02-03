@@ -25,4 +25,6 @@ private:
 	rhi::core::swapchain m_swapchain;
 	rhi::core::allocator m_allocator;
 
+	std::vector<rhi::core::commandPool> m_commandPools;
+
 };

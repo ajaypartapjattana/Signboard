@@ -3,6 +3,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include <iostream>
+
 TextureLoader::TextureLoader()
 	: running(true)
 {
@@ -64,7 +66,7 @@ void TextureLoader::loaderLoop() {
 			load(*texture);
 		}
 		catch (const std::exception& e) {
-
+			std::cerr << '\n' << e.what() << std::endl;
 		}
 
 		loadedTextures.push(std::move(texture));

@@ -21,7 +21,7 @@ const platform::primitive::display_window& target_surface::native_target() const
 platform::primitive::display_window target_surface::setup_primiary() {
 	platform::procedure::display_window_builder l_builder{ m_ctx };
 
-	platform::procedure::display_window_builder::window_extent extent = { 800, 600 };
+	platform::procedure::display_window_builder::window_extent extent = { 1200, 800 };
 	l_builder.setMode_windowed(extent);
 
 	std::string title = "My window";

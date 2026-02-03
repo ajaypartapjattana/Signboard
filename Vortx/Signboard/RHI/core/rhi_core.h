@@ -5,7 +5,7 @@
 #include "device.h"
 #include "swapchain.h"
 #include "allocator.h"
-
+#include "commandPool.h"
 
 namespace rhi::core {
 
@@ -14,5 +14,6 @@ namespace rhi::core {
 	class device;
 	class swapchain;
 	class allocator;
+	class commandPool;
 
 }

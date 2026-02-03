@@ -2,7 +2,9 @@
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
-#include <unordered_set>
+#include <unordered_map>
+
+#include <iostream>
 
 ModelLoader::ModelLoader()
     : running(true)
@@ -65,7 +67,7 @@ void ModelLoader::loaderLoop() {
             load(*model);
         }
         catch (const std::exception& e) {
-
+            std::cerr << '\n' << e.what() << std::endl;
         }
 
 		loadedModels.push(std::move(model));

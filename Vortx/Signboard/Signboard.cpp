@@ -1,7 +1,5 @@
 #include "Signboard.h"
 
-#include "Assets/configLoader/ConfigLoader.h"
-
 Signboard::Signboard()
 	: m_renderer(m_target.native_target())
 {

@@ -5,7 +5,6 @@
 #include <memory>
 
 #include "RenderBackend/render_interface.h"
-#include "RenderBackend/target_surface.h"
 
 class Renderer {
 public:

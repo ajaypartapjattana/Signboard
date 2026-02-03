@@ -18,10 +18,18 @@ namespace rhi::procedure {
 		VkAttachmentDescription attachment{};
 		attachment.format = rhi::primitive::image_vkAccess::get_format(image);
 		
+		return *this;
 	}
 
 	rhi::primitive::renderPass renderPass_builder::build(bool keep_state) {
 
+		VkRenderPass vk_renderPass = VK_NULL_HANDLE;
+
+		rhi::primitive::renderPass l_renderPass;
+		l_renderPass.m_device = m_device;
+		l_renderPass.m_renderPass = vk_renderPass;
+
+		return l_renderPass;
 	}
 
 	void renderPass_builder::reset_builder() {

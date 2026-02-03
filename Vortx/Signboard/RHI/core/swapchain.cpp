@@ -12,6 +12,9 @@ namespace rhi::core {
 	}
 
 	swapchain& swapchain::operator=(swapchain&& other) noexcept {
+		if (this == &other)
+			return *this;
+
 		if (m_swapchain)
 			vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
 
@@ -21,6 +24,8 @@ namespace rhi::core {
 
 		other.m_swapchain = VK_NULL_HANDLE;
 		other.m_device = VK_NULL_HANDLE;
+
+		return *this;
 	}
 
 	swapchain::~swapchain() noexcept {

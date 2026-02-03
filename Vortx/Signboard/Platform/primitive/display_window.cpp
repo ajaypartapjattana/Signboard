@@ -8,11 +8,16 @@ namespace platform::primitive {
 	}
 
 	display_window& display_window::operator=(display_window&& other) noexcept {
+		if (this == &other)
+			return *this;
+
 		if (m_window)
 			glfwDestroyWindow(m_window);
 
 		m_window = other.m_window;
 		other.m_window = nullptr;
+
+		return *this;
 	}
 
 	display_window::~display_window() noexcept {

@@ -9,7 +9,12 @@ render_interface::render_interface(const platform::primitive::display_window& a_
 	m_swapchain(setup_swapchain()),
 	m_allocator(setup_allocator())
 {
+	rhi::procedure::commandPool_creator l_creator{ m_device };
 
+	uint32_t poolCount = l_creator.get_requiredPoolCount();
+
+	m_commandPools.resize(poolCount);
+	l_creator.create(m_commandPools.data(), poolCount);
 }
 
 rhi::core::instance render_interface::setup_instance() {

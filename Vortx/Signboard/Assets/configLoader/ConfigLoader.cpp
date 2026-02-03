@@ -13,7 +13,7 @@ void ConfigLoader::Build_StartupConfig(const std::string& path, StartupConfig& c
 	for (auto& att : node->children) {
 		WindowInfo& info = config.windowCreateInfo;
 		info.width = convStr::toInt(FindAttr(att, "width")->value.c_str());
-		info.height = convStr::toFloat(FindAttr(att, "height")->value.c_str());
+		info.height = convStr::toInt(FindAttr(att, "height")->value.c_str());
 	}
 
 }
@@ -35,6 +35,6 @@ const ML_Node* ConfigLoader::FindChild(
 	for (auto& c : node.children) {
 		if (c.name == name)
 			return &c;
-		return nullptr;
 	}
+	return nullptr;
 }
