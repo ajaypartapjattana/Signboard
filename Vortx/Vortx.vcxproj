@@ -175,10 +175,12 @@
     <ClCompile Include="Signboard\RHI\core\surface.cpp" />
     <ClCompile Include="Signboard\RHI\core\swapchain.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\buffer.cpp" />
+    <ClCompile Include="Signboard\RHI\primitive\commandBuffer.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\image.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\renderPass.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\sampler.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\buffer_allocator.cpp" />
+    <ClCompile Include="Signboard\RHI\procedure\commandBuffer_allocator.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\commandPool_creator.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\device_builder.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\image_allocator.cpp" />
@@ -244,6 +246,8 @@
     <ClInclude Include="Signboard\RHI\primitives\image_vk.h" />
     <ClInclude Include="Signboard\RHI\primitive\buffer.h" />
     <ClInclude Include="Signboard\RHI\primitive\buffer_vk.h" />
+    <ClInclude Include="Signboard\RHI\primitive\commandBuffer.h" />
+    <ClInclude Include="Signboard\RHI\primitive\commandBuffer_vk.h" />
     <ClInclude Include="Signboard\RHI\primitive\image.h" />
     <ClInclude Include="Signboard\RHI\primitive\image_vk.h" />
     <ClInclude Include="Signboard\RHI\primitive\renderPass.h" />
@@ -253,6 +257,7 @@
     <ClInclude Include="Signboard\RHI\primitive\sampler_vk.h" />
     <ClInclude Include="Signboard\RHI\procedure\bitops.h" />
     <ClInclude Include="Signboard\RHI\procedure\buffer_allocator.h" />
+    <ClInclude Include="Signboard\RHI\procedure\commandBuffer_allocator.h" />
     <ClInclude Include="Signboard\RHI\procedure\commandPool_creator.h" />
     <ClInclude Include="Signboard\RHI\procedure\device_builder.h" />
     <ClInclude Include="Signboard\RHI\procedure\image_allocator.h" />

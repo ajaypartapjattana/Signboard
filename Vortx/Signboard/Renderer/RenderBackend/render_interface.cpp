@@ -49,7 +49,7 @@ rhi::core::instance render_interface::setup_instance() {
 	l_builder.addExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
 
-	return l_builder.build();	
+	return l_builder.build();
 }
 
 rhi::core::surface render_interface::setup_surface(const platform::primitive::display_window& window) {
@@ -73,7 +73,6 @@ rhi::core::swapchain render_interface::setup_swapchain() {
 	rhi::procedure::swapchain_builder l_builder{ m_device, m_surface };
 
 	l_builder.prefer_format_srgb();
-	l_builder.prefer_presentMode_MAILBOX();
 
 	l_builder.set_imageCount(2);
 
