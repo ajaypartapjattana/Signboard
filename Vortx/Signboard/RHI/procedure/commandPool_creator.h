@@ -22,15 +22,15 @@ namespace rhi::procedure {
 		commandPool_creator(const rhi::core::device& device);
 
 		uint32_t get_requiredPoolCount() noexcept;
-		const std::vector<pool_requirement>& get_poolRequirements() noexcept;
+		//const std::vector<pool_requirement>& get_poolRequirements() noexcept;
 
-		struct pool_reqirement {
+		/*struct pool_requirement {
 			uint32_t family;
 			VkQueueFlags capabilities;
 			bool present_supported;
-		};
+		};*/
 
-		const std::vector<pool_reqirement>& get_poolRequirements() noexcept;
+		const std::vector<pool_requirement>& get_poolRequirements() noexcept;
 
 		VkResult create(rhi::core::commandPool* pools, uint32_t poolCount);
 

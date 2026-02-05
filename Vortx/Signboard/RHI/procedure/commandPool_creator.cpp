@@ -49,7 +49,7 @@ namespace rhi::procedure {
 	VkResult commandPool_creator::create(rhi::core::commandPool* pools, uint32_t poolCount) {
 		collect_poolRequirements();
 
-		if (poolCount < m_reqirements.size())
+		if (poolCount < m_requirements.size())
 			return VK_INCOMPLETE;
 
 		if (!pools)
