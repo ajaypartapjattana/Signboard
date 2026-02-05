@@ -8,6 +8,14 @@ public:
 	render_interface(const platform::primitive::display_window& a_window);
 
 private:
+	struct commandPool_binding {
+		uint32_t poolIndex;
+		uint32_t queueFamily;
+		VkQueueFlags capabilities;
+		bool presentSupported;
+	};
+
+private:
 	rhi::core::instance setup_instance();
 	rhi::core::surface setup_surface(const platform::primitive::display_window& window);
 
@@ -26,5 +34,6 @@ private:
 	rhi::core::allocator m_allocator;
 
 	std::vector<rhi::core::commandPool> m_commandPools;
+	std::vector<commandPool_binding> m_commandPoolBindings;
 
 };

@@ -1,5 +1,7 @@
 #include "render_interface.h"
 
+#include <stdexcept>
+
 render_interface::render_interface(const platform::primitive::display_window& a_window) 
 	: m_instance(setup_instance()),
 	m_surface(setup_surface(a_window)),
@@ -11,10 +13,25 @@ render_interface::render_interface(const platform::primitive::display_window& a_
 {
 	rhi::procedure::commandPool_creator l_creator{ m_device };
 
-	uint32_t poolCount = l_creator.get_requiredPoolCount();
+	const auto& poolRequirements = l_creator.get_poolRequirements();
+	const uint32_t poolCount = static_cast<uint32_t>(poolRequirements.size());
 
 	m_commandPools.resize(poolCount);
-	l_creator.create(m_commandPools.data(), poolCount);
+	if (poolCount > 0) {
+		VkResult result = l_creator.create(m_commandPools.data(), poolCount);
+		if (result != VK_SUCCESS)
+			throw std::runtime_error("FAILURE: commandPool_creation!");
+	}
+
+	m_commandPoolBindings.reserve(poolRequirements.size());
+	for (uint32_t i = 0; i < poolCount; ++i) {
+		m_commandPoolBindings.push_back({
+			i,
+			poolRequirements[i].family,
+			poolRequirements[i].capabilities,
+			poolRequirements[i].present_supported
+		});
+	}
 }
 
 rhi::core::instance render_interface::setup_instance() {
@@ -23,8 +40,9 @@ rhi::core::instance render_interface::setup_instance() {
 	uint32_t ext_count = 0;
 	const char** exts = platform::core::context::native_extensions(ext_count);
 
-	for (uint32_t i = 0; i < ext_count; ++i)
+	for (uint32_t i = 0; i < ext_count; ++i) {
 		l_builder.addExtension(exts[i]);
+	}
 
 #ifndef NDEBUG
 	l_builder.enableValidationLayer();
