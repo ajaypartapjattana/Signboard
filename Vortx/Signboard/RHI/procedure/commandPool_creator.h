@@ -13,9 +13,16 @@ namespace rhi::procedure {
 
 	class commandPool_creator {
 	public:
+		struct pool_requirement {
+			uint32_t family;
+			VkQueueFlags capabilities;
+			bool present_supported;
+		};
+
 		commandPool_creator(const rhi::core::device& device);
 
 		uint32_t get_requiredPoolCount() noexcept;
+		const std::vector<pool_requirement>& get_poolRequirements() noexcept;
 
 		struct pool_reqirement {
 			uint32_t family;
@@ -33,7 +40,7 @@ namespace rhi::procedure {
 	private:
 		const rhi::core::device& m_device;
 
-		std::vector<pool_reqirement> m_reqirements;
+		std::vector<pool_requirement> m_requirements;
 
 	};
 
