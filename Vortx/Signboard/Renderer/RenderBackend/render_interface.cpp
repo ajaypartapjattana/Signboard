@@ -62,6 +62,7 @@ rhi::core::device render_interface::setup_device() {
 	rhi::procedure::device_builder l_builder{ m_instance };
 
 	l_builder.require_graphicsQueue();
+	l_builder.require_transferQueue();
 	l_builder.require_presentQueue(m_surface);
 
 	l_builder.enable_samplerAnisotropy();

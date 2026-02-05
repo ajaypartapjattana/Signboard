@@ -18,24 +18,28 @@ namespace rhi::procedure {
 
 				VkQueueFlags remaining = required;
 
-				for (const auto& q : c.assigned_queueFamilies) {
-					VkQueueFlags reused = q.caps & remaining;
-					remaining &= ~reused;
-				}
-
 				for (uint32_t i = 0; i < c.families.size() && remaining; ++i) {
 					VkQueueFlags supported = c.families[i].queueFlags;
+					if ((supported & remaining) == 0)
+						continue;
+
+					uint32_t assignedCount = 0;
+					for (const auto& q : c.assigned_queueFamilies) {
+						if (q.family == i)
+							++assignedCount;
+					}
+
+					if (assignedCount >= c.families[i].queueCount)
+						continue;
 
 					VkQueueFlags matched = supported & remaining;
-					if (matched) {
-						c.assigned_queueFamilies.push_back({ i, matched });
-						remaining &= ~matched;
-					}
+					c.assigned_queueFamilies.push_back({ i, assignedCount, matched, false });
+					remaining &= ~matched;
 				}
 
-				if (remaining != 0) {
+				if (remaining != 0)
 					c.suitable = false;
-				}
+
 			}
 		}
 
@@ -63,7 +67,7 @@ namespace rhi::procedure {
 
 						if (supported) {
 							VkQueueFlags caps = c.families[i].queueFlags;
-							c.assigned_queueFamilies.push_back({ i, caps, true });
+							c.assigned_queueFamilies.push_back({ i, 0, caps, true });
 							found = true;
 							break;
 						}
@@ -95,7 +99,7 @@ namespace rhi::procedure {
 					supported = true;
 			}
 			if (!supported)
-				throw std::runtime_error("The extension is not supportes by any physical device!");
+				throw std::runtime_error("HARDWARE_LIMIT: extension_not_supported!");
 
 			b.m_requiredExtensions.push_back(name);
 		}
@@ -123,7 +127,7 @@ namespace rhi::procedure {
 		vkEnumeratePhysicalDevices(vkInstance, &count, nullptr);
 
 		if (count == 0)
-			throw std::runtime_error("No physical device with vulkan support found!");
+			throw std::runtime_error("ABORT: vulkan_not_supported!");
 
 		std::vector<VkPhysicalDevice> devices(count);
 		vkEnumeratePhysicalDevices(vkInstance, &count, devices.data());
@@ -196,23 +200,34 @@ namespace rhi::procedure {
 		auto suited_physical = std::find_if(candidates.begin(), candidates.end(), [](const phys_candidate& c) {return c.suitable; });
 
 		if (suited_physical == candidates.end())
-			throw std::runtime_error("No suitable physical device found!");
+			throw std::runtime_error("FAILURE: no_satisfactory_physicalDevice!");
 
 		std::unordered_map<uint32_t, uint32_t> familyQueueCount;
-		std::vector<VkDeviceQueueCreateInfo> queueInfos;
-
 		for (const auto& c : suited_physical->assigned_queueFamilies) {
-			if (familyQueueCount.emplace(c.family, 1).second) {
-				static const float priority = 1.0f;
+			auto it = familyQueueCount.find(c.family);
+			uint32_t needed = c.index + 1;
+			if (it == familyQueueCount.end())
+				familyQueueCount.emplace(c.family, needed);
+			else if (it->second < needed)
+				it->second = needed;
+		}
 
-				VkDeviceQueueCreateInfo qi{};
-				qi.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-				qi.queueFamilyIndex = c.family;
-				qi.queueCount = 1;
-				qi.pQueuePriorities = &priority;
+		std::vector<std::vector<float>> queuePriorities;
+		queuePriorities.reserve(familyQueueCount.size());
 
-				queueInfos.push_back(qi);
-			}
+		std::vector<VkDeviceQueueCreateInfo> queueInfos;
+		queueInfos.reserve(familyQueueCount.size());
+
+		for (const auto& [family, queueCount] : familyQueueCount) {
+			queuePriorities.emplace_back(queueCount, 1.0f);
+
+			VkDeviceQueueCreateInfo qi{};
+			qi.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+			qi.queueFamilyIndex = family;
+			qi.queueCount = 1;
+			qi.pQueuePriorities = queuePriorities.back().data();
+
+			queueInfos.push_back(qi);
 		}
 
 		VkDeviceCreateInfo createInfo{};
@@ -223,23 +238,17 @@ namespace rhi::procedure {
 		createInfo.ppEnabledExtensionNames = m_requiredExtensions.data();
 		createInfo.pEnabledFeatures = &suited_physical->enabledFeatures;
 
-		VkDevice vkDevice = VK_NULL_HANDLE;
-		if (vkCreateDevice(suited_physical->phys, &createInfo, nullptr, &vkDevice) != VK_SUCCESS)
-			throw std::runtime_error("Failed to create logical device!");
-
-		std::unordered_map<uint32_t, VkQueue> queues;
-		for (const auto& [family, _] : familyQueueCount) {
-			VkQueue q = VK_NULL_HANDLE;
-			vkGetDeviceQueue(vkDevice, family, 0, &q);
-			queues[family] = q;
-		}
+		VkDevice vk_device = VK_NULL_HANDLE;
+		if (vkCreateDevice(suited_physical->phys, &createInfo, nullptr, &vk_device) != VK_SUCCESS)
+			throw std::runtime_error("FAILURE: logicalDevice_creation!");
 
 		rhi::core::device l_device;
-		l_device.m_device = vkDevice;
+		l_device.m_device = vk_device;
 		l_device.m_physical = suited_physical->phys;
 		for (const phys_candidate::assigned_queue& aq : suited_physical->assigned_queueFamilies) {
-			VkQueue vkQueue = queues.at(aq.family);
-			l_device.m_queues.push_back({ vkQueue, aq.family, aq.caps, aq.can_present });
+			VkQueue vk_queue = VK_NULL_HANDLE;
+			vkGetDeviceQueue(vk_device, aq.family, aq.index, &vk_queue);
+			l_device.m_queues.push_back({ vk_queue, aq.family, aq.index, aq.caps, aq.can_present });
 		}
 
 		l_device.m_enabledfeatures = suited_physical->enabledFeatures;

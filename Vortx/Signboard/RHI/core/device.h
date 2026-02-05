@@ -36,6 +36,7 @@ namespace rhi::core {
 		struct queue_entry {
 			VkQueue queue;
 			uint32_t family;
+			uint32_t index;
 			VkQueueFlags capabilities;
 			bool present_supported;
 		};

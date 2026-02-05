@@ -44,6 +44,7 @@ namespace rhi::procedure {
 
 			struct assigned_queue {
 				uint32_t family;
+				uint32_t index = 0;
 				VkQueueFlags caps;
 				bool can_present = false;
 			};
