@@ -17,6 +17,14 @@ private:
 	rhi::core::allocator setup_allocator();
 
 private:
+	struct commandPool_binding {
+		uint32_t poolIndex;
+		uint32_t queueFamily;
+		VkQueueFlags capabilities;
+		bool presentSupported;
+	};
+
+private:
 	rhi::core::instance m_instance;
 	rhi::core::surface m_surface;
 
@@ -26,5 +34,6 @@ private:
 	rhi::core::allocator m_allocator;
 
 	std::vector<rhi::core::commandPool> m_commandPools;
+	std::vector<commandPool_binding> m_commandPoolBindings;
 
 };
