@@ -18,28 +18,61 @@ namespace rhi::procedure {
 
 				VkQueueFlags remaining = required;
 
-				for (uint32_t i = 0; i < c.families.size() && remaining; ++i) {
-					VkQueueFlags supported = c.families[i].queueFlags;
-					if ((supported & remaining) == 0)
-						continue;
+				while (remaining) {
+					uint32_t bestFamily = UINT32_MAX;
+					uint32_t bestIndex = 0;
+					VkQueueFlags bestMatched = 0;
+					bool bestDedicated = false;
+					uint32_t bestExtraCaps = UINT32_MAX;
+					
+					for (uint32_t i = 0; i < c.families.size() && remaining; ++i) {
+						VkQueueFlags supported = c.families[i].queueFlags;
+						VkQueueFlags matched = supported & remaining;
+						if (!matched)
+							continue;
 
-					uint32_t assignedCount = 0;
-					for (const auto& q : c.assigned_queueFamilies) {
-						if (q.family == i)
-							++assignedCount;
+						uint32_t assignedCount = 0;
+						for (const auto& q : c.assigned_queueFamilies) {
+							if (q.family == i)
+								++assignedCount;
+						}
+
+						if (assignedCount >= c.families[i].queueCount)
+							continue;
+
+						bool dedicated = false;
+						if (matched == VK_QUEUE_TRANSFER_BIT)
+							dedicated = (supported & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)) == 0;
+						else if (matched == VK_QUEUE_COMPUTE_BIT)
+							dedicated = (supported & VK_QUEUE_GRAPHICS_BIT);
+
+						uint32_t extraCaps = static_cast<uint32_t>(supported & ~matched);
+
+						bool better = false;
+						if (bestFamily == UINT32_MAX)
+							better = true;
+						else if (dedicated != bestDedicated)
+							better = dedicated;
+						else if (extraCaps < bestExtraCaps)
+							better = true;
+
+						if (better) {
+							bestFamily = i;
+							bestIndex = assignedCount;
+							bestMatched = matched;
+							bestDedicated = dedicated;
+							bestExtraCaps = extraCaps;
+						}
 					}
+					if (bestFamily == UINT32_MAX)
+						break;
 
-					if (assignedCount >= c.families[i].queueCount)
-						continue;
-
-					VkQueueFlags matched = supported & remaining;
-					c.assigned_queueFamilies.push_back({ i, assignedCount, matched, false });
-					remaining &= ~matched;
+					c.assigned_queueFamilies.push_back({ bestFamily, bestIndex, bestMatched, false });
+					remaining &= ~bestMatched;
 				}
 
 				if (remaining != 0)
 					c.suitable = false;
-
 			}
 		}
 
