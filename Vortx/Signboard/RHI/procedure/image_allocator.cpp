@@ -11,7 +11,7 @@ namespace rhi::procedure {
 	image_allocator::image_allocator(const rhi::core::device& device, const rhi::core::allocator& allocator)
 		: m_device(rhi::core::device_vkAccess::get(device)), m_allocator(rhi::core::allocator_vmaAccess::get(allocator))
 	{
-		reset_allocatorState();
+
 	}
 
 	image_allocator& image_allocator::set_usage_colorAttachment() {
@@ -52,18 +52,12 @@ namespace rhi::procedure {
 		return *this;
 	}
 
-	rhi::primitive::image image_allocator::allocate() {
-		if (final_format == VK_FORMAT_UNDEFINED)
-			throw std::runtime_error("UNDEFINED: image_format!");
-
-		if (final_usage == 0)
-			throw std::runtime_error("UNDEFINED: image_usage!");
-
-		if (final_extent.width == 0 || final_extent.height == 0)
-			throw std::runtime_error("INVALID: image_extent!");
-
-		if (final_aspect == 0)
-			throw std::runtime_error("INVALID: image_aspect!");
+	VkResult image_allocator::allocate(rhi::primitive::image& image) {
+		if (final_format == VK_FORMAT_UNDEFINED ||
+			final_usage == 0 ||
+			(final_extent.width == 0 || final_extent.height == 0) ||
+			final_aspect == 0)
+			return VK_INCOMPLETE;
 
 		VkImageCreateInfo imageInfo{};
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -83,8 +77,10 @@ namespace rhi::procedure {
 
 		VkImage vk_image = VK_NULL_HANDLE;
 		VmaAllocation vma_allocation = VK_NULL_HANDLE;
-		if (vmaCreateImage(m_allocator, &imageInfo, &allocInfo, &vk_image, &vma_allocation, nullptr) != VK_SUCCESS)
-			throw std::runtime_error("FAILED: vma_image_allocation!");
+		VkResult result = vmaCreateImage(m_allocator, &imageInfo, &allocInfo, &vk_image, &vma_allocation, nullptr);
+
+		if (result != VK_SUCCESS)
+			return result;
 
 		VkImageViewCreateInfo viewInfo{};
 		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -98,9 +94,11 @@ namespace rhi::procedure {
 		viewInfo.subresourceRange.baseArrayLayer = 0;
 		
 		VkImageView vk_view = VK_NULL_HANDLE;
-		if (vkCreateImageView(m_device, &viewInfo, nullptr, &vk_view) != VK_SUCCESS) {
+		result = vkCreateImageView(m_device, &viewInfo, nullptr, &vk_view);
+
+		if (result != VK_SUCCESS) {
 			vmaDestroyImage(m_allocator, vk_image, vma_allocation);
-			throw std::runtime_error("FAILED: image_viewCreation!");
+			return result;
 		}
 
 		rhi::primitive::image l_image;
@@ -110,16 +108,7 @@ namespace rhi::procedure {
 		l_image.m_device = m_device;
 		l_image.m_allocator = m_allocator;
 
-		reset_allocatorState();
-
-		return l_image;
-	}
-
-	void image_allocator::reset_allocatorState() {
-		final_usage = 0;
-		final_format = VK_FORMAT_UNDEFINED;
-		final_extent = { 0, 0, 1 };
-		final_aspect = 0;
+		return result;
 	}
 
 }

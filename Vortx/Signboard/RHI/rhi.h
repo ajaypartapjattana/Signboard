@@ -16,6 +16,8 @@ namespace rhi {
 	}
 
 	namespace primitive {
+		class commandBuffer;
+
 		class buffer;
 		class image;
 		class sampler;
@@ -29,6 +31,7 @@ namespace rhi {
 		class allocator_creator;
 		class commandPool_creator;
 
+		class commandBuffer_allocator;
 		class image_allocator;
 		class buffer_allocator;
 		class sampler_creator;

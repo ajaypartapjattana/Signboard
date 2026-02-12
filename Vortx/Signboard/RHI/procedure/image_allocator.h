@@ -29,7 +29,7 @@ namespace rhi::procedure {
 
 		image_allocator& set_extent(uint32_t w, uint32_t h);
 
-		[[nodiscard]] rhi::primitive::image allocate();
+		VkResult allocate(rhi::primitive::image& targetImage);
 
 	private:
 		image_allocator& set_usage(VkImageUsageFlags usage);

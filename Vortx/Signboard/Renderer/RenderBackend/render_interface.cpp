@@ -1,9 +1,12 @@
 #include "render_interface.h"
 
+#include <algorithm>
 #include <stdexcept>
 
-render_interface::render_interface(const platform::primitive::display_window& a_window) 
-	: m_instance(setup_instance()),
+render_interface::render_interface(const platform::primitive::display_window& a_window, uint32_t bufferedFrame_count) 
+	: m_bufferedFrameCount(std::max(2u, bufferedFrame_count)),
+
+	m_instance(setup_instance()),
 	m_surface(setup_surface(a_window)),
 
 	m_device(setup_device()),
@@ -32,6 +35,9 @@ render_interface::render_interface(const platform::primitive::display_window& a_
 			poolRequirements[i].present_supported
 		});
 	}
+
+	m_graphicsPoolIndex = find_graphicsPool_index();
+	allocate_renderCommandBuffers(m_bufferedFrameCount);
 }
 
 rhi::core::instance render_interface::setup_instance() {
@@ -75,7 +81,7 @@ rhi::core::swapchain render_interface::setup_swapchain() {
 
 	l_builder.prefer_format_srgb();
 
-	l_builder.set_imageCount(2);
+	l_builder.set_imageCount(m_bufferedFrameCount);
 
 	return l_builder.build();
 }
@@ -84,4 +90,77 @@ rhi::core::allocator render_interface::setup_allocator() {
 	rhi::procedure::allocator_creator l_creator{ m_instance, m_device };
 
 	return l_creator.create();
+}
+
+uint32_t render_interface::find_graphicsPool_index() const noexcept {
+	auto it = std::find_if(
+		m_commandPoolBindings.begin(),
+		m_commandPoolBindings.end(),
+		[](const commandPool_binding& binding) {
+			return (binding.capabilities & VK_QUEUE_GRAPHICS_BIT) != 0;
+		}
+	);
+
+	if (it == m_commandPoolBindings.end())
+		return 0;
+
+	return it->poolIndex;
+}
+
+void render_interface::allocate_renderCommandBuffers(uint32_t bufferedFrame_count) {
+	release_renderCommandBuffers();
+
+	if (bufferedFrame_count == 0)
+		return;
+
+	if (m_commandPools.empty())
+		return;
+
+	m_renderCommandBuffers.resize(bufferedFrame_count);
+
+	rhi::procedure::commandBuffer_allocator l_allocator{ m_device };
+	l_allocator.allocate(m_commandPools[m_graphicsPoolIndex], m_renderCommandBuffers.data(), bufferedFrame_count);
+}
+
+void render_interface::release_renderCommandBuffers() noexcept {
+	if (m_renderCommandBuffers.empty())
+		return;
+
+	if (m_commandPools.empty())
+		return;
+
+	// --- incomplete here! [add free/release capability to the commandBuffer_allocator before proceeding->]
+
+}
+
+void render_interface::set_bufferedFrame_count(uint32_t bufferedFrame_count) {
+	uint32_t clampedFrames = std::max(2u, bufferedFrame_count);
+	if (clampedFrames == m_bufferedFrameCount)
+		return;
+
+	m_bufferedFrameCount = clampedFrames;
+
+	rhi::procedure::swapchain_builder l_builder{ m_device, m_surface };
+
+	l_builder.prefer_format_srgb();
+	l_builder.set_imageCount(m_bufferedFrameCount);
+	l_builder.recycle_swapchain(m_swapchain);
+	m_swapchain = l_builder.build();
+
+	allocate_renderCommandBuffers(bufferedFrame_count);
+}
+
+uint32_t render_interface::get_bufferedFrame_count() const noexcept {
+	return m_bufferedFrameCount;
+}
+
+rhi::primitive::commandBuffer& render_interface::active_commandBuffer() {
+	return m_renderCommandBuffers[m_activeFrameIndex];
+}
+
+void render_interface::advance_frame() noexcept {
+	if (m_bufferedFrameCount == 0)
+		return;
+
+	m_activeFrameIndex = (m_activeFrameIndex + 1) % m_bufferedFrameCount;
 }

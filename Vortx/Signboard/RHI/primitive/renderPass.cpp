@@ -2,6 +2,12 @@
 
 namespace rhi::primitive {
 
+	renderPass::renderPass() noexcept
+		: m_renderPass(VK_NULL_HANDLE), m_device(VK_NULL_HANDLE)
+	{
+
+	}
+
 	renderPass::renderPass(renderPass&& other) noexcept {
 		m_renderPass = other.m_renderPass;
 		m_device = other.m_device;

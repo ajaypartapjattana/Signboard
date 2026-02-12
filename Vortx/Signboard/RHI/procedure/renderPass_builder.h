@@ -23,10 +23,7 @@ namespace rhi::procedure {
 
 		renderPass_builder& add_attachment(const rhi::primitive::image& image);
 
-		rhi::primitive::renderPass build(bool keep_state);
-
-	private:
-		void reset_builder();
+		VkResult build(rhi::primitive::renderPass& targetPass);
 
 	private:
 		VkDevice m_device = VK_NULL_HANDLE;

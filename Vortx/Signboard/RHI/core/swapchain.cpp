@@ -5,6 +5,7 @@ namespace rhi::core {
 	swapchain::swapchain(swapchain&& other) noexcept {
 		m_swapchain = other.m_swapchain;
 		m_format = other.m_format;
+		m_extent = other.m_extent;
 		m_device = other.m_device;
 
 		other.m_swapchain = VK_NULL_HANDLE;
@@ -20,6 +21,7 @@ namespace rhi::core {
 
 		m_swapchain = other.m_swapchain;
 		m_format = other.m_format;
+		m_extent = other.m_extent;
 		m_device = other.m_device;
 
 		other.m_swapchain = VK_NULL_HANDLE;
@@ -29,7 +31,7 @@ namespace rhi::core {
 	}
 
 	swapchain::~swapchain() noexcept {
-		if (m_swapchain != VK_NULL_HANDLE)
+		if (m_swapchain)
 			vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
 	}
 

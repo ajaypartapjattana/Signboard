@@ -28,8 +28,9 @@ namespace rhi::procedure {
 
 		swapchain_builder& allow_tearing(bool);
 
-		rhi::core::swapchain build(VkAllocationCallbacks* allocator = nullptr);
 		swapchain_builder& recycle_swapchain(const rhi::core::swapchain&);
+
+		rhi::core::swapchain build(VkAllocationCallbacks* allocator = nullptr);
 
 	private:
 		void query_support();

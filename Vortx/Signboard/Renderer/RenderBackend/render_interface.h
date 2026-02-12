@@ -5,7 +5,13 @@
 
 class render_interface {
 public:
-	render_interface(const platform::primitive::display_window& a_window);
+	render_interface(const platform::primitive::display_window& a_window, uint32_t bufferedFrame_count = 2);
+
+	void set_bufferedFrame_count(uint32_t bufferedFrame_count);
+	uint32_t get_bufferedFrame_count() const noexcept;
+
+	rhi::primitive::commandBuffer& active_commandBuffer();
+	void advance_frame() noexcept;
 
 private:
 	rhi::core::instance setup_instance();
@@ -17,6 +23,12 @@ private:
 	rhi::core::allocator setup_allocator();
 
 private:
+	uint32_t find_graphicsPool_index() const noexcept;
+
+	void allocate_renderCommandBuffers(uint32_t buffered_frames);
+	void release_renderCommandBuffers() noexcept;
+
+private:
 	rhi::core::instance m_instance;
 	rhi::core::surface m_surface;
 
@@ -24,6 +36,10 @@ private:
 
 	rhi::core::swapchain m_swapchain;
 	rhi::core::allocator m_allocator;
+
+private:
+	uint32_t m_bufferedFrameCount = 2;
+	uint32_t m_activeFrameIndex = 0;
 
 	struct commandPool_binding {
 		uint32_t poolIndex;
@@ -34,5 +50,8 @@ private:
 
 	std::vector<rhi::core::commandPool> m_commandPools;
 	std::vector<commandPool_binding> m_commandPoolBindings;
+
+	uint32_t m_graphicsPoolIndex = 0;
+	std::vector<rhi::primitive::commandBuffer> m_renderCommandBuffers;
 
 };

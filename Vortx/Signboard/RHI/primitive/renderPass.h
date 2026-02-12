@@ -12,6 +12,8 @@ namespace rhi::primitive {
 
 	class renderPass {
 	public:
+		renderPass() noexcept;
+
 		renderPass(const renderPass&) = delete;
 		renderPass& operator=(const renderPass&) = delete;
 
@@ -25,8 +27,6 @@ namespace rhi::primitive {
 	private:
 		friend class rhi::procedure::renderPass_builder;
 		friend struct renderPass_vkAccess;
-
-		renderPass() = default;
 
 		VkRenderPass m_renderPass;
 

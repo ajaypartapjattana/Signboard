@@ -7,6 +7,7 @@
 #include "allocator_creator.h"
 #include "commandPool_creator.h"
 
+#include "commandBuffer_allocator.h"
 #include "image_allocator.h"
 #include "buffer_allocator.h"
 #include "sampler_creator.h"
@@ -20,6 +21,7 @@ namespace rhi::procedure {
 	class allocator_creator;
 	class commandPool_creator;
 
+	class commandBuffer_allocator;
 	class image_allocator;
 	class buffer_allocator;
 	class sampler_creator;

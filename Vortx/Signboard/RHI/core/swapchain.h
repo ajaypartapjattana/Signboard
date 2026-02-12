@@ -29,7 +29,9 @@ namespace rhi::core {
 		swapchain() = default;
 
 		VkSwapchainKHR m_swapchain;
+		
 		VkFormat m_format;
+		VkExtent2D m_extent;
 		
 		VkDevice m_device;
 

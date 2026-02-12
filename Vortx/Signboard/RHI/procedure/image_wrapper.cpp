@@ -15,7 +15,7 @@ namespace rhi::procedure {
 
 	}
 
-	void image_wrapper::wrap_swapchainImages(const rhi::core::swapchain& swapchain, std::vector<rhi::primitive::image>& images) {
+	VkResult image_wrapper::wrap_swapchainImages(const rhi::core::swapchain& swapchain, std::vector<rhi::primitive::image>& images) {
 		VkSwapchainKHR a_swapchain = rhi::core::swapchain_vkAccess::get(swapchain);
 		VkFormat a_format = rhi::core::swapchain_vkAccess::get_format(swapchain);
 
@@ -47,8 +47,9 @@ namespace rhi::procedure {
 			viewInfo.subresourceRange.layerCount = 1;
 
 			VkImageView vk_view = VK_NULL_HANDLE;
-			if (vkCreateImageView(m_device, &viewInfo, nullptr, &vk_view) != VK_SUCCESS)
-				throw std::runtime_error("FAILED: swapchain_imageWrap!");
+			VkResult result = vkCreateImageView(m_device, &viewInfo, nullptr, &vk_view);
+			if (result != VK_SUCCESS)
+				return result;
 
 			rhi::primitive::image l_image;
 			l_image.m_image = image;
@@ -60,6 +61,7 @@ namespace rhi::procedure {
 
 			images.emplace_back(std::move(l_image));
 
+			return result;
 		}
 
 	}

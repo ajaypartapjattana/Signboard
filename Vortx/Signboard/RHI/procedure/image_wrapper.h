@@ -18,7 +18,7 @@ namespace rhi::procedure {
 	public:
 		image_wrapper(const rhi::core::device& device);
 
-		void wrap_swapchainImages(const rhi::core::swapchain& swapchain, std::vector<rhi::primitive::image>& images);
+		VkResult wrap_swapchainImages(const rhi::core::swapchain& swapchain, std::vector<rhi::primitive::image>& images);
 
 	private:
 		VkDevice m_device;

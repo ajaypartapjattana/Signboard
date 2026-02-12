@@ -132,6 +132,7 @@ namespace rhi::procedure {
 		rhi::core::swapchain l_swapchain;
 		l_swapchain.m_swapchain = vk_swapchain;
 		l_swapchain.m_format = final_format.format;
+		l_swapchain.m_extent = final_extent;
 		l_swapchain.m_device = m_device;
 
 		return l_swapchain;
