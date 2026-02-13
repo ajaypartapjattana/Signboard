@@ -21,14 +21,20 @@ namespace rhi::procedure {
 		renderPass_builder(const renderPass_builder&) = delete;
 		renderPass_builder& operator=(const renderPass_builder&) = delete;
 
-		renderPass_builder& add_attachment(const rhi::primitive::image& image);
+		struct attachment_desc {
+			VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			VkImageLayout finalLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		};
 
-		VkResult build(rhi::primitive::renderPass& targetPass);
+		renderPass_builder& add_colorAttachment(const rhi::primitive::image& image, const attachment_desc& desc);
+
+		VkResult build_graphicsPass(rhi::primitive::renderPass& targetPass);
 
 	private:
 		VkDevice m_device = VK_NULL_HANDLE;
 
 		std::vector<VkAttachmentDescription> m_attachments;
+		std::vector<VkAttachmentReference> m_attachmentRef;
 
 	};
 

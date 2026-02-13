@@ -4,8 +4,8 @@
 #include "Signboard/RHI/core/device_vk.h"
 #include "Signboard/RHI/core/swapchain_vk.h"
 #include "Signboard/RHI/primitive/pipelineLayout_vk.h"
+#include "Signboard/RHI/primitive/renderPass_vk.h"
 #include "Signboard/RHI/primitive/shader_vk.h"
-
 
 namespace rhi::procedure {
 
@@ -29,7 +29,7 @@ namespace rhi::procedure {
 		return *this;
 	}
 
-	VkResult pipeline_builder::build_graphics(rhi::primitive::pipeline& tw_pipeline) {
+	VkResult pipeline_builder::build_graphicsPipeline(const rhi::primitive::renderPass& renderPass, rhi::primitive::pipeline& tw_pipeline) {
 
 		if (m_moduleRef.empty())
 			return VK_INCOMPLETE;
@@ -111,6 +111,7 @@ namespace rhi::procedure {
 
 		VkGraphicsPipelineCreateInfo pipeInfo{};
 		pipeInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		pipeInfo.stageCount = static_cast<uint32_t>(shaders.size());
 		pipeInfo.pStages = shaders.data();
 		pipeInfo.pDynamicState = &dynamicStateInfo;
 		pipeInfo.pVertexInputState = &vertexInputInfo;
@@ -118,7 +119,13 @@ namespace rhi::procedure {
 		pipeInfo.pViewportState = &viewportStateInfo;
 		pipeInfo.pRasterizationState = &rasterizerStateInfo;
 		pipeInfo.pMultisampleState = &multisampleStateInfo;
+
 		pipeInfo.layout = m_layout;
+		pipeInfo.renderPass = rhi::primitive::renderPass_vkAccess::get(renderPass);
+		pipeInfo.subpass = 0;
+
+		pipeInfo.basePipelineHandle = VK_NULL_HANDLE;
+		pipeInfo.basePipelineIndex = -1;
 
 		VkPipeline vk_pipeline = VK_NULL_HANDLE;
 		VkResult result =  vkCreateGraphicsPipelines(m_device, nullptr, 1, &pipeInfo, nullptr, &vk_pipeline);

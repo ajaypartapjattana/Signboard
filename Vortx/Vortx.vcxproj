@@ -156,7 +156,8 @@
   <ItemGroup>
     <ClCompile Include="Signboard\Assets\configLoader\ConfigLoader.cpp" />
     <ClCompile Include="Signboard\Assets\configLoader\XMLLoader\XMLConfigLoader.cpp" />
-    <ClCompile Include="Signboard\Assets\ResourceLoaders\TextureLoader.cpp" />
+    <ClCompile Include="Signboard\Assets\io\ResourceLoaders\file_loader.cpp" />
+    <ClCompile Include="Signboard\Assets\io\ResourceLoaders\TextureLoader.cpp" />
     <ClCompile Include="Signboard\Assets\Utility\convStr.cpp" />
     <ClCompile Include="Signboard\Core\Time\Time.cpp" />
     <ClCompile Include="Signboard\Platform\core\context.cpp" />
@@ -196,10 +197,11 @@
     <ClCompile Include="Signboard\RHI\procedure\pipeline_builder.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\renderPass_builder.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\sampler_creator.cpp" />
+    <ClCompile Include="Signboard\RHI\procedure\shader_wrapper.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\surface_creator.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\swapchain_builder.cpp" />
     <ClCompile Include="Signboard\RHI\detail\vma\vma.cpp" />
-    <ClCompile Include="Signboard\Assets\ResourceLoaders\ModelLoader.cpp" />
+    <ClCompile Include="Signboard\Assets\io\ResourceLoaders\ModelLoader.cpp" />
     <ClCompile Include="Signboard\Renderer\renderer_core.cpp" />
     <ClCompile Include="Signboard\Renderer\Mesh\VertexLayout.cpp" />
     <ClCompile Include="main.cpp" />
@@ -209,6 +211,9 @@
   <ItemGroup>
     <ClInclude Include="Signboard\Assets\configLoader\ConfigLoader.h" />
     <ClInclude Include="Signboard\Assets\configLoader\ReadTypes\ApplicationReadTypes.h" />
+    <ClInclude Include="Signboard\Assets\io\io.h" />
+    <ClInclude Include="Signboard\Assets\io\ResourceLoaders\file_loader.h" />
+    <ClInclude Include="Signboard\Assets\io\ResourceLoaders\loader.h" />
     <ClInclude Include="Signboard\Core\Containers\storage\detail\storage_detail.h" />
     <ClInclude Include="Signboard\Core\Containers\storage\storage_handle.h" />
     <ClInclude Include="Signboard\Core\Containers\storage\detail\storage_detail_iterator.h" />
@@ -236,6 +241,7 @@
     <ClInclude Include="Signboard\Platform\procedure\eventState_initializer.h" />
     <ClInclude Include="Signboard\Platform\procedure\platform_procedure.h" />
     <ClInclude Include="Signboard\Platform\procedure\window_eventHandler.h" />
+    <ClInclude Include="Signboard\Renderer\Materials\material.h" />
     <ClInclude Include="Signboard\Renderer\RenderBackend\render_interface.h" />
     <ClInclude Include="Signboard\Renderer\renderTarget\target_surface.h" />
     <ClInclude Include="Signboard\RHI\core\commandPool_vk.h" />
@@ -285,6 +291,7 @@
     <ClInclude Include="Signboard\RHI\procedure\renderPass_builder.h" />
     <ClInclude Include="Signboard\RHI\procedure\rhi_procedure.h" />
     <ClInclude Include="Signboard\RHI\procedure\sampler_creator.h" />
+    <ClInclude Include="Signboard\RHI\procedure\shader_wrapper.h" />
     <ClInclude Include="Signboard\RHI\procedure\surface_creator.h" />
     <ClInclude Include="Signboard\RHI\procedure\swapchain_builder.h" />
     <ClInclude Include="Signboard\RHI\detail\vma\vk_mem_alloc.h" />
@@ -294,7 +301,7 @@
     <ClInclude Include="Signboard\RHI\core\instance_vk.h" />
     <ClInclude Include="Signboard\Core\Threading\threadCommProtocol.h" />
     <ClInclude Include="Signboard\Assets\FastNoiseLite.h" />
-    <ClInclude Include="Signboard\Assets\ResourceLoaders\ModelLoader.h" />
+    <ClInclude Include="Signboard\Assets\io\ResourceLoaders\ModelLoader.h" />
     <ClInclude Include="Signboard\Renderer\renderer.h" />
     <ClInclude Include="Signboard\Renderer\DescriptorSchema.h" />
     <ClInclude Include="Signboard\RHI\common\frameBufferTypes.h" />
@@ -310,7 +317,7 @@
     <ClInclude Include="Signboard\Renderer\Mesh\VertexLayout.h" />
     <ClInclude Include="Signboard\Renderer\Mesh\Vertex.h" />
     <ClInclude Include="Signboard\Signboard.h" />
-    <ClInclude Include="Signboard\Assets\ResourceLoaders\TextureLoader.h" />
+    <ClInclude Include="Signboard\Assets\io\ResourceLoaders\TextureLoader.h" />
     <ClInclude Include="Signboard\Platform\primitive\display_window.h" />
   </ItemGroup>
   <ItemGroup>

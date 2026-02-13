@@ -7,6 +7,7 @@ namespace rhi::core {
 
 namespace rhi::primitive {
 	class pipelineLayout;
+	class renderPass;
 	class pipeline;
 	class shader;
 }
@@ -23,7 +24,7 @@ namespace rhi::procedure {
 		pipeline_builder& set_vertShader(const rhi::primitive::shader& shader) noexcept;
 		pipeline_builder& set_fragShader(const rhi::primitive::shader& shader) noexcept;
 
-		VkResult build_graphics(rhi::primitive::pipeline& pipeline);
+		VkResult build_graphicsPipeline(const rhi::primitive::renderPass& renderPass, rhi::primitive::pipeline& pipeline);
 
 	private:
 		VkDevice m_device;

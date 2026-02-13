@@ -1,5 +1,9 @@
 #pragma once
 
+namespace rhi::procedure {
+	class shader_wrapper;
+}
+
 #include <vulkan/vulkan.h>
 
 namespace rhi::primitive {
@@ -21,6 +25,7 @@ namespace rhi::primitive {
 		VkShaderModule native_shader() const noexcept;
 
 	private:
+		friend class rhi::procedure::shader_wrapper;
 		friend struct shader_vkAccess;
 
 		VkShaderModule m_shader = VK_NULL_HANDLE;
