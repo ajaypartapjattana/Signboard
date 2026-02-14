@@ -6,6 +6,33 @@
 namespace storage {
 
 	template <typename T>
+	class vault_readAccessor {
+	public:
+		explicit vault_readAccessor(const vault<T>& vault)
+			: m_vault(vault) {
+		}
+
+		vault_readAccessor(const vault_readAccessor&) = delete;
+		vault_readAccessor& operator=(const vault_readAccessor&) = delete;
+
+		const T* get(storage_handle h) const {
+			const auto& slot = m_vault.slots[h.index];
+
+			if (!slot.alive || slot.generation != h.generation)
+				return nullptr;
+
+			return &slot.object;
+		}
+
+		auto begin() const { return detail::storage_readIterator<vault<T>, T>(m_vault, 0); }
+		auto end() const { return detail::storage_readIterator<vault<T>, T>(m_vault, m_vault.slots.size()); }
+
+	private:
+		const vault<T>& m_vault;
+
+	};
+
+	template <typename T>
 	class vault_writeAccessor {
 	public:
 		vault_writeAccessor(vault<T>& vault)
@@ -48,33 +75,6 @@ namespace storage {
 
 	private:
 		vault<T>& m_vault;
-	};
-
-	template <typename T>
-	class vault_readAccessor {
-	public:
-		explicit vault_readAccessor(const vault<T>& vault)
-			: m_vault(vault) {
-		}
-
-		vault_readAccessor(const vault_readAccessor&) = delete;
-		vault_readAccessor& operator=(const vault_readAccessor&) = delete;
-
-		const T* get(storage_handle h) const {
-			const auto& slot = m_vault.slots[h.index];
-
-			if (!slot.alive || slot.generation != h.generation)
-				return nullptr;
-
-			return &slot.object;
-		}
-
-		auto begin() const { return detail::storage_readIterator<vault<T>, T>(m_vault, 0); }
-		auto end() const { return detail::storage_readIterator<vault<T>, T>(m_vault, m_vault.slots.size()); }
-
-	private:
-		const vault<T>& m_vault;
-
 	};
 
 }

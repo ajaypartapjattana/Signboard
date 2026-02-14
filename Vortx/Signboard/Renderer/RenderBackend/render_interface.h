@@ -3,6 +3,8 @@
 #include "Signboard/Platform/platform.h"
 #include "Signboard/RHI/rhi.h"
 
+struct rndr_interfaceAccess;
+
 class render_interface {
 public:
 	render_interface(const platform::primitive::display_window& a_window, uint32_t bufferedFrame_count = 2);
@@ -29,6 +31,8 @@ private:
 	void release_renderCommandBuffers() noexcept;
 
 private:
+	friend struct rndr_interfaceAccess;
+
 	rhi::core::instance m_instance;
 	rhi::core::surface m_surface;
 

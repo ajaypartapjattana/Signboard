@@ -14,6 +14,7 @@ namespace rhi::primitive {
 
 #include <vulkan/vulkan.h>
 #include <vector>
+#include <cstdint>
 
 namespace rhi::procedure {
 
@@ -24,17 +25,20 @@ namespace rhi::procedure {
 		pipeline_builder& set_vertShader(const rhi::primitive::shader& shader) noexcept;
 		pipeline_builder& set_fragShader(const rhi::primitive::shader& shader) noexcept;
 
-		VkResult build_graphicsPipeline(const rhi::primitive::renderPass& renderPass, rhi::primitive::pipeline& pipeline);
+		pipeline_builder& set_targetPass(const rhi::primitive::renderPass& renderPass) noexcept;
+
+		VkResult build_graphicsPipeline(const uint32_t target_subpass, rhi::primitive::pipeline& pipeline);
 
 	private:
 		VkDevice m_device;
-
 		VkPipelineLayout m_layout;
+
+		VkExtent2D m_viewportExtent{};
+
+		VkRenderPass m_pass = VK_NULL_HANDLE;
 
 		std::vector<VkShaderModule> m_modules;
 		std::vector<VkShaderStageFlagBits> m_moduleRef;
-
-		VkExtent2D m_viewportExtent;
 
 	};
 

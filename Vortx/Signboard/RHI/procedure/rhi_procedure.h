@@ -10,6 +10,7 @@
 #include "allocator_creator.h"
 
 #include "image_allocator.h"
+#include "image_wrapper.h"
 #include "buffer_allocator.h"
 #include "sampler_creator.h"
 
@@ -31,6 +32,7 @@ namespace rhi::procedure {
 	class allocator_creator;
 
 	class image_allocator;
+	class image_wrapper;
 	class buffer_allocator;
 	class sampler_creator;
 

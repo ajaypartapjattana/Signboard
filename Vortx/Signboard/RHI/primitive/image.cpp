@@ -1,6 +1,10 @@
 #include "image.h"
 
 namespace rhi::primitive {
+	
+	image::image() noexcept {
+
+	}
 
 	image::image(image&& other) noexcept {
 		m_image = other.m_image;

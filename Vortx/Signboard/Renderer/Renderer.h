@@ -5,6 +5,8 @@
 #include <memory>
 
 #include "RenderBackend/render_interface.h"
+#include "Materials/materials.h"
+#include "Pass/passes.h"
 
 class Renderer {
 public:
@@ -22,5 +24,8 @@ private:
 
 private:
 	render_interface m_renderInterface;
+
+	passes m_passes;
+	materials m_materials;
 
 };

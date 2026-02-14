@@ -28,8 +28,6 @@ namespace rhi::procedure{
 	}
 
 	VkResult pipelineLayout_builder::build(rhi::primitive::pipelineLayout& tw_pipelineLayout) {
-		if (m_setLayouts.empty() && m_pushConstantRanges.empty())
-			return VK_INCOMPLETE;
 
 		VkPipelineLayoutCreateInfo layoutInfo{};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

@@ -9,13 +9,13 @@
 
 namespace rhi::procedure {
 
-	image_wrapper::image_wrapper(const rhi::core::device& device)
+	image_wrapper::image_wrapper(const rhi::core::device& device) noexcept
 		: m_device(rhi::core::device_vkAccess::get(device))
 	{
 
 	}
 
-	VkResult image_wrapper::wrap_swapchainImages(const rhi::core::swapchain& swapchain, std::vector<rhi::primitive::image>& images) {
+	VkResult image_wrapper::wrap_swapchainImages(const rhi::core::swapchain& swapchain, std::vector<rhi::primitive::image>& tw_images) {
 		VkSwapchainKHR a_swapchain = rhi::core::swapchain_vkAccess::get(swapchain);
 		VkFormat a_format = rhi::core::swapchain_vkAccess::get_format(swapchain);
 
@@ -25,8 +25,8 @@ namespace rhi::procedure {
 		std::vector<VkImage> sc_images(count);
 		vkGetSwapchainImagesKHR(m_device, a_swapchain, &count, sc_images.data());
 
-		images.clear();
-		images.reserve(count);
+		tw_images.clear();
+		tw_images.reserve(count);
 
 		for (VkImage image : sc_images) {
 			VkImageViewCreateInfo viewInfo{};
@@ -59,7 +59,7 @@ namespace rhi::procedure {
 			l_image.m_device = m_device;
 			l_image.m_allocator = VK_NULL_HANDLE;
 
-			images.emplace_back(std::move(l_image));
+			tw_images.emplace_back(std::move(l_image));
 
 			return result;
 		}

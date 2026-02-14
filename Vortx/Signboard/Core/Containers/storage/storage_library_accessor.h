@@ -6,10 +6,38 @@
 namespace storage {
 
 	template <typename T>
+	class library_readAccessor {
+	public:
+		library_readAccessor(const library<T>& library)
+			: m_library(library) {
+		}
+
+		library_readAccessor(const library_readAccessor&) = delete;
+		library_readAccessor& operator=(const library_readAccessor&) = delete;
+
+		const T* get(storage_handle h) const {
+			auto& slot = m_library.slots[h.index];
+
+			if (!slot.alive || slot.generation != h.generation)
+				return nullptr;
+
+			return &slot.object;
+		}
+
+		auto begin() const { return detail::storage_readIterator<library<T>, T>(m_library, 0); }
+		auto end() const { return detail::storage_readIterator<library<T>, T>(m_library, m_library.slots.size()); }
+
+	private:
+		const library<T>& m_library;
+
+	};
+
+	template <typename T>
 	class library_writeAccessor {
 	public:
 		explicit library_writeAccessor(library<T>& library)
-			: m_library(library) {}
+			: m_library(library) {
+		}
 
 		library_writeAccessor(const library_writeAccessor&) = delete;
 		library_writeAccessor& operator=(const library_writeAccessor&) = delete;
@@ -57,32 +85,6 @@ namespace storage {
 
 	private:
 		library<T>& m_library;
-	};
-
-	template <typename T>
-	class library_readAccessor {
-	public:
-		library_readAccessor(const library<T>& library)
-			: m_library(library) {}
-
-		library_readAccessor(const library_readAccessor&) = delete;
-		library_readAccessor& operator=(const library_readAccessor&) = delete;
-
-		const T* get(storage_handle h) const {
-			auto& slot = m_library.slots[h.index];
-
-			if (!slot.alive || slot.generation != h.generation)
-				return nullptr;
-
-			return &slot.object;
-		}
-
-		auto begin() const { return detail::storage_readIterator<library<T>, T>(m_library, 0); }
-		auto end() const { return detail::storage_readIterator<library<T>, T>(m_library, m_library.slots.size()); }
-
-	private:
-		const library<T>& m_library;
-
 	};
 
 }

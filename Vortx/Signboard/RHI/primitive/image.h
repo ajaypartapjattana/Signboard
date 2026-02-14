@@ -13,6 +13,8 @@ namespace rhi::primitive {
 
 	class image {
 	public:
+		image() noexcept;
+
 		image(const image&) = delete;
 		image& operator=(const image&) = delete;
 
@@ -29,8 +31,6 @@ namespace rhi::primitive {
 		friend class rhi::procedure::image_allocator;
 		friend class rhi::procedure::image_wrapper;
 		friend struct image_vkAccess;
-
-		image() = default;
 
 		VkImage m_image = VK_NULL_HANDLE;
 		VmaAllocation m_allocation = VK_NULL_HANDLE;

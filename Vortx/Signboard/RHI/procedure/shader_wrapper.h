@@ -17,9 +17,9 @@ namespace rhi::procedure {
 	public:
 		shader_wrapper(const rhi::core::device& device) noexcept;
 
-		shader_wrapper& set_target(rhi::primitive::shader& targetShader);
+		shader_wrapper& set_target(rhi::primitive::shader& targetShader) noexcept;
 
-		VkResult wrap_shaderCode(const std::vector<char>& data);
+		VkResult wrap_shaderCode(const char* data, size_t size);
 
 	private:
 		VkDevice m_Device;

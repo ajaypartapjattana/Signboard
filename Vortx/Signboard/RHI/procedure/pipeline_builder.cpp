@@ -29,10 +29,17 @@ namespace rhi::procedure {
 		return *this;
 	}
 
-	VkResult pipeline_builder::build_graphicsPipeline(const rhi::primitive::renderPass& renderPass, rhi::primitive::pipeline& tw_pipeline) {
+	pipeline_builder& pipeline_builder::set_targetPass(const rhi::primitive::renderPass& renderPass) noexcept {
+		m_pass = rhi::primitive::renderPass_vkAccess::get(renderPass);
 
-		if (m_moduleRef.empty())
+		return *this;
+	}
+
+	VkResult pipeline_builder::build_graphicsPipeline(const uint32_t target_subpass, rhi::primitive::pipeline& tw_pipeline) {
+
+		if (m_moduleRef.empty() || !m_pass)
 			return VK_INCOMPLETE;
+
 		std::vector<VkPipelineShaderStageCreateInfo> shaders;
 		shaders.reserve(m_moduleRef.size());
 		VkPipelineShaderStageCreateInfo shaderStageInfo{};
@@ -121,8 +128,8 @@ namespace rhi::procedure {
 		pipeInfo.pMultisampleState = &multisampleStateInfo;
 
 		pipeInfo.layout = m_layout;
-		pipeInfo.renderPass = rhi::primitive::renderPass_vkAccess::get(renderPass);
-		pipeInfo.subpass = 0;
+		pipeInfo.renderPass = m_pass;
+		pipeInfo.subpass = target_subpass;
 
 		pipeInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipeInfo.basePipelineIndex = -1;

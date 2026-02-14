@@ -166,8 +166,11 @@
     <ClCompile Include="Signboard\Platform\procedure\display_window_builder.cpp" />
     <ClCompile Include="Signboard\Platform\procedure\eventState_initializer.cpp" />
     <ClCompile Include="Signboard\Platform\procedure\window_eventHandler.cpp" />
+    <ClCompile Include="Signboard\Renderer\Materials\materials.cpp" />
+    <ClCompile Include="Signboard\Renderer\Pass\passes.cpp" />
     <ClCompile Include="Signboard\Renderer\RenderBackend\render_interface.cpp" />
     <ClCompile Include="Signboard\Renderer\renderTarget\target_surface.cpp" />
+    <ClCompile Include="Signboard\Resources\res_images.cpp" />
     <ClCompile Include="Signboard\RHI\core\commandPool.cpp" />
     <ClCompile Include="Signboard\RHI\core\device.cpp" />
     <ClCompile Include="Signboard\RHI\core\instance.cpp" />
@@ -202,7 +205,7 @@
     <ClCompile Include="Signboard\RHI\procedure\swapchain_builder.cpp" />
     <ClCompile Include="Signboard\RHI\detail\vma\vma.cpp" />
     <ClCompile Include="Signboard\Assets\io\ResourceLoaders\ModelLoader.cpp" />
-    <ClCompile Include="Signboard\Renderer\renderer_core.cpp" />
+    <ClCompile Include="Signboard\Renderer\renderer.cpp" />
     <ClCompile Include="Signboard\Renderer\Mesh\VertexLayout.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Signboard\RHI\common\DeviceTypes.h" />
@@ -241,9 +244,12 @@
     <ClInclude Include="Signboard\Platform\procedure\eventState_initializer.h" />
     <ClInclude Include="Signboard\Platform\procedure\platform_procedure.h" />
     <ClInclude Include="Signboard\Platform\procedure\window_eventHandler.h" />
-    <ClInclude Include="Signboard\Renderer\Materials\material.h" />
+    <ClInclude Include="Signboard\Renderer\Materials\materials.h" />
+    <ClInclude Include="Signboard\Renderer\Pass\passes.h" />
     <ClInclude Include="Signboard\Renderer\RenderBackend\render_interface.h" />
+    <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_interfaceAccess.h" />
     <ClInclude Include="Signboard\Renderer\renderTarget\target_surface.h" />
+    <ClInclude Include="Signboard\Resources\res_images.h" />
     <ClInclude Include="Signboard\RHI\core\commandPool_vk.h" />
     <ClInclude Include="Signboard\RHI\core\commandPool.h" />
     <ClInclude Include="Signboard\RHI\core\device.h" />

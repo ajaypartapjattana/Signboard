@@ -17,14 +17,17 @@ namespace rhi::procedure {
 		return *this;
 	}
 
-	VkResult shader_wrapper::wrap_shaderCode(const std::vector<char>& data) {
-		if (!m_target)
+	VkResult shader_wrapper::wrap_shaderCode(const char* data, size_t size) {
+		if (!m_target || !data || !*data)
 			return VK_INCOMPLETE;
+
+		if (size % 4 != 0)
+			return VK_ERROR_INVALID_SHADER_NV;
 
 		VkShaderModuleCreateInfo shaderInfo{};
 		shaderInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		shaderInfo.pCode = reinterpret_cast<const uint32_t*>(data.data());
-		shaderInfo.codeSize = data.size();
+		shaderInfo.pCode = reinterpret_cast<const uint32_t*>(*data);
+		shaderInfo.codeSize = size;
 
 		VkShaderModule vk_shaderModule = VK_NULL_HANDLE;
 		VkResult result = vkCreateShaderModule(m_Device, &shaderInfo, nullptr, &vk_shaderModule);
