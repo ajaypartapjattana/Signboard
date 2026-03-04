@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <cstdint>
+#include <type_traits>
 
 namespace storage {
 
@@ -20,9 +21,17 @@ namespace storage {
 
 	private:
 		struct Slot {
-			T object;
+			std::aligned_storage_t<sizeof(T), alignof(T)> storage;
 			uint32_t generation = 0;
 			bool alive = false;
+
+			T* object_ptr() {
+				return std::launder(reinterpret_cast<T*>(&storage));
+			}
+
+			const T* object_ptr() const {
+				return std::launder(reinterpret_cast<const T*>(&storage));
+			}
 		};
 
 		std::vector<Slot> slots;

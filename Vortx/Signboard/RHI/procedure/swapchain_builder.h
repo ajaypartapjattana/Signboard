@@ -30,11 +30,9 @@ namespace rhi::procedure {
 
 		swapchain_builder& recycle_swapchain(const rhi::core::swapchain&);
 
-		rhi::core::swapchain build(VkAllocationCallbacks* allocator = nullptr);
+		VkResult build(rhi::core::swapchain& target_swapchain);
 
 	private:
-		void query_support();
-
 		swapchain_builder& prefer_format(VkFormat format);
 		swapchain_builder& prefer_presentMode(VkPresentModeKHR presentMode);
 
@@ -51,7 +49,7 @@ namespace rhi::procedure {
 		VkExtent2D final_extent{};
 		bool extent_chosen = false;
 
-		uint32_t final_imageCount;
+		uint32_t final_imageCount = 2;
 		bool imageCount_chosen = false;
 
 		VkSurfaceFormatKHR final_format{};

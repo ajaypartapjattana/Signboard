@@ -11,15 +11,9 @@
 
 namespace rhi::procedure {
 
-	swapchain_builder::swapchain_builder(const rhi::core::device& device, const rhi::core::surface& surface) {
-		m_device = rhi::core::device_vkAccess::get(device);
-		m_phys = rhi::core::device_vkAccess::get_physicalDevice(device);
-		m_surface = rhi::core::surface_vkAccess::get(surface);
-
-		query_support();
-	}
-
-	void swapchain_builder::query_support() {
+	swapchain_builder::swapchain_builder(const rhi::core::device& device, const rhi::core::surface& surface) 
+		: m_device(rhi::core::device_vkAccess::get(device)), m_phys(rhi::core::device_vkAccess::get_physicalDevice(device)), m_surface(rhi::core::surface_vkAccess::get(surface))
+	{
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_phys, m_surface, &surface_caps);
 
 		uint32_t count = 0;
@@ -87,7 +81,7 @@ namespace rhi::procedure {
 		return *this;
 	}
 
-	rhi::core::swapchain swapchain_builder::build(VkAllocationCallbacks* allocator) {
+	 VkResult swapchain_builder::build(rhi::core::swapchain& target_swapchain) {
 		if (available_surfaceFormat.empty() || available_presentMode.empty())
 			throw std::runtime_error("surface does not support swapchains!");
 
@@ -126,16 +120,16 @@ namespace rhi::procedure {
 		createInfo.pQueueFamilyIndices = nullptr;
 
 		VkSwapchainKHR vk_swapchain = VK_NULL_HANDLE;
-		if (vkCreateSwapchainKHR(m_device, &createInfo, allocator, &vk_swapchain) != VK_SUCCESS)
-			throw std::runtime_error("failed to create swapchain!");
+		VkResult result = vkCreateSwapchainKHR(m_device, &createInfo, nullptr, &vk_swapchain);
+		if (result != VK_SUCCESS)
+			return result;
 
-		rhi::core::swapchain l_swapchain;
-		l_swapchain.m_swapchain = vk_swapchain;
-		l_swapchain.m_format = final_format.format;
-		l_swapchain.m_extent = final_extent;
-		l_swapchain.m_device = m_device;
+		target_swapchain.m_swapchain = vk_swapchain;
+		target_swapchain.m_format = final_format.format;
+		target_swapchain.m_extent = final_extent;
+		target_swapchain.m_device = m_device;
 
-		return l_swapchain;
+		return result;
 	}
 
 	swapchain_builder& swapchain_builder::recycle_swapchain(const rhi::core::swapchain& sc) {

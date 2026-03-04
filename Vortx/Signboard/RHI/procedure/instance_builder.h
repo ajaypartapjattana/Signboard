@@ -18,7 +18,7 @@ namespace rhi::procedure {
 		instance_builder& addExtension(const char* name);
 		instance_builder& enableValidationLayer();
 
-		rhi::core::instance build();
+		VkResult build(rhi::core::instance& target_instance);
 
 	private:
 		static bool extensionSupported(const char*);

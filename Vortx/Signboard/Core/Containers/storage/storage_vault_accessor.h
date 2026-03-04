@@ -17,11 +17,7 @@ namespace storage {
 
 		const T* get(storage_handle h) const {
 			const auto& slot = m_vault.slots[h.index];
-
-			if (!slot.alive || slot.generation != h.generation)
-				return nullptr; 
-
-			return &slot.object;
+			return slot.alive && slot.generation == h.generation ? slot.object_ptr() : nullptr;
 		}
 
 		auto begin() const { return detail::storage_readIterator<vault<T>, T>(m_vault, 0); }
@@ -56,7 +52,7 @@ namespace storage {
 			}
 
 			auto& slot = m_vault.slots[index];
-			new slot.object T(std::forward<Args>(args)...);
+			new (slot.object_ptr()) T(std::forward<Args>(args)...);
 			slot.alive = true;
 
 			return { index, slot.generation };
@@ -68,7 +64,7 @@ namespace storage {
 			if (!slot.alive || slot.generation != h.generation)
 				return;
 
-			slot.object.~T();
+			slot.object_ptr()->~T();
 			slot.alive = false;
 			slot.generation++;
 			m_vault.freeList.push_back(h.index);

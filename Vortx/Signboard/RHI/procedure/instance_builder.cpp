@@ -66,7 +66,7 @@ namespace rhi::procedure {
 		return *this;
 	}
 	
-	rhi::core::instance instance_builder::build() {
+	VkResult instance_builder::build(rhi::core::instance& target_instance) {
 
 		VkApplicationInfo appInfo{};
 		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -85,14 +85,13 @@ namespace rhi::procedure {
 		createInfo.ppEnabledLayerNames = m_layers.data();
 
 		VkInstance vk_instance = VK_NULL_HANDLE;
-		if (vkCreateInstance(&createInfo, nullptr, &vk_instance) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create vulkan instance!");
-		}
+		VkResult result = vkCreateInstance(&createInfo, nullptr, &vk_instance);
+		if (result != VK_SUCCESS)
+			return result;
 
-		rhi::core::instance instance;
-		instance.m_instance = vk_instance;
+		target_instance.m_instance = vk_instance;
 
-		return instance;
+		return result;
 	}
 
 	bool instance_builder::extensionSupported(const char* extName) {
