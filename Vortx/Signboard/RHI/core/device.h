@@ -14,6 +14,8 @@ namespace rhi::core {
 
 	class device {
 	public:
+		device() noexcept;
+
 		device(const device&) = delete;
 		device& operator=(const device&) = delete;
 
@@ -28,10 +30,8 @@ namespace rhi::core {
 		friend class rhi::procedure::device_builder;
 		friend struct device_vkAccess;
 
-		device() = default;
-
-		VkDevice m_device;
-		VkPhysicalDevice m_physical;
+		VkDevice m_device = VK_NULL_HANDLE;
+		VkPhysicalDevice m_physical = VK_NULL_HANDLE;
 
 		struct queue_entry {
 			VkQueue queue;
@@ -42,8 +42,8 @@ namespace rhi::core {
 		};
 		std::vector<queue_entry> m_queues;
 
-		VkPhysicalDeviceFeatures m_enabledfeatures;
-		VkPhysicalDeviceProperties m_properties;
+		VkPhysicalDeviceFeatures m_enabledfeatures{};
+		VkPhysicalDeviceProperties m_properties{};
 
 	};
 

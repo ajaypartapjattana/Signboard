@@ -3,7 +3,7 @@
 namespace rhi::core {
 
 	commandPool::commandPool() noexcept 
-		: m_commandPool(VK_NULL_HANDLE), m_device(VK_NULL_HANDLE)
+		: m_commandPool(VK_NULL_HANDLE), m_queueFamilyIndex(0), m_device(VK_NULL_HANDLE)
 	{
 
 	}

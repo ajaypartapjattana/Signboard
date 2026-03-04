@@ -4,6 +4,12 @@
 
 namespace rhi::core {
 
+	instance::instance() noexcept
+		: m_instance(VK_NULL_HANDLE)
+	{
+		
+	}
+
 	instance::instance(instance&& other) noexcept {
 		m_instance = other.m_instance;
 

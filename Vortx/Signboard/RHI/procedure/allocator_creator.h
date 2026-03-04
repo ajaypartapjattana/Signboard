@@ -15,12 +15,12 @@ namespace rhi::procedure {
 	public:
 		allocator_creator(const rhi::core::instance& instance, const rhi::core::device& device);
 
-		rhi::core::allocator create() const ;
+		VkResult create(rhi::core::allocator& target_allocator) const;
 
 	private:
-		VkInstance m_instance;
-		VkDevice m_device;
-		VkPhysicalDevice m_phys;
+		VkInstance m_instance = VK_NULL_HANDLE;
+		VkDevice m_device = VK_NULL_HANDLE;
+		VkPhysicalDevice m_phys = VK_NULL_HANDLE;
 
 	};
 

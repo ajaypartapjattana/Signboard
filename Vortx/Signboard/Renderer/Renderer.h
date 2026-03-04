@@ -4,7 +4,7 @@
 #include <vector>
 #include <memory>
 
-#include "RenderBackend/render_interface.h"
+#include "RenderBackend/rndr_Backend.h"
 #include "Materials/materials.h"
 #include "Pass/passes.h"
 
@@ -23,7 +23,8 @@ private:
 	void resize();
 
 private:
-	render_interface m_renderInterface;
+	rndr_context m_context;
+	rndr_interface m_interface;
 
 	passes m_passes;
 	materials m_materials;

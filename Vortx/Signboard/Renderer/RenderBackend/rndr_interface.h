@@ -3,11 +3,13 @@
 #include "Signboard/Platform/platform.h"
 #include "Signboard/RHI/rhi.h"
 
-struct rndr_interfaceAccess;
+class rndr_context;
 
-class render_interface {
+struct rndr_interface_Access;
+
+class rndr_interface {
 public:
-	render_interface(const platform::primitive::display_window& a_window, uint32_t bufferedFrame_count = 2);
+	rndr_interface(const rndr_context& context, uint32_t bufferedFrame_count = 2);
 
 	void set_bufferedFrame_count(uint32_t bufferedFrame_count);
 	uint32_t get_bufferedFrame_count() const noexcept;
@@ -16,13 +18,7 @@ public:
 	void advance_frame() noexcept;
 
 private:
-	rhi::core::instance setup_instance();
-	rhi::core::surface setup_surface(const platform::primitive::display_window& window);
-
-	rhi::core::device setup_device();
-
 	rhi::core::swapchain setup_swapchain();
-	rhi::core::allocator setup_allocator();
 
 private:
 	uint32_t find_graphicsPool_index() const noexcept;
@@ -31,17 +27,14 @@ private:
 	void release_renderCommandBuffers() noexcept;
 
 private:
-	friend struct rndr_interfaceAccess;
-
-	rhi::core::instance m_instance;
-	rhi::core::surface m_surface;
-
-	rhi::core::device m_device;
-
-	rhi::core::swapchain m_swapchain;
-	rhi::core::allocator m_allocator;
+	const rhi::core::device& r_device;
+	const rhi::core::surface& r_surface;
 
 private:
+	friend struct rndr_interface_Access;
+
+	rhi::core::swapchain m_swapchain;
+
 	uint32_t m_bufferedFrameCount = 2;
 	uint32_t m_activeFrameIndex = 0;
 

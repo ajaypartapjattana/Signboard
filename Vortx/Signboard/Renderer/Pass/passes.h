@@ -3,17 +3,17 @@
 #include "Signboard/Core/Containers/storage/storage.h"
 #include "Signboard/RHI/rhi.h"
 
-class render_interface;
+class rndr_context;
 
 class passes {
 public:
-	passes(const render_interface& ri);
+	passes(const rndr_context& context);
 
 private:
 	void setup_basePass();
 
 private:
-	const rhi::core::device& m_device;
+	const rhi::core::device& r_device;
 
 	storage::vault<rhi::primitive::renderPass> m_passes;
 

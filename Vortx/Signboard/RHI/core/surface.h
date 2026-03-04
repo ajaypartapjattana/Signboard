@@ -12,6 +12,8 @@ namespace rhi::core {
 
 	class surface {
 	public:
+		surface() noexcept;
+
 		surface(const surface&) = delete;
 		surface& operator=(const surface&) = delete;
 
@@ -26,11 +28,9 @@ namespace rhi::core {
 		friend class rhi::procedure::surface_creator;
 		friend struct surface_vkAccess;
 
-		surface() = default;
+		VkSurfaceKHR m_surface = VK_NULL_HANDLE;
 
-		VkInstance m_instance;
-
-		VkSurfaceKHR m_surface;
+		VkInstance m_instance = VK_NULL_HANDLE;
 
 	};
 

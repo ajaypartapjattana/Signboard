@@ -4,6 +4,12 @@
 
 namespace rhi::core {
 
+	surface::surface() noexcept
+		: m_surface(VK_NULL_HANDLE), m_instance(VK_NULL_HANDLE)
+	{
+
+	}
+
 	surface::surface(surface&& other) noexcept {
 		m_surface = other.m_surface;
 		m_instance = other.m_instance;

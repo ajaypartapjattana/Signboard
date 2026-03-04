@@ -16,45 +16,44 @@ namespace rhi::procedure {
 
 	}
 
-	rhi::core::allocator allocator_creator::create() const {
-		rhi::core::allocator l_mallocator;
+	VkResult allocator_creator::create(rhi::core::allocator& target_allocator) const {
+		target_allocator.m_vkfuncs.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
+		target_allocator.m_vkfuncs.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
 
-		l_mallocator.m_vkfuncs.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
-		l_mallocator.m_vkfuncs.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
-
-		l_mallocator.m_vkfuncs.vkGetPhysicalDeviceProperties = &vkGetPhysicalDeviceProperties;
-		l_mallocator.m_vkfuncs.vkGetPhysicalDeviceMemoryProperties = &vkGetPhysicalDeviceMemoryProperties;
-		l_mallocator.m_vkfuncs.vkAllocateMemory = &vkAllocateMemory;
-		l_mallocator.m_vkfuncs.vkFreeMemory = &vkFreeMemory;
-		l_mallocator.m_vkfuncs.vkMapMemory = &vkMapMemory;
-		l_mallocator.m_vkfuncs.vkUnmapMemory = &vkUnmapMemory;
-		l_mallocator.m_vkfuncs.vkFlushMappedMemoryRanges = &vkFlushMappedMemoryRanges;
-		l_mallocator.m_vkfuncs.vkInvalidateMappedMemoryRanges = &vkInvalidateMappedMemoryRanges;
-		l_mallocator.m_vkfuncs.vkBindBufferMemory = &vkBindBufferMemory;
-		l_mallocator.m_vkfuncs.vkBindImageMemory = &vkBindImageMemory;
-		l_mallocator.m_vkfuncs.vkGetBufferMemoryRequirements = &vkGetBufferMemoryRequirements;
-		l_mallocator.m_vkfuncs.vkGetImageMemoryRequirements = &vkGetImageMemoryRequirements;
-		l_mallocator.m_vkfuncs.vkCreateBuffer = &vkCreateBuffer;
-		l_mallocator.m_vkfuncs.vkDestroyBuffer = &vkDestroyBuffer;
-		l_mallocator.m_vkfuncs.vkCreateImage = &vkCreateImage;
-		l_mallocator.m_vkfuncs.vkDestroyImage = &vkDestroyImage;
-		l_mallocator.m_vkfuncs.vkCmdCopyBuffer = &vkCmdCopyBuffer;
+		target_allocator.m_vkfuncs.vkGetPhysicalDeviceProperties = &vkGetPhysicalDeviceProperties;
+		target_allocator.m_vkfuncs.vkGetPhysicalDeviceMemoryProperties = &vkGetPhysicalDeviceMemoryProperties;
+		target_allocator.m_vkfuncs.vkAllocateMemory = &vkAllocateMemory;
+		target_allocator.m_vkfuncs.vkFreeMemory = &vkFreeMemory;
+		target_allocator.m_vkfuncs.vkMapMemory = &vkMapMemory;
+		target_allocator.m_vkfuncs.vkUnmapMemory = &vkUnmapMemory;
+		target_allocator.m_vkfuncs.vkFlushMappedMemoryRanges = &vkFlushMappedMemoryRanges;
+		target_allocator.m_vkfuncs.vkInvalidateMappedMemoryRanges = &vkInvalidateMappedMemoryRanges;
+		target_allocator.m_vkfuncs.vkBindBufferMemory = &vkBindBufferMemory;
+		target_allocator.m_vkfuncs.vkBindImageMemory = &vkBindImageMemory;
+		target_allocator.m_vkfuncs.vkGetBufferMemoryRequirements = &vkGetBufferMemoryRequirements;
+		target_allocator.m_vkfuncs.vkGetImageMemoryRequirements = &vkGetImageMemoryRequirements;
+		target_allocator.m_vkfuncs.vkCreateBuffer = &vkCreateBuffer;
+		target_allocator.m_vkfuncs.vkDestroyBuffer = &vkDestroyBuffer;
+		target_allocator.m_vkfuncs.vkCreateImage = &vkCreateImage;
+		target_allocator.m_vkfuncs.vkDestroyImage = &vkDestroyImage;
+		target_allocator.m_vkfuncs.vkCmdCopyBuffer = &vkCmdCopyBuffer;
 
 		VmaAllocatorCreateInfo info{};
 		info.instance = m_instance;
 		info.device = m_device;
 		info.physicalDevice = m_phys;
-		info.pVulkanFunctions = &l_mallocator.m_vkfuncs;
+		info.pVulkanFunctions = &target_allocator.m_vkfuncs;
 		info.flags |= VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
 		info.vulkanApiVersion = VK_API_VERSION_1_3;
 
 		VmaAllocator vma_allocator = VK_NULL_HANDLE;
-		if (vmaCreateAllocator(&info, &vma_allocator) != VK_SUCCESS)
-			throw std::runtime_error("FAILED: vma_creation!");
+		VkResult result = vmaCreateAllocator(&info, &vma_allocator);
+		if (result != VK_SUCCESS)
+			return result;
 
-		l_mallocator.m_allocator = vma_allocator;
+		target_allocator.m_allocator = vma_allocator;
 
-		return l_mallocator;
+		return result;
 	}
 
 }

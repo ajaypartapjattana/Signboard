@@ -29,7 +29,7 @@ namespace rhi::core {
 		friend struct commandPool_vkAccess;
 
 		VkCommandPool m_commandPool = VK_NULL_HANDLE;
-		uint32_t m_queueFamilyIndex;
+		uint32_t m_queueFamilyIndex = 0;
 
 		VkDevice m_device = VK_NULL_HANDLE;
 	};

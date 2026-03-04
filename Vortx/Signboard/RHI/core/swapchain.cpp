@@ -2,6 +2,12 @@
 
 namespace rhi::core {
 
+	swapchain::swapchain() noexcept
+		: m_swapchain(VK_NULL_HANDLE), m_format(VK_FORMAT_UNDEFINED), m_device(VK_NULL_HANDLE)
+	{
+
+	}
+
 	swapchain::swapchain(swapchain&& other) noexcept {
 		m_swapchain = other.m_swapchain;
 		m_format = other.m_format;

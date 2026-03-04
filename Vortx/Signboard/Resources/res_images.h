@@ -13,8 +13,8 @@ private:
 
 
 private:
-	const rhi::core::device& m_device;
-	const rhi::core::allocator& m_allocator;
+	const rhi::core::device& r_device;
+	const rhi::core::allocator& r_allocator;
 
 	storage::vault<rhi::primitive::image> m_attachmentImages;
 	storage::vault<rhi::primitive::image> m_swapchainImages;

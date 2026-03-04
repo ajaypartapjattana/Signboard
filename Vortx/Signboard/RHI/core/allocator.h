@@ -12,6 +12,8 @@ namespace rhi::core {
 
 	class allocator {
 	public:
+		allocator() noexcept;
+
 		allocator(const allocator&) = delete;
 		allocator& operator=(const allocator&) = delete;
 
@@ -25,8 +27,6 @@ namespace rhi::core {
 	private:
 		friend class rhi::procedure::allocator_creator;
 		friend struct allocator_vmaAccess;
-
-		allocator() = default;
 
 		VmaAllocator m_allocator = VK_NULL_HANDLE;
 		VmaVulkanFunctions m_vkfuncs{};

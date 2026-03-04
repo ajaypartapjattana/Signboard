@@ -41,9 +41,9 @@ namespace rhi::procedure {
 							continue;
 
 						bool dedicated = false;
-						if (matched == VK_QUEUE_TRANSFER_BIT)
+						if (matched & VK_QUEUE_TRANSFER_BIT)
 							dedicated = (supported & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)) == 0;
-						else if (matched == VK_QUEUE_COMPUTE_BIT)
+						else if (matched & VK_QUEUE_COMPUTE_BIT)
 							dedicated = (supported & VK_QUEUE_GRAPHICS_BIT);
 
 						uint32_t extraCaps = static_cast<uint32_t>(supported & ~matched);
@@ -227,7 +227,7 @@ namespace rhi::procedure {
 		return *this;
 	}
 
-	rhi::core::device device_builder::build() {
+	VkResult device_builder::build(rhi::core::device& target_device) {
 		const std::vector<phys_candidate>& candidates = m_candidates;
 
 		auto suited_physical = std::find_if(candidates.begin(), candidates.end(), [](const phys_candidate& c) {return c.suitable; });
@@ -272,22 +272,22 @@ namespace rhi::procedure {
 		createInfo.pEnabledFeatures = &suited_physical->enabledFeatures;
 
 		VkDevice vk_device = VK_NULL_HANDLE;
-		if (vkCreateDevice(suited_physical->phys, &createInfo, nullptr, &vk_device) != VK_SUCCESS)
-			throw std::runtime_error("FAILURE: logicalDevice_creation!");
+		VkResult result = vkCreateDevice(suited_physical->phys, &createInfo, nullptr, &vk_device);
+		if (result != VK_SUCCESS)
+			return result;
 
-		rhi::core::device l_device;
-		l_device.m_device = vk_device;
-		l_device.m_physical = suited_physical->phys;
+		target_device.m_device = vk_device;
+		target_device.m_physical = suited_physical->phys;
 		for (const phys_candidate::assigned_queue& aq : suited_physical->assigned_queueFamilies) {
 			VkQueue vk_queue = VK_NULL_HANDLE;
 			vkGetDeviceQueue(vk_device, aq.family, aq.index, &vk_queue);
-			l_device.m_queues.push_back({ vk_queue, aq.family, aq.index, aq.caps, aq.can_present });
+			target_device.m_queues.push_back({ vk_queue, aq.family, aq.index, aq.caps, aq.can_present });
 		}
 
-		l_device.m_enabledfeatures = suited_physical->enabledFeatures;
-		l_device.m_properties = suited_physical->properties;
+		target_device.m_enabledfeatures = suited_physical->enabledFeatures;
+		target_device.m_properties = suited_physical->properties;
 
-		return l_device;
+		return result;
 	}
 
 }

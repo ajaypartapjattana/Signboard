@@ -19,7 +19,7 @@ namespace storage {
 			const auto& slot = m_vault.slots[h.index];
 
 			if (!slot.alive || slot.generation != h.generation)
-				return nullptr;
+				return nullptr; 
 
 			return &slot.object;
 		}
@@ -56,7 +56,7 @@ namespace storage {
 			}
 
 			auto& slot = m_vault.slots[index];
-			slot.object = T(std::forward<Args>(args)...);
+			new slot.object T(std::forward<Args>(args)...);
 			slot.alive = true;
 
 			return { index, slot.generation };
@@ -68,6 +68,7 @@ namespace storage {
 			if (!slot.alive || slot.generation != h.generation)
 				return;
 
+			slot.object.~T();
 			slot.alive = false;
 			slot.generation++;
 			m_vault.freeList.push_back(h.index);

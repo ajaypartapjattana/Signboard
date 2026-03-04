@@ -28,7 +28,7 @@ namespace rhi::procedure {
 
 		sampler_creator& require_anisotropy();
 
-		rhi::primitive::sampler create();
+		VkResult create(rhi::primitive::sampler& target_sampler);
 
 	private:
 		void set_addressingMode(VkSamplerAddressMode mode);

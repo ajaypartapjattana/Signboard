@@ -12,6 +12,8 @@ namespace rhi::core {
 
 	class swapchain {
 	public:
+		swapchain() noexcept;
+
 		swapchain(const swapchain&) = delete;
 		swapchain& operator=(const swapchain&) = delete;
 
@@ -26,14 +28,12 @@ namespace rhi::core {
 		friend class rhi::procedure::swapchain_builder;
 		friend struct swapchain_vkAccess;
 
-		swapchain() = default;
-
-		VkSwapchainKHR m_swapchain;
+		VkSwapchainKHR m_swapchain = VK_NULL_HANDLE;
 		
-		VkFormat m_format;
-		VkExtent2D m_extent;
+		VkFormat m_format = VK_FORMAT_UNDEFINED;
+		VkExtent2D m_extent{};
 		
-		VkDevice m_device;
+		VkDevice m_device = VK_NULL_HANDLE;
 
 	};
 

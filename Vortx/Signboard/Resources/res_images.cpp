@@ -3,7 +3,7 @@
 #include <vector>
 
 res_images::res_images(const rhi::core::device& device, const rhi::core::allocator& allocator)
-	: m_device(device), m_allocator(allocator)
+	: r_device(device), r_allocator(allocator)
 {
 
 }
@@ -11,7 +11,7 @@ res_images::res_images(const rhi::core::device& device, const rhi::core::allocat
 void res_images::create_image() {
 	rhi::primitive::image l_image;
 
-	rhi::procedure::image_allocator allocator{ m_device, m_allocator };
+	rhi::procedure::image_allocator allocator{ r_device, r_allocator };
 	allocator.allocate(l_image);
 
 	storage::vault_writeAccessor<rhi::primitive::image> write{ m_textureImages };
@@ -19,7 +19,7 @@ void res_images::create_image() {
 }
 
 void res_images::wrap_swapchainImages(const rhi::core::swapchain& swapchain) {
-	rhi::procedure::image_wrapper wrapper{ m_device };
+	rhi::procedure::image_wrapper wrapper{ r_device };
 
 	std::vector<rhi::primitive::image> sc_images;
 	wrapper.wrap_swapchainImages(swapchain, sc_images);

@@ -3,11 +3,12 @@
 #include "Signboard/RHI/rhi.h"
 #include "Signboard/Core/Containers/storage/storage.h"
 
-#include "Signboard/Renderer/RenderBackend/render_interface.h"
+class rndr_context;
+class rndr_interface;
 
 class materials {
 public:
-	materials(const render_interface& ri);
+	materials(const rndr_context& context, const rndr_interface& interface);
 
 	struct material {
 		uint32_t targetPass_index;
@@ -21,8 +22,8 @@ private:
 	void create_shader(rhi::primitive::shader& tw_shader, const char* path);
 
 private:
-	const rhi::core::device& m_device;
-	const rhi::core::swapchain& m_swapchain;
+	const rhi::core::device& r_device;
+	const rhi::core::swapchain& r_swapchain;
 
 	rhi::primitive::pipelineLayout m_pipelineLayout;
 

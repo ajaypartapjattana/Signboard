@@ -28,7 +28,7 @@ namespace rhi::procedure {
 
 		device_builder& enable_samplerAnisotropy();
 
-		rhi::core::device build();
+		VkResult build(rhi::core::device& target_device);
 
 
 	private:

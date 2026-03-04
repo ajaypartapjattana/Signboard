@@ -2,8 +2,15 @@
 
 namespace rhi::core {
 
+	allocator::allocator() noexcept
+		: m_allocator(VK_NULL_HANDLE)
+	{
+
+	}
+
 	allocator::allocator(allocator&& other) noexcept {
 		m_allocator = other.m_allocator;
+		m_vkfuncs = other.m_vkfuncs;
 
 		other.m_allocator = VK_NULL_HANDLE;
 	}
@@ -16,6 +23,7 @@ namespace rhi::core {
 			vmaDestroyAllocator(m_allocator);
 
 		m_allocator = other.m_allocator;
+		m_vkfuncs = other.m_vkfuncs;
 
 		other.m_allocator = VK_NULL_HANDLE;
 

@@ -22,11 +22,13 @@ namespace rhi::procedure {
 		renderPass_builder& operator=(const renderPass_builder&) = delete;
 
 		struct attachment_desc {
+			VkFormat format = VK_FORMAT_UNDEFINED;
 			VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 			VkImageLayout finalLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			VkImageLayout usageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		};
 
-		renderPass_builder& add_colorAttachment(const rhi::primitive::image& image, const attachment_desc& desc);
+		renderPass_builder& add_colorAttachment(const rhi::primitive::image* image, const attachment_desc& desc);
 
 		VkResult build_graphicsPass(rhi::primitive::renderPass& targetPass);
 

@@ -4,10 +4,18 @@
 
 namespace rhi::core {
 
+	device::device() noexcept
+		: m_device(VK_NULL_HANDLE), m_physical(VK_NULL_HANDLE)
+	{
+
+	}
+
 	device::device(device&& other) noexcept {
 		m_device = other.m_device;
 		m_physical = other.m_physical;
 		m_queues = other.m_queues;
+		m_enabledfeatures = other.m_enabledfeatures;
+		m_properties = other.m_properties;
 
 		other.m_device = VK_NULL_HANDLE;
 		other.m_physical = VK_NULL_HANDLE;
@@ -24,6 +32,8 @@ namespace rhi::core {
 		m_device = other.m_device;
 		m_physical = other.m_physical;
 		m_queues = other.m_queues;
+		m_enabledfeatures = other.m_enabledfeatures;
+		m_properties = other.m_properties;
 
 		other.m_device = VK_NULL_HANDLE;
 		other.m_physical = VK_NULL_HANDLE;

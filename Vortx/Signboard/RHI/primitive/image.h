@@ -26,7 +26,6 @@ namespace rhi::primitive {
 		const VkImage native_image() const noexcept;
 		const VkImageView native_view() const noexcept;
 
-
 	private:
 		friend class rhi::procedure::image_allocator;
 		friend class rhi::procedure::image_wrapper;

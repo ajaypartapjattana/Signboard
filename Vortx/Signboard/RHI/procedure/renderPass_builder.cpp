@@ -14,9 +14,9 @@ namespace rhi::procedure {
 
 	}
 
-	renderPass_builder& renderPass_builder::add_colorAttachment(const rhi::primitive::image& image, const attachment_desc& desc) {
+	renderPass_builder& renderPass_builder::add_colorAttachment(const rhi::primitive::image* image, const attachment_desc& desc) {
 		VkAttachmentDescription attachment{};
-		attachment.format = rhi::primitive::image_vkAccess::get_format(image);
+		attachment.format = image ? rhi::primitive::image_vkAccess::get_format(*image) : desc.format;
 		attachment.samples = VK_SAMPLE_COUNT_1_BIT;
 		attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -29,7 +29,7 @@ namespace rhi::procedure {
 
 		VkAttachmentReference reference{};
 		reference.attachment = static_cast<uint32_t>(m_attachments.size() - 1);
-		reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		reference.layout = desc.usageLayout;
 
 		m_attachmentRef.push_back(reference);
 

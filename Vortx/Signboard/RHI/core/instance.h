@@ -12,6 +12,8 @@ namespace rhi::core {
 
 	class instance {
 	public:
+		instance() noexcept;
+
 		instance(const instance&) = delete;
 		instance& operator=(const instance&) = delete;
 
@@ -26,9 +28,7 @@ namespace rhi::core {
 		friend class rhi::procedure::instance_builder;
 		friend struct instance_vkAccess;
 
-		instance() = default;
-
-		VkInstance m_instance = nullptr;
+		VkInstance m_instance = VK_NULL_HANDLE;
 
 	};
 

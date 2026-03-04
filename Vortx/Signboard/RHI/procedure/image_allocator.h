@@ -42,11 +42,8 @@ namespace rhi::procedure {
 		VmaAllocator m_allocator = VK_NULL_HANDLE;
 
 		VkImageUsageFlags final_usage{};
-		
 		VkFormat final_format{};
-
 		VkExtent3D final_extent{};
-
 		VkImageAspectFlags final_aspect{};
 
 	};

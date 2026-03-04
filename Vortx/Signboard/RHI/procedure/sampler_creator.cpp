@@ -10,13 +10,10 @@ namespace rhi::procedure {
 	sampler_creator::sampler_creator(const rhi::core::device& device)
 		: m_device(rhi::core::device_vkAccess::get(device))
 	{
-		reset_creator();
-
 		if (rhi::core::device_vkAccess::get_featureEnabled(device, &VkPhysicalDeviceFeatures::samplerAnisotropy)) {
 			enabled_anisotropy = VK_TRUE;
 			max_anisotropy = rhi::core::device_vkAccess::get_properties(device).limits.maxSamplerAnisotropy;
 		}
-
 	}
 
 	sampler_creator& sampler_creator::set_addressingMode_REPEAT() {
@@ -49,7 +46,7 @@ namespace rhi::procedure {
 		return *this;
 	}
 
-	rhi::primitive::sampler sampler_creator::create() {
+	VkResult sampler_creator::create(rhi::primitive::sampler& target_sampler) {
 		VkSamplerCreateInfo samplerInfo{};
 		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 		
@@ -77,16 +74,15 @@ namespace rhi::procedure {
 
 		samplerInfo.pNext = nullptr;
 
-
 		VkSampler vk_sampler = VK_NULL_HANDLE;
-		if (vkCreateSampler(m_device, &samplerInfo, nullptr, &vk_sampler) != VK_SUCCESS)
-			throw std::runtime_error("FAILED: sampler_creation!");
+		VkResult result = vkCreateSampler(m_device, &samplerInfo, nullptr, &vk_sampler);
+		if (result != VK_SUCCESS)
+			return result;
 
-		rhi::primitive::sampler l_sampler;
-		l_sampler.m_device = m_device;
-		l_sampler.m_sampler = vk_sampler;
+		target_sampler.m_device = m_device;
+		target_sampler.m_sampler = vk_sampler;
 
-		return l_sampler;
+		return result;
 	}
 
 	void sampler_creator::set_addressingMode(VkSamplerAddressMode mode) {
