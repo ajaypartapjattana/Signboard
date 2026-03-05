@@ -1,52 +1,50 @@
 #include "rndr_context.h"
 
-rndr_context::rndr_context(const platform::primitive::display_window& window)
-	: m_instance(setup_instance()),
-	m_surface(setup_surface(window)), 
-	m_device(setup_device()), 
-	m_allocator(setup_allocator())
-{
-
+void rndr_context::create(const platform::primitive::display_window& window) {
+	VK_CHECK_VOID(setup_instance());
+	VK_CHECK_VOID(setup_surface(window));
+	VK_CHECK_VOID(setup_device());
+	VK_CHECK_VOID(setup_allocator());
 }
 
-rhi::core::instance rndr_context::setup_instance() {
-	rhi::procedure::instance_builder l_builder;
+VkResult rndr_context::setup_instance() noexcept {
+	rhi::procedure::instance_builder prcdr;
 
 	uint32_t ext_count = 0;
 	const char** exts = platform::core::context::native_extensions(ext_count);
 
 	for (uint32_t i = 0; i < ext_count; ++i) {
-		l_builder.addExtension(exts[i]);
+		prcdr.addExtension(exts[i]);
 	}
 
 #ifndef NDEBUG
-	l_builder.enableValidationLayer();
-	l_builder.addExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+	prcdr.enableValidationLayer();
+	prcdr.addExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
 
-	return l_builder.build();
+	return prcdr.build(m_instance);
 }
 
-rhi::core::surface rndr_context::setup_surface(const platform::primitive::display_window& window) {
-	rhi::procedure::surface_creator l_creator{ m_instance };
+VkResult rndr_context::setup_surface(const platform::primitive::display_window& window) noexcept {
+	rhi::procedure::surface_creator prcdr{ m_instance };
 
-	return l_creator.create_surface(window);
+	return prcdr.create_surface(window, m_surface);
 }
 
-rhi::core::device rndr_context::setup_device() {
-	rhi::procedure::device_builder l_builder{ m_instance };
+VkResult rndr_context::setup_device() noexcept {
+	rhi::procedure::device_builder prcdr{ m_instance };
 
-	l_builder.require_graphicsQueue();
-	l_builder.require_transferQueue();
-	l_builder.require_presentQueue(m_surface);
+	prcdr.require_graphicsQueue();
+	prcdr.require_transferQueue();
+	prcdr.require_presentQueue(m_surface);
 
-	l_builder.enable_samplerAnisotropy();
+	prcdr.enable_samplerAnisotropy();
 
-	return l_builder.build();
+	return prcdr.build(m_device);
 }
 
-rhi::core::allocator rndr_context::setup_allocator() {
-	rhi::procedure::allocator_creator l_creator{ m_instance, m_device };
+VkResult rndr_context::setup_allocator() noexcept {
+	rhi::procedure::allocator_creator prcdr{ m_instance, m_device };
 
-	return l_creator.create();
+	return prcdr.create(m_allocator);
 }

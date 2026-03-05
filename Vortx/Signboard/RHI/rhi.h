@@ -3,6 +3,7 @@
 #include "core/rhi_core.h"
 #include "primitive/rhi_primitive.h"
 #include "procedure/rhi_procedure.h"
+#include "detail/vkexcept.h"
 
 namespace rhi {
 	

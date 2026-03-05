@@ -264,6 +264,7 @@
     <ClInclude Include="Signboard\RHI\core\surface_vk.h" />
     <ClInclude Include="Signboard\RHI\core\swapchain.h" />
     <ClInclude Include="Signboard\RHI\core\swapchain_vk.h" />
+    <ClInclude Include="Signboard\RHI\detail\vkexcept.h" />
     <ClInclude Include="Signboard\RHI\detail\vma\vma.h" />
     <ClInclude Include="Signboard\RHI\primitives\image.h" />
     <ClInclude Include="Signboard\RHI\primitives\image_vk.h" />
