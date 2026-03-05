@@ -10,17 +10,16 @@ rndr_interface::rndr_interface(const rndr_context& context, uint32_t bufferedFra
 	r_device(rndr_context_Access::get_device(context)),
 	r_surface(rndr_context_Access::get_surface(context)),
 
-	m_bufferedFrameCount(std::max(2u, bufferedFrame_count)),
-	m_swapchain(setup_swapchain())
+	m_bufferedFrameCount(std::max(2u, bufferedFrame_count))
 {
-	rhi::procedure::commandPool_creator l_creator{ r_device };
+	rhi::procedure::commandPool_creator prcdr{ r_device };
 
-	const auto& poolRequirements = l_creator.get_poolRequirements();
+	const auto& poolRequirements = prcdr.get_poolRequirements();
 	const uint32_t poolCount = static_cast<uint32_t>(poolRequirements.size());
 
 	m_commandPools.resize(poolCount);
 	if (poolCount > 0) {
-		VkResult result = l_creator.create(m_commandPools.data(), poolCount);
+		VkResult result = prcdr.create(m_commandPools.data(), poolCount);
 		if (result != VK_SUCCESS)
 			throw std::runtime_error("FAILURE: commandPool_creation!");
 	}
@@ -41,14 +40,14 @@ rndr_interface::rndr_interface(const rndr_context& context, uint32_t bufferedFra
 
 
 
-rhi::core::swapchain rndr_interface::setup_swapchain() {
-	rhi::procedure::swapchain_builder l_builder{ r_device, r_surface };
+VkResult rndr_interface::construct_swapchain() {
+	rhi::procedure::swapchain_builder prcdr{ r_device, r_surface };
 
-	l_builder.prefer_format_srgb();
+	prcdr.prefer_format_srgb();
+	prcdr.set_imageCount(m_bufferedFrameCount);
+	prcdr.recycle_swapchain(m_swapchain);
 
-	l_builder.set_imageCount(m_bufferedFrameCount);
-
-	return l_builder.build();
+	return prcdr.build(m_swapchain);
 }
 
 uint32_t rndr_interface::find_graphicsPool_index() const noexcept {
@@ -99,12 +98,7 @@ void rndr_interface::set_bufferedFrame_count(uint32_t bufferedFrame_count) {
 
 	m_bufferedFrameCount = clampedFrames;
 
-	rhi::procedure::swapchain_builder l_builder{ r_device, r_surface };
-
-	l_builder.prefer_format_srgb();
-	l_builder.set_imageCount(m_bufferedFrameCount);
-	l_builder.recycle_swapchain(m_swapchain);
-	m_swapchain = l_builder.build();
+	construct_swapchain();
 
 	allocate_renderCommandBuffers(bufferedFrame_count);
 }

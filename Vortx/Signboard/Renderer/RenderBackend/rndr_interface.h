@@ -18,9 +18,8 @@ public:
 	void advance_frame() noexcept;
 
 private:
-	rhi::core::swapchain setup_swapchain();
+	VkResult construct_swapchain();
 
-private:
 	uint32_t find_graphicsPool_index() const noexcept;
 
 	void allocate_renderCommandBuffers(uint32_t buffered_frames);
@@ -33,7 +32,7 @@ private:
 private:
 	friend struct rndr_interface_Access;
 
-	rhi::core::swapchain m_swapchain;
+	rhi::core::swapchain m_swapchain{};
 
 	uint32_t m_bufferedFrameCount = 2;
 	uint32_t m_activeFrameIndex = 0;

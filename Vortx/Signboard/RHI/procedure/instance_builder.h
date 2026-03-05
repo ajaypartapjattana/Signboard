@@ -1,10 +1,11 @@
 #pragma once
 
-#include <vector>
-
 namespace rhi::core {
 	class instance;
 }
+
+#include <vector>
+#include <vulkan/vulkan.h>
 
 namespace rhi::procedure {
 
