@@ -1,20 +1,27 @@
 #pragma once
 
-namespace rhi::procedure {
-	class device_builder;
-}
-
 #include <vulkan/vulkan.h>
 #include <cstdint>
 #include <vector>
 
 namespace rhi::core {
 
+	class instance;
+	class surface;
+
 	struct device_vkAccess;
+	
+	struct device_CI {
+		std::vector<VkQueueFlagBits> requiredQueues;
+		rhi::core::surface* present_surface;
+
+		std::vector<const char*> requiredExtensions;
+		std::vector<VkBool32 VkPhysicalDeviceFeatures::*> requiredFeatures;
+	};
 
 	class device {
 	public:
-		device() noexcept;
+		device(const device_CI& createInfo, const instance& instance);
 
 		device(const device&) = delete;
 		device& operator=(const device&) = delete;
@@ -27,7 +34,9 @@ namespace rhi::core {
 		const VkDevice* native_device() const noexcept;
 
 	private:
-		friend class rhi::procedure::device_builder;
+		void build(const device_CI& createInfo, const VkInstance instance);
+
+	private:
 		friend struct device_vkAccess;
 
 		VkDevice m_device = VK_NULL_HANDLE;

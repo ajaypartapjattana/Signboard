@@ -1,12 +1,21 @@
 #include "surface.h"
 
 #include <vulkan/vulkan.h>
+#include <stdexcept>
+
+#include "instance_vk.h"
+#include "Signboard/Platform/primitive/display_window_glfwAccess.h"
 
 namespace rhi::core {
 
-	surface::surface() noexcept
-		: m_surface(VK_NULL_HANDLE), m_instance(VK_NULL_HANDLE)
+	surface::surface(const platform::primitive::display_window& window, const instance& instance)
+		: m_surface(VK_NULL_HANDLE), m_instance(rhi::core::instance_vkAccess::get(instance))
 	{
+		GLFWwindow* a_window = platform::primitive::display_window_glfwAccess::get(window);
+
+		VkResult result = glfwCreateWindowSurface(m_instance, a_window, nullptr, &m_surface);
+		if (result != VK_SUCCESS)
+			throw std::runtime_error("FAILURE: surface_creation!");
 
 	}
 

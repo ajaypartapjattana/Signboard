@@ -25,11 +25,7 @@ namespace rhi {
 	}
 
 	namespace procedure {
-		class instance_builder;
-		class surface_creator;
-		class device_builder;
 		class swapchain_builder;
-		class allocator_creator;
 		class commandPool_creator;
 
 		class commandBuffer_allocator;

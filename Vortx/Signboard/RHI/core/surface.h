@@ -1,18 +1,20 @@
 #pragma once
 
-namespace rhi::procedure {
-	class surface_creator;
+namespace platform::primitive {
+	class display_window;
 }
 
 #include <vulkan/vulkan.h>
 
 namespace rhi::core {
 
+	class instance;
+
 	struct surface_vkAccess;
 
 	class surface {
 	public:
-		surface() noexcept;
+		surface(const platform::primitive::display_window& window, const instance& instance);
 
 		surface(const surface&) = delete;
 		surface& operator=(const surface&) = delete;
@@ -25,7 +27,6 @@ namespace rhi::core {
 		const VkSurfaceKHR* native_surface() const noexcept;
 
 	private:
-		friend class rhi::procedure::surface_creator;
 		friend struct surface_vkAccess;
 
 		VkSurfaceKHR m_surface = VK_NULL_HANDLE;

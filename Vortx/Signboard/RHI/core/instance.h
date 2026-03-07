@@ -1,18 +1,21 @@
 #pragma once
 
-namespace rhi::procedure {
-	class instance_builder;
-}
-
 #include <vulkan/vulkan.h>
+#include <vector>
 
 namespace rhi::core {
 
 	struct instance_vkAccess;
+	
+	struct instance_CI {
+		std::vector<const char*> extensions;
+		std::vector<const char*> layers;
+		bool enable_validation = false;
+	};
 
 	class instance {
 	public:
-		instance() noexcept;
+		instance(const instance_CI& createInfo) noexcept;
 
 		instance(const instance&) = delete;
 		instance& operator=(const instance&) = delete;
@@ -22,10 +25,15 @@ namespace rhi::core {
 
 		~instance() noexcept;
 
-		const VkInstance* native_instance() const noexcept;
+		const VkInstance native_instance() const noexcept;
 
 	private:
-		friend class rhi::procedure::instance_builder;
+		void build(const instance_CI& createInfo);
+
+		bool validateExtension(const char* extName);
+		bool validateLayer(const char* layerName);
+
+	private:
 		friend struct instance_vkAccess;
 
 		VkInstance m_instance = VK_NULL_HANDLE;
