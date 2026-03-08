@@ -11,8 +11,8 @@
 
 namespace rhi::procedure {
 
-	pipeline_builder::pipeline_builder(const rhi::core::device& device, const rhi::core::swapchain& swapchain, const rhi::primitive::pipelineLayout& pipelineLayout)
-		: m_device(rhi::core::device_vkAccess::get(device)), m_layout(rhi::primitive::pipelineLayout_vkAccess::get(pipelineLayout)), m_viewportExtent(rhi::core::swapchain_vkAccess::get_extent(swapchain))
+	pipeline_builder::pipeline_builder(const rhi::core::device& device, const rhi::primitive::swapchain& swapchain, const rhi::primitive::pipelineLayout& pipelineLayout)
+		: m_device(rhi::core::device_vkAccess::get(device)), m_layout(rhi::primitive::pipelineLayout_vkAccess::get(pipelineLayout)), m_viewportExtent(rhi::primitive::swapchain_vkAccess::get_extent(swapchain))
 	{
 	
 	}
@@ -76,8 +76,8 @@ namespace rhi::procedure {
 		viewport.y = 0.0f;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
-		viewport.width = m_viewportExtent.width;
-		viewport.height = m_viewportExtent.height;
+		viewport.width = (float)m_viewportExtent.width;
+		viewport.height = (float)m_viewportExtent.height;
 
 		VkRect2D scissor{};
 		scissor.offset = { 0,0 };

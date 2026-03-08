@@ -2,7 +2,7 @@
 
 #include "swapchain.h"
 
-namespace rhi::core {
+namespace rhi::primitive {
 
 	struct swapchain_vkAccess {
 

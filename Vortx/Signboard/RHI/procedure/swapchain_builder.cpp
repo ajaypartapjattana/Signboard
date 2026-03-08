@@ -105,7 +105,7 @@ namespace rhi::procedure {
 		return *this;
 	}
 
-	 VkResult swapchain_builder::build(rhi::core::swapchain& target_swapchain) {
+	 VkResult swapchain_builder::build(rhi::primitive::swapchain& target_swapchain) {
 		if (available_surfaceFormat.empty() || available_presentMode.empty())
 			throw std::runtime_error("surface does not support swapchains!");
 
@@ -186,7 +186,7 @@ namespace rhi::procedure {
 		return result;
 	}
 
-	swapchain_builder& swapchain_builder::recycle_swapchain(const rhi::core::swapchain& sc) {
+	swapchain_builder& swapchain_builder::recycle_swapchain(const rhi::primitive::swapchain& sc) {
 		recycled_swapchain = sc.m_swapchain;
 		return *this;
 	}

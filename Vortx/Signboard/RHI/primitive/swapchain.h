@@ -7,7 +7,7 @@ namespace rhi::procedure {
 #include <vulkan/vulkan.h>
 #include <vector>
 
-namespace rhi::core {
+namespace rhi::primitive {
 
 	struct swapchain_vkAccess;
 
@@ -24,6 +24,7 @@ namespace rhi::core {
 		~swapchain() noexcept;
 
 		VkSwapchainKHR native_swapchain() const noexcept;
+		VkFormat native_format() const noexcept;
 
 	private:
 		friend class rhi::procedure::swapchain_builder;

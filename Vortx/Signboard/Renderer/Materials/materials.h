@@ -25,7 +25,7 @@ private:
 
 private:
 	const rhi::core::device& r_device;
-	const rhi::core::swapchain& r_swapchain;
+	const rhi::primitive::swapchain& r_swapchain;
 	const passes& r_passes;
 
 	rhi::primitive::pipelineLayout m_pipelineLayout;

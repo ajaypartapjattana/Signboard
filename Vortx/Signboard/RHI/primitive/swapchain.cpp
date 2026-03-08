@@ -1,6 +1,6 @@
 #include "swapchain.h"
 
-namespace rhi::core {
+namespace rhi::primitive {
 
 	swapchain::swapchain() noexcept
 		: m_swapchain(VK_NULL_HANDLE), m_format(VK_FORMAT_UNDEFINED), m_device(VK_NULL_HANDLE)
@@ -46,6 +46,10 @@ namespace rhi::core {
 
 	VkSwapchainKHR swapchain::native_swapchain() const noexcept {
 		return m_swapchain;
+	}
+
+	VkFormat swapchain::native_format() const noexcept {
+		return m_format;
 	}
 
 }

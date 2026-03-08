@@ -33,7 +33,7 @@ private:
 private:
 	friend struct rndr_interface_Access;
 
-	rhi::core::swapchain m_swapchain{};
+	rhi::primitive::swapchain m_swapchain{};
 
 	uint32_t m_bufferedFrameCount = 2;
 	uint32_t m_activeFrameIndex = 0;

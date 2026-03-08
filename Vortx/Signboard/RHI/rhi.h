@@ -8,23 +8,28 @@
 namespace rhi {
 	
 	namespace core {
+
 		class instance;
 		class surface;
 		class device;
-		class swapchain;
 		class allocator;
 		class commandPool;
+	
 	}
 
 	namespace primitive {
+	
 		class commandBuffer;
+		class swapchain;
 
 		class buffer;
 		class image;
 		class sampler;
+	
 	}
 
 	namespace procedure {
+	
 		class swapchain_builder;
 		class commandPool_creator;
 
@@ -32,6 +37,7 @@ namespace rhi {
 		class image_allocator;
 		class buffer_allocator;
 		class sampler_creator;
+	
 	}
 
 	namespace detail {

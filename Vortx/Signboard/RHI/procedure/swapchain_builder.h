@@ -2,9 +2,12 @@
 
 
 namespace rhi::core {
-	class swapchain;
 	class device;
 	class surface;
+}
+
+namespace rhi::primitive {
+	class swapchain;
 }
 
 #include <vulkan/vulkan.h>
@@ -25,9 +28,9 @@ namespace rhi::procedure {
 
 		swapchain_builder& allow_tearing(bool);
 
-		swapchain_builder& recycle_swapchain(const rhi::core::swapchain&);
+		swapchain_builder& recycle_swapchain(const rhi::primitive::swapchain&);
 
-		VkResult build(rhi::core::swapchain& target_swapchain);		
+		VkResult build(rhi::primitive::swapchain& target_swapchain);
 
 	private:
 		VkDevice m_device;

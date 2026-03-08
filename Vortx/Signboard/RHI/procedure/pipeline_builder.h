@@ -2,10 +2,11 @@
 
 namespace rhi::core {
 	class device;
-	class swapchain;
 }
 
 namespace rhi::primitive {
+	class swapchain;
+
 	class pipelineLayout;
 	class renderPass;
 	class pipeline;
@@ -20,7 +21,7 @@ namespace rhi::procedure {
 
 	class pipeline_builder {
 	public:
-		pipeline_builder(const rhi::core::device& device, const rhi::core::swapchain& swapchain, const rhi::primitive::pipelineLayout& pipelineLayout);
+		pipeline_builder(const rhi::core::device& device, const rhi::primitive::swapchain& swapchain, const rhi::primitive::pipelineLayout& pipelineLayout);
 
 		pipeline_builder& set_vertShader(const rhi::primitive::shader& shader) noexcept;
 		pipeline_builder& set_fragShader(const rhi::primitive::shader& shader) noexcept;
