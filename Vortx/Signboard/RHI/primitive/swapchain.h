@@ -5,6 +5,7 @@ namespace rhi::procedure {
 }
 
 #include <vulkan/vulkan.h>
+#include <vector>
 
 namespace rhi::core {
 
@@ -29,6 +30,9 @@ namespace rhi::core {
 		friend struct swapchain_vkAccess;
 
 		VkSwapchainKHR m_swapchain = VK_NULL_HANDLE;
+
+		std::vector<VkImage> m_images;
+		std::vector<VkImageView> m_views;
 		
 		VkFormat m_format = VK_FORMAT_UNDEFINED;
 		VkExtent2D m_extent{};

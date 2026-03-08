@@ -1,6 +1,5 @@
 #include "instance.h"
 
-#include "instance_builder.h"
 #include <stdexcept>
 
 namespace rhi::core {

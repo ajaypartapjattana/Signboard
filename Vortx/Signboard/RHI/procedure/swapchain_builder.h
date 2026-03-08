@@ -17,11 +17,8 @@ namespace rhi::procedure {
 	public:
 		swapchain_builder(const rhi::core::device& device, const rhi::core::surface& surface);
 
-		swapchain_builder& prefer_format_srgb();
-		swapchain_builder& prefer_format_unorm();
-
-		swapchain_builder& prefer_presentMode_MAILBOX();
-		swapchain_builder& prefer_presentMode_IMMEDIATE();
+		swapchain_builder& prefer_format(VkFormat format);
+		swapchain_builder& prefer_presentMode(VkPresentModeKHR presentMode);
 
 		swapchain_builder& set_extent(uint32_t w, uint32_t h);
 		swapchain_builder& set_imageCount(uint32_t count);
@@ -30,11 +27,7 @@ namespace rhi::procedure {
 
 		swapchain_builder& recycle_swapchain(const rhi::core::swapchain&);
 
-		VkResult build(rhi::core::swapchain& target_swapchain);
-
-	private:
-		swapchain_builder& prefer_format(VkFormat format);
-		swapchain_builder& prefer_presentMode(VkPresentModeKHR presentMode);
+		VkResult build(rhi::core::swapchain& target_swapchain);		
 
 	private:
 		VkDevice m_device;

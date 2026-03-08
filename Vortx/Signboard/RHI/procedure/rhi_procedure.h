@@ -5,7 +5,6 @@
 #include "commandBuffer_allocator.h"
 
 #include "image_allocator.h"
-#include "image_wrapper.h"
 #include "buffer_allocator.h"
 #include "sampler_creator.h"
 
@@ -22,7 +21,6 @@ namespace rhi::procedure {
 	class commandBuffer_allocator;
 
 	class image_allocator;
-	class image_wrapper;
 	class buffer_allocator;
 	class sampler_creator;
 

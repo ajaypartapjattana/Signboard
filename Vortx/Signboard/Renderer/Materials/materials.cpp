@@ -4,22 +4,24 @@
 
 #include "Signboard/Renderer/RenderBackend/rndr_context_Access.h"
 #include "Signboard/Renderer/RenderBackend/rndr_interface_Access.h"
+#include "Signboard/Renderer/Pass/passes.h"
 
 #include <vector>
 #include <stdexcept>
 
-materials::materials(const rndr_context& context, const rndr_interface& interface)
-	: r_device(rndr_context_Access::get_device(context)), r_swapchain(rndr_interface_Access::get_swapchain(interface))
+materials::materials(const rndr_context& context, const rndr_interface& interface, const passes& passes)
+	: r_device(rndr_context_Access::get_device(context)), r_swapchain(rndr_interface_Access::get_swapchain(interface)), r_passes(passes)
 {
 	rhi::procedure::pipelineLayout_builder layout_builder{ r_device };
 	layout_builder.build(m_pipelineLayout);
 }
 
-void materials::create_material(uint32_t targetPass_index, uint32_t subpass) {
-	material baseMat{};
+void materials::create_baseMaterial(uint32_t targetPass_index, uint32_t subpass) {
 
-	baseMat.targetPass_index = targetPass_index;
-	baseMat.targetSubpass_index = subpass;
+	m_baseMat.targetPass_index = targetPass_index;
+	m_baseMat.targetSubpass_index = subpass;
+
+	const rhi::primitive::renderPass& a_pass = r_passes.get_basePass();
 	
 	rhi::primitive::shader l_vertShader;
 	create_shader(l_vertShader, "shaders/base.vert.spv");
@@ -30,11 +32,12 @@ void materials::create_material(uint32_t targetPass_index, uint32_t subpass) {
 	rhi::procedure::pipeline_builder pipeline_builder{ r_device, r_swapchain, m_pipelineLayout };
 	pipeline_builder.set_vertShader(l_vertShader);
 	pipeline_builder.set_fragShader(l_fragShader);
-	pipeline_builder.set_targetPass();
-	pipeline_builder.build_graphicsPipeline(0, baseMat.pipeline);
+	pipeline_builder.set_targetPass(a_pass);
+	pipeline_builder.build_graphicsPipeline(0, m_baseMat.pipeline);
 
-	storage::vault_writeAccessor<material> writer{ m_vault };
-	writer.create(baseMat);
+
+	/*storage::vault_writeAccessor<material> writer{ m_vault };
+	writer.create(baseMat);*/
 	
 }
 

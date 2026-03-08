@@ -1,6 +1,7 @@
 #pragma once
 
 #include "commandBuffer.h"
+#include "swapchain.h"
 
 #include "buffer.h"
 #include "image.h"
@@ -16,6 +17,7 @@
 namespace rhi::primitive {
 
 	class commandBuffer;
+	class swapchain;
 
 	class buffer;
 	class image;

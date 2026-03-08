@@ -193,7 +193,6 @@
     <ClCompile Include="Signboard\RHI\procedure\commandBuffer_allocator.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\commandPool_creator.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\image_allocator.cpp" />
-    <ClCompile Include="Signboard\RHI\procedure\image_wrapper.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\pipelineLayout_builder.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\pipeline_builder.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\renderPass_builder.cpp" />
@@ -290,7 +289,6 @@
     <ClInclude Include="Signboard\RHI\procedure\commandBuffer_allocator.h" />
     <ClInclude Include="Signboard\RHI\procedure\commandPool_creator.h" />
     <ClInclude Include="Signboard\RHI\procedure\image_allocator.h" />
-    <ClInclude Include="Signboard\RHI\procedure\image_wrapper.h" />
     <ClInclude Include="Signboard\RHI\procedure\pipelineLayout_builder.h" />
     <ClInclude Include="Signboard\RHI\procedure\pipeline_builder.h" />
     <ClInclude Include="Signboard\RHI\procedure\renderPass_builder.h" />

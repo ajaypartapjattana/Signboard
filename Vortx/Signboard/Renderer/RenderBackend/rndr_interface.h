@@ -11,8 +11,7 @@ class rndr_interface {
 public:
 	rndr_interface(const rndr_context& context, uint32_t bufferedFrame_count = 2);
 
-	void rebuild_swapchain(const platform::primitive::display_window& window);
-
+	void refresh_swapchain();
 	void set_bufferedFrame_count(uint32_t bufferedFrame_count);
 	uint32_t get_bufferedFrame_count() const noexcept;
 

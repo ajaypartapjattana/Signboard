@@ -37,6 +37,9 @@ namespace rhi::core {
 	}
 
 	swapchain::~swapchain() noexcept {
+		for (VkImageView view : m_views)
+			vkDestroyImageView(m_device, view, nullptr);
+
 		if (m_swapchain)
 			vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
 	}

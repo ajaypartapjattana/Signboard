@@ -6,9 +6,11 @@
 class rndr_context;
 class rndr_interface;
 
+class passes;
+
 class materials {
 public:
-	materials(const rndr_context& context, const rndr_interface& interface);
+	materials(const rndr_context& context, const rndr_interface& interface, const passes& passes);
 
 	struct material {
 		uint32_t targetPass_index;
@@ -17,17 +19,18 @@ public:
 	};
 
 private:
-	void create_material(uint32_t targetPass_index, uint32_t subpass);
+	void create_baseMaterial(uint32_t targetPass_index, uint32_t subpass);
 
 	void create_shader(rhi::primitive::shader& tw_shader, const char* path);
 
 private:
 	const rhi::core::device& r_device;
 	const rhi::core::swapchain& r_swapchain;
+	const passes& r_passes;
 
 	rhi::primitive::pipelineLayout m_pipelineLayout;
 
-
+	material m_baseMat;
 	storage::vault<material> m_vault;
 
 };

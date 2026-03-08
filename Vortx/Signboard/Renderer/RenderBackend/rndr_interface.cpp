@@ -12,6 +12,8 @@ rndr_interface::rndr_interface(const rndr_context& context, uint32_t bufferedFra
 
 	m_bufferedFrameCount(std::max(2u, bufferedFrame_count))
 {
+	construct_swapchain();
+
 	rhi::procedure::commandPool_creator prcdr{ r_device };
 
 	const auto& poolRequirements = prcdr.get_poolRequirements();
@@ -38,12 +40,14 @@ rndr_interface::rndr_interface(const rndr_context& context, uint32_t bufferedFra
 	allocate_renderCommandBuffers(m_bufferedFrameCount);
 }
 
-
+void rndr_interface::refresh_swapchain() {
+	construct_swapchain();
+}
 
 VkResult rndr_interface::construct_swapchain() {
 	rhi::procedure::swapchain_builder prcdr{ r_device, r_surface };
 
-	prcdr.prefer_format_srgb();
+	prcdr.prefer_format(VK_FORMAT_B8G8R8A8_SRGB);
 	prcdr.set_imageCount(m_bufferedFrameCount);
 	prcdr.recycle_swapchain(m_swapchain);
 
@@ -99,7 +103,6 @@ void rndr_interface::set_bufferedFrame_count(uint32_t bufferedFrame_count) {
 	m_bufferedFrameCount = clampedFrames;
 
 	construct_swapchain();
-
 	allocate_renderCommandBuffers(bufferedFrame_count);
 }
 

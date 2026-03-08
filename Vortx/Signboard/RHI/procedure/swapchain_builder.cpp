@@ -1,6 +1,7 @@
 #include "swapchain_builder.h"
 
-#include "Signboard/RHI/core/swapchain.h"
+#include "Signboard/RHI/primitive/swapchain.h"
+
 #include "Signboard/RHI/core/device_vk.h"
 #include "Signboard/RHI/core/surface_vk.h"
 
@@ -27,20 +28,43 @@ namespace rhi::procedure {
 		vkGetPhysicalDeviceSurfacePresentModesKHR(m_phys, m_surface, &count, available_presentMode.data());
 	}
 
-	swapchain_builder& swapchain_builder::prefer_format_srgb() {
-		return prefer_format(VK_FORMAT_R8G8B8A8_SRGB);
+	swapchain_builder& swapchain_builder::prefer_format(VkFormat format) {
+		if (available_surfaceFormat.size() == 1 && available_surfaceFormat[0].format == VK_FORMAT_UNDEFINED) {
+			final_format.format = format;
+			final_format.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+			format_chosen = true;
+
+			return *this;
+		}
+
+		for (const auto& sf : available_surfaceFormat) {
+			if (sf.format == format) {
+				final_format = sf;
+				format_chosen = true;
+
+				return *this;
+			}
+		}
+
+		final_format = available_surfaceFormat[0];
+		format_chosen = true;
+		return *this;
 	}
 
-	swapchain_builder& swapchain_builder::prefer_format_unorm() {
-		return prefer_format(VK_FORMAT_R8G8B8A8_UNORM);
-	}
+	swapchain_builder& swapchain_builder::prefer_presentMode(VkPresentModeKHR presentMode) {
+		for (const VkPresentModeKHR& pm : available_presentMode) {
+			if (pm == presentMode) {
+				final_presentMode = pm;
+				presentMode_chosen = true;
 
-	swapchain_builder& swapchain_builder::prefer_presentMode_MAILBOX() {
-		return prefer_presentMode(VK_PRESENT_MODE_MAILBOX_KHR);
-	}
+				return *this;
+			}
+		}
 
-	swapchain_builder& swapchain_builder::prefer_presentMode_IMMEDIATE() {
-		return prefer_presentMode(VK_PRESENT_MODE_IMMEDIATE_KHR);
+		final_presentMode = VK_PRESENT_MODE_FIFO_KHR;
+		presentMode_chosen = true;
+
+		return *this;
 	}
 
 	swapchain_builder& swapchain_builder::set_extent(uint32_t w, uint32_t h) {
@@ -129,50 +153,41 @@ namespace rhi::procedure {
 		target_swapchain.m_extent = final_extent;
 		target_swapchain.m_device = m_device;
 
+		uint32_t count = 0;
+		vkGetSwapchainImagesKHR(m_device, vk_swapchain, &count, nullptr);
+
+		target_swapchain.m_images.resize(count);
+		vkGetSwapchainImagesKHR(m_device, vk_swapchain, &count, target_swapchain.m_images.data());
+
+		target_swapchain.m_views.resize(count);
+		for (uint32_t i = 0; i < count; ++i) {
+			VkImageViewCreateInfo viewInfo{};
+			viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+			viewInfo.image = target_swapchain.m_images[i];
+			viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+			viewInfo.format = final_format.format;
+
+			viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+			viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+			viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+			viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+			viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			viewInfo.subresourceRange.baseMipLevel = 0;
+			viewInfo.subresourceRange.levelCount = 1;
+			viewInfo.subresourceRange.baseArrayLayer = 0;
+			viewInfo.subresourceRange.layerCount = 1;
+
+			result = vkCreateImageView(m_device, &viewInfo, nullptr, &target_swapchain.m_views[i]);
+			if (result != VK_SUCCESS)
+				return result;
+		}
+
 		return result;
 	}
 
 	swapchain_builder& swapchain_builder::recycle_swapchain(const rhi::core::swapchain& sc) {
 		recycled_swapchain = sc.m_swapchain;
-		return *this;
-	}
-
-	swapchain_builder& swapchain_builder::prefer_format(VkFormat format) {
-		if (available_surfaceFormat.size() == 1 && available_surfaceFormat[0].format == VK_FORMAT_UNDEFINED) {
-			final_format.format = format;
-			final_format.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-			format_chosen = true;
-
-			return *this;
-		}
-
-		for (const auto& sf : available_surfaceFormat) {
-			if (sf.format == format) {
-				final_format = sf;
-				format_chosen = true;
-
-				return *this;
-			}
-		}
-
-		final_format = available_surfaceFormat[0];
-		format_chosen = true;
-		return *this;
-	}
-
-	swapchain_builder& swapchain_builder::prefer_presentMode(VkPresentModeKHR presentMode) {
-		for (const VkPresentModeKHR& pm : available_presentMode) {
-			if (pm == presentMode) {
-				final_presentMode = pm;
-				presentMode_chosen = true;
-
-				return *this;
-			}
-		}
-
-		final_presentMode = VK_PRESENT_MODE_FIFO_KHR;
-		presentMode_chosen = true;
-		
 		return *this;
 	}
 
