@@ -20,6 +20,7 @@ public:
 
 private:
 	VkResult construct_swapchain();
+	VkResult create_swapchainTargetFB();
 
 	uint32_t find_graphicsPool_index() const noexcept;
 

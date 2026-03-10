@@ -20,20 +20,16 @@ namespace rhi::procedure {
 		image_allocator(const image_allocator&) = delete;
 		image_allocator& operator=(const image_allocator&) = delete;
 
-		image_allocator& set_usage_colorAttachment();
-		image_allocator& set_usage_depthStencil();
-		image_allocator& set_usage_transferDst();
-		image_allocator& set_usage_sampled();
+		image_allocator& set_usage(VkImageUsageFlags usage) noexcept;
+		image_allocator& set_format(VkFormat format) noexcept;
+		image_allocator& set_aspect(VkImageAspectFlags aspect) noexcept;
 
-		image_allocator& set_format_R8G8B8A8();
+		image_allocator& set_extent(VkExtent2D extent) noexcept;
+		image_allocator& set_extent(VkExtent3D extent) noexcept;
 
-		image_allocator& set_extent(uint32_t w, uint32_t h);
-
-		VkResult allocate(rhi::primitive::image& targetImage);
+		VkResult allocate(rhi::primitive::image& targetImage) const;
 
 	private:
-		image_allocator& set_usage(VkImageUsageFlags usage);
-		image_allocator& set_format(VkFormat format);
 
 		void reset_allocatorState();
 

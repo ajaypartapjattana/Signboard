@@ -2,7 +2,6 @@
 
 namespace rhi::procedure {
 	class image_allocator;
-	class image_wrapper;
 }
 
 #include "Signboard/RHI/detail/vma/vma.h"
@@ -28,13 +27,13 @@ namespace rhi::primitive {
 
 	private:
 		friend class rhi::procedure::image_allocator;
-		friend class rhi::procedure::image_wrapper;
 		friend struct image_vkAccess;
 
 		VkImage m_image = VK_NULL_HANDLE;
 		VmaAllocation m_allocation = VK_NULL_HANDLE;
 		VkImageView m_view = VK_NULL_HANDLE;
 
+		VkExtent3D m_extent{};
 		VkFormat m_format = VK_FORMAT_UNDEFINED;
 
 		VkDevice m_device = VK_NULL_HANDLE;

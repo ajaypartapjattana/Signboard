@@ -14,45 +14,32 @@ namespace rhi::procedure {
 
 	}
 
-	image_allocator& image_allocator::set_usage_colorAttachment() {
-		final_aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-		return set_usage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-	}
-
-	image_allocator& image_allocator::set_usage_depthStencil() {
-		final_aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
-		return set_usage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
-	}
-
-	image_allocator& image_allocator::set_usage_sampled() {
-		return set_usage(VK_IMAGE_USAGE_SAMPLED_BIT);
-	}
-
-	image_allocator& image_allocator::set_usage_transferDst() {
-		return set_usage(VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-	}
-
-	image_allocator& image_allocator::set_format_R8G8B8A8() {
-		final_aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-		return set_format(VK_FORMAT_R8G8B8A8_UNORM);
-	}
-
-	image_allocator& image_allocator::set_extent(uint32_t w, uint32_t h) {
-		final_extent = { w, h, 1 };
-		return *this;
-	}
-
-	image_allocator& image_allocator::set_usage(VkImageUsageFlags usage) {
+	image_allocator& image_allocator::set_usage(VkImageUsageFlags usage) noexcept {
 		final_usage |= usage;
 		return *this;
 	}
 
-	image_allocator& image_allocator::set_format(VkFormat format) {
+	image_allocator& image_allocator::set_format(VkFormat format) noexcept {
 		final_format = format;
 		return *this;
 	}
 
-	VkResult image_allocator::allocate(rhi::primitive::image& image) {
+	image_allocator& image_allocator::set_aspect(VkImageAspectFlags aspect) noexcept {
+		final_aspect = aspect;
+		return *this;
+	}
+
+	image_allocator& image_allocator::set_extent(VkExtent2D extent) noexcept {
+		final_extent = { extent.width, extent.height, 1 };
+		return *this;
+	}
+
+	image_allocator& image_allocator::set_extent(VkExtent3D extent) noexcept {
+		final_extent = extent;
+		return *this;
+	}
+
+	VkResult image_allocator::allocate(rhi::primitive::image& target_image) const {
 		if (final_format == VK_FORMAT_UNDEFINED ||
 			final_usage == 0 ||
 			(final_extent.width == 0 || final_extent.height == 0) ||
@@ -101,12 +88,14 @@ namespace rhi::procedure {
 			return result;
 		}
 
-		rhi::primitive::image l_image;
-		l_image.m_image = vk_image;
-		l_image.m_allocation = vma_allocation;
-		l_image.m_view = vk_view;
-		l_image.m_device = m_device;
-		l_image.m_allocator = m_allocator;
+		target_image.m_image = vk_image;
+		target_image.m_allocation = vma_allocation;
+		target_image.m_view = vk_view;
+
+		target_image.m_extent = final_extent;
+
+		target_image.m_device = m_device;
+		target_image.m_allocator = m_allocator;
 
 		return result;
 	}

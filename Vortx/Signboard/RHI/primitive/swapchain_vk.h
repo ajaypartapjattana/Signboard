@@ -18,6 +18,10 @@ namespace rhi::primitive {
 			return s.m_extent;
 		}
 
+		static const std::vector<VkImageView>& get_views(const swapchain& s) noexcept {
+			return s.m_views;
+		}
+
 	};
 
 }

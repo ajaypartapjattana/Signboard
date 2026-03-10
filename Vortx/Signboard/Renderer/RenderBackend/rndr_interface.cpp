@@ -54,6 +54,12 @@ VkResult rndr_interface::construct_swapchain() {
 	return prcdr.build(m_swapchain);
 }
 
+VkResult rndr_interface::create_swapchainTargetFB() {
+	rhi::procedure::framebuffer_creator prcdr{ r_device };
+
+	//prcdr.bind_renderpass(); ---> [need to finalize render pass access for the base interface to continue ->]
+}
+
 uint32_t rndr_interface::find_graphicsPool_index() const noexcept {
 	auto it = std::find_if(
 		m_commandPoolBindings.begin(),

@@ -4,6 +4,8 @@
 #include "commandPool_creator.h"
 #include "commandBuffer_allocator.h"
 
+#include "framebuffer_creator.h"
+
 #include "image_allocator.h"
 #include "buffer_allocator.h"
 #include "sampler_creator.h"
@@ -19,6 +21,8 @@ namespace rhi::procedure {
 	class swapchain_builder;
 	class commandPool_creator;
 	class commandBuffer_allocator;
+
+	class framebuffer_creator;
 
 	class image_allocator;
 	class buffer_allocator;
