@@ -11,23 +11,27 @@ rndr_interface::rndr_interface(const rndr_context& context, const rndr_presentat
 	: 
 	r_device(rndr_context_Access::get_device(context)),
 	r_surface(rndr_context_Access::get_surface(context)),
+
 	r_swapchain(rndr_presentation_Access::get_swapchain(presentation)),
 
 	rm_primaryPass(passes_Access::get_primiaryPass(passes))
 {
-	create_swapchainTargetFB();
+	summon_commandPools();
+	m_graphicsPoolIndex = find_graphicsPool_index();
 
+	configure_bufferedFrames();
+}
+
+VkResult rndr_interface::summon_commandPools() {
 	rhi::procedure::commandPool_creator prcdr{ r_device };
 
 	const auto& poolRequirements = prcdr.get_poolRequirements();
 	const uint32_t poolCount = static_cast<uint32_t>(poolRequirements.size());
 
 	m_commandPools.resize(poolCount);
-	if (poolCount > 0) {
-		VkResult result = prcdr.create(m_commandPools.data(), poolCount);
-		if (result != VK_SUCCESS)
-			throw std::runtime_error("FAILURE: commandPool_creation!");
-	}
+	VkResult result = prcdr.create(m_commandPools.data(), poolCount);
+	if (result != VK_SUCCESS)
+		return result;
 
 	m_commandPoolBindings.reserve(poolRequirements.size());
 	for (uint32_t i = 0; i < poolCount; ++i) {
@@ -36,22 +40,10 @@ rndr_interface::rndr_interface(const rndr_context& context, const rndr_presentat
 			poolRequirements[i].family,
 			poolRequirements[i].capabilities,
 			poolRequirements[i].present_supported
-		});
+			});
 	}
 
-	m_graphicsPoolIndex = find_graphicsPool_index();
-	allocate_renderCommandBuffers(bufferedFrame_count);
-}
-
-VkResult rndr_interface::create_swapchainTargetFB() {
-	rhi::procedure::framebuffer_creator prcdr{ r_device };
-
-	prcdr.bind_renderpass(rm_primaryPass);
-
-	prcdr.create_swapchainTarget_framebuffer(r_swapchain, &bufferedFrame_count, nullptr);
-
-	m_scBuffers.resize(bufferedFrame_count);
-	return prcdr.create_swapchainTarget_framebuffer(r_swapchain, &bufferedFrame_count, m_scBuffers.data());
+	return VK_SUCCESS;
 }
 
 uint32_t rndr_interface::find_graphicsPool_index() const noexcept {
@@ -69,11 +61,24 @@ uint32_t rndr_interface::find_graphicsPool_index() const noexcept {
 	return it->poolIndex;
 }
 
-void rndr_interface::allocate_renderCommandBuffers(uint32_t bufferedFrame_count) {
-	release_renderCommandBuffers();
+void rndr_interface::configure_bufferedFrames() {
+	create_primaryPass_framebuffers();
+	allocate_renderCommandBuffers();
+}
 
-	if (bufferedFrame_count == 0)
-		return;
+VkResult rndr_interface::create_primaryPass_framebuffers() {
+	rhi::procedure::framebuffer_creator prcdr{ r_device };
+
+	prcdr.bind_renderpass(rm_primaryPass);
+
+	prcdr.create_swapchainTarget_framebuffer(r_swapchain, &bufferedFrame_count, nullptr);
+
+	m_primaryFramebuffers.resize(bufferedFrame_count);
+	return prcdr.create_swapchainTarget_framebuffer(r_swapchain, &bufferedFrame_count, m_primaryFramebuffers.data());
+}
+
+void rndr_interface::allocate_renderCommandBuffers() {
+	release_renderCommandBuffers();
 
 	if (m_commandPools.empty())
 		return;
@@ -93,20 +98,6 @@ void rndr_interface::release_renderCommandBuffers() noexcept {
 
 	// --- incomplete here! [add free/release capability to the commandBuffer_allocator before proceeding->]
 
-}
-
-void rndr_interface::set_bufferedFrame_count(uint32_t bufferedFrame_count) {
-	uint32_t clampedFrames = std::max(2u, bufferedFrame_count);
-	if (clampedFrames == bufferedFrame_count)
-		return;
-
-	bufferedFrame_count = clampedFrames;
-
-	allocate_renderCommandBuffers(bufferedFrame_count);
-}
-
-uint32_t rndr_interface::get_bufferedFrame_count() const noexcept {
-	return bufferedFrame_count;
 }
 
 rhi::primitive::commandBuffer& rndr_interface::active_commandBuffer() {

@@ -31,7 +31,7 @@ rhi::core::instance_CI rndr_context::get_instanceCI() noexcept {
 rhi::core::device_CI rndr_context::get_deviceCI() noexcept {
 	rhi::core::device_CI ci{};
 
-	ci.requiredQueues = { VK_QUEUE_GRAPHICS_BIT };
+	ci.requiredQueues = { VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_TRANSFER_BIT };
 	ci.present_surface = &m_surface;
 	ci.requiredFeatures = { &VkPhysicalDeviceFeatures::samplerAnisotropy };
 

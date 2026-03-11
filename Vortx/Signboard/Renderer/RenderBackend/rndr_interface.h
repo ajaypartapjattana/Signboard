@@ -13,18 +13,18 @@ class rndr_interface {
 public:
 	rndr_interface(const rndr_context& context, const rndr_presentation& presentation, const passes& passes);
 
-	void set_bufferedFrame_count(uint32_t bufferedFrame_count);
-	uint32_t get_bufferedFrame_count() const noexcept;
+	void configure_bufferedFrames();
 
 	rhi::primitive::commandBuffer& active_commandBuffer();
 	void advance_frame() noexcept;
 
 private:
-	VkResult create_swapchainTargetFB();
+	VkResult summon_commandPools();
+	VkResult create_primaryPass_framebuffers();
 
 	uint32_t find_graphicsPool_index() const noexcept;
 
-	void allocate_renderCommandBuffers(uint32_t buffered_frames);
+	void allocate_renderCommandBuffers();
 	void release_renderCommandBuffers() noexcept;
 
 private:
@@ -35,7 +35,8 @@ private:
 	const rhi::primitive::swapchain& r_swapchain;
 
 	const rhi::primitive::renderPass& rm_primaryPass;
-	std::vector<rhi::primitive::framebuffer> m_scBuffers;
+
+	std::vector<rhi::primitive::framebuffer> m_primaryFramebuffers;
 
 	uint32_t bufferedFrame_count = 2;
 	uint32_t m_activeFrameIndex = 0;

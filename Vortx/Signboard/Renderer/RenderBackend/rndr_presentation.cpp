@@ -13,7 +13,11 @@ rndr_presentation::rndr_presentation(const rndr_context& ctx, const uint32_t buf
 }
 
 void rndr_presentation::update_bufferedFrameCount(const uint32_t count) {
-	bufferedFrame_count = count;
+	uint32_t clampedFrames = std::max(2u, bufferedFrame_count);
+	if (clampedFrames == bufferedFrame_count)
+		return;
+
+	bufferedFrame_count = clampedFrames;
 	construct_swapchain();
 }
 
