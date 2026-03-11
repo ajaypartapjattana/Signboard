@@ -8,6 +8,8 @@
 #include "sampler.h"
 
 #include "renderPass.h"
+#include "framebuffer.h"
+
 #include "descriptorLayout.h"
 #include "pushConstantRange.h"
 #include "pipelineLayout.h"
@@ -24,6 +26,8 @@ namespace rhi::primitive {
 	class sampler;
 
 	class renderPass;
+	class framebuffer;
+
 	class descriptorLayout;
 	class pushConstantRange;
 	class pipelineLayout;

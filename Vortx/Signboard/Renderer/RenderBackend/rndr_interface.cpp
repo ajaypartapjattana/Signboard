@@ -1,18 +1,21 @@
 #include "rndr_interface.h"
 
 #include "rndr_context_Access.h"
+#include "rndr_presentation_Access.h"
+#include "Signboard/Renderer/Pass/passes_Access.h"
 
 #include <algorithm>
 #include <stdexcept>
 
-rndr_interface::rndr_interface(const rndr_context& context, uint32_t bufferedFrame_count)
+rndr_interface::rndr_interface(const rndr_context& context, const rndr_presentation& presentation, const passes& passes)
 	: 
 	r_device(rndr_context_Access::get_device(context)),
 	r_surface(rndr_context_Access::get_surface(context)),
+	r_swapchain(rndr_presentation_Access::get_swapchain(presentation)),
 
-	m_bufferedFrameCount(std::max(2u, bufferedFrame_count))
+	rm_primaryPass(passes_Access::get_primiaryPass(passes))
 {
-	construct_swapchain();
+	create_swapchainTargetFB();
 
 	rhi::procedure::commandPool_creator prcdr{ r_device };
 
@@ -37,27 +40,18 @@ rndr_interface::rndr_interface(const rndr_context& context, uint32_t bufferedFra
 	}
 
 	m_graphicsPoolIndex = find_graphicsPool_index();
-	allocate_renderCommandBuffers(m_bufferedFrameCount);
-}
-
-void rndr_interface::refresh_swapchain() {
-	construct_swapchain();
-}
-
-VkResult rndr_interface::construct_swapchain() {
-	rhi::procedure::swapchain_builder prcdr{ r_device, r_surface };
-
-	prcdr.prefer_format(VK_FORMAT_B8G8R8A8_SRGB);
-	prcdr.set_imageCount(m_bufferedFrameCount);
-	prcdr.recycle_swapchain(m_swapchain);
-
-	return prcdr.build(m_swapchain);
+	allocate_renderCommandBuffers(bufferedFrame_count);
 }
 
 VkResult rndr_interface::create_swapchainTargetFB() {
 	rhi::procedure::framebuffer_creator prcdr{ r_device };
 
-	//prcdr.bind_renderpass(); ---> [need to finalize render pass access for the base interface to continue ->]
+	prcdr.bind_renderpass(rm_primaryPass);
+
+	prcdr.create_swapchainTarget_framebuffer(r_swapchain, &bufferedFrame_count, nullptr);
+
+	m_scBuffers.resize(bufferedFrame_count);
+	return prcdr.create_swapchainTarget_framebuffer(r_swapchain, &bufferedFrame_count, m_scBuffers.data());
 }
 
 uint32_t rndr_interface::find_graphicsPool_index() const noexcept {
@@ -103,17 +97,16 @@ void rndr_interface::release_renderCommandBuffers() noexcept {
 
 void rndr_interface::set_bufferedFrame_count(uint32_t bufferedFrame_count) {
 	uint32_t clampedFrames = std::max(2u, bufferedFrame_count);
-	if (clampedFrames == m_bufferedFrameCount)
+	if (clampedFrames == bufferedFrame_count)
 		return;
 
-	m_bufferedFrameCount = clampedFrames;
+	bufferedFrame_count = clampedFrames;
 
-	construct_swapchain();
 	allocate_renderCommandBuffers(bufferedFrame_count);
 }
 
 uint32_t rndr_interface::get_bufferedFrame_count() const noexcept {
-	return m_bufferedFrameCount;
+	return bufferedFrame_count;
 }
 
 rhi::primitive::commandBuffer& rndr_interface::active_commandBuffer() {
@@ -121,8 +114,8 @@ rhi::primitive::commandBuffer& rndr_interface::active_commandBuffer() {
 }
 
 void rndr_interface::advance_frame() noexcept {
-	if (m_bufferedFrameCount == 0)
+	if (bufferedFrame_count == 0)
 		return;
 
-	m_activeFrameIndex = (m_activeFrameIndex + 1) % m_bufferedFrameCount;
+	m_activeFrameIndex = (m_activeFrameIndex + 1) % bufferedFrame_count;
 }

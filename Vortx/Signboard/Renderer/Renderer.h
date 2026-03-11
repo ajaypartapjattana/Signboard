@@ -15,18 +15,17 @@ public:
 	void render();
 
 private:
-
 	bool prepareFrame();
 	void renderFrame();
 	void endFrame();
 
-	void resize();
-
 private:
 	rndr_context m_context;
-	rndr_interface m_interface;
+	rndr_presentation m_presentation;
 
 	passes m_passes;
 	materials m_materials;
+
+	rndr_interface m_interface;
 
 };

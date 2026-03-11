@@ -50,6 +50,10 @@ namespace rhi::procedure {
 		createInfo.layers = am_bufferExtent.depth;
 
 		VkResult result = vkCreateFramebuffer(am_device, &createInfo, nullptr, &target_framebuffer.m_framebuffer);
+		if (result != VK_SUCCESS)
+			return result;
+
+		target_framebuffer.m_device = am_device;
 
 		m_attachments.clear();
 		return result;
@@ -61,7 +65,7 @@ namespace rhi::procedure {
 		
 		const std::vector<VkImageView>& a_swapchainViews = rhi::primitive::swapchain_vkAccess::get_views(swapchain);
 		const uint32_t swapchainView_count = static_cast<uint32_t>(a_swapchainViews.size());
-		if (*framebuffer_count != swapchainView_count) {
+		if (!target_framebuffer) {
 			*framebuffer_count = swapchainView_count;
 			return VK_INCOMPLETE;
 		}
@@ -89,6 +93,8 @@ namespace rhi::procedure {
 				}
 				return result;
 			}
+			
+			target_framebuffer[i].m_device = am_device;
 		}
 
 		return VK_SUCCESS;

@@ -1,17 +1,13 @@
 #include "passes.h"
 
 #include "Signboard/Renderer/RenderBackend/rndr_context_Access.h"
-#include "Signboard/Renderer/RenderBackend/rndr_interface_Access.h"
+#include "Signboard/Renderer/RenderBackend/rndr_presentation_Access.h"
 
-passes::passes(const rndr_context& context, const rndr_interface& interface) 
+passes::passes(const rndr_context& context, const rndr_presentation& presentation) 
 	: r_device(rndr_context_Access::get_device(context)),
-	r_swapchain(rndr_interface_Access::get_swapchain(interface))
+	r_swapchain(rndr_presentation_Access::get_swapchain(presentation))
 {
 	setup_basePass();
-}
-
-const rhi::primitive::renderPass& passes::get_basePass() const noexcept {
-	return m_basePass;
 }
 
 void passes::setup_basePass() {
@@ -24,5 +20,5 @@ void passes::setup_basePass() {
 	desc.usageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 	builder.add_colorAttachment(nullptr, desc);
-	builder.build_graphicsPass(m_basePass);
+	builder.build_graphicsPass(m_primiaryPass);
 }

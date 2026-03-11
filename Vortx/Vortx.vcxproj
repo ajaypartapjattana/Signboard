@@ -170,6 +170,7 @@
     <ClCompile Include="Signboard\Renderer\Pass\passes.cpp" />
     <ClCompile Include="Signboard\Renderer\RenderBackend\rndr_interface.cpp" />
     <ClCompile Include="Signboard\Renderer\RenderBackend\rndr_context.cpp" />
+    <ClCompile Include="Signboard\Renderer\RenderBackend\rndr_presentation.cpp" />
     <ClCompile Include="Signboard\Renderer\renderTarget\target_surface.cpp" />
     <ClCompile Include="Signboard\Resources\res_images.cpp" />
     <ClCompile Include="Signboard\RHI\core\commandPool.cpp" />
@@ -244,11 +245,14 @@
     <ClInclude Include="Signboard\Platform\procedure\window_eventHandler.h" />
     <ClInclude Include="Signboard\Renderer\Materials\materials.h" />
     <ClInclude Include="Signboard\Renderer\Pass\passes.h" />
+    <ClInclude Include="Signboard\Renderer\Pass\passes_Access.h" />
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_Backend.h" />
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_interface.h" />
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_context.h" />
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_context_Access.h" />
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_interface_Access.h" />
+    <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_presentation.h" />
+    <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_presentation_Access.h" />
     <ClInclude Include="Signboard\Renderer\renderTarget\target_surface.h" />
     <ClInclude Include="Signboard\Resources\res_images.h" />
     <ClInclude Include="Signboard\RHI\core\commandPool_vk.h" />

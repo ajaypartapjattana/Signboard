@@ -3,14 +3,17 @@
 #include "Signboard/Assets/io/io.h"
 
 #include "Signboard/Renderer/RenderBackend/rndr_context_Access.h"
-#include "Signboard/Renderer/RenderBackend/rndr_interface_Access.h"
-#include "Signboard/Renderer/Pass/passes.h"
+#include "Signboard/Renderer/RenderBackend/rndr_presentation_Access.h"
+#include "Signboard/Renderer/Pass/passes_Access.h"
 
 #include <vector>
 #include <stdexcept>
 
-materials::materials(const rndr_context& context, const rndr_interface& interface, const passes& passes)
-	: r_device(rndr_context_Access::get_device(context)), r_swapchain(rndr_interface_Access::get_swapchain(interface)), r_passes(passes)
+materials::materials(const rndr_context& context, const rndr_presentation& presentation, const passes& passes)
+	: 
+	r_device(rndr_context_Access::get_device(context)), 
+	r_swapchain(rndr_presentation_Access::get_swapchain(presentation)), 
+	r_passes(passes)
 {
 	rhi::procedure::pipelineLayout_builder layout_builder{ r_device };
 	layout_builder.build(m_pipelineLayout);
@@ -21,7 +24,7 @@ void materials::create_baseMaterial(uint32_t targetPass_index, uint32_t subpass)
 	m_baseMat.targetPass_index = targetPass_index;
 	m_baseMat.targetSubpass_index = subpass;
 
-	const rhi::primitive::renderPass& a_pass = r_passes.get_basePass();
+	const rhi::primitive::renderPass& a_pass = passes_Access::get_primiaryPass(r_passes);
 	
 	rhi::primitive::shader l_vertShader;
 	create_shader(l_vertShader, "shaders/base.vert.spv");

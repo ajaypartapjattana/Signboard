@@ -4,13 +4,13 @@
 #include "Signboard/Core/Containers/storage/storage.h"
 
 class rndr_context;
-class rndr_interface;
+class rndr_presentation;
 
 class passes;
 
 class materials {
 public:
-	materials(const rndr_context& context, const rndr_interface& interface, const passes& passes);
+	materials(const rndr_context& context, const rndr_presentation& presentation, const passes& passes);
 
 	struct material {
 		uint32_t targetPass_index;
