@@ -140,6 +140,7 @@ namespace rhi::procedure {
 		VkResult result =  vkCreateGraphicsPipelines(m_device, nullptr, 1, &pipeInfo, nullptr, &vk_pipeline);
 
 		tw_pipeline.m_pipeline = vk_pipeline;
+		tw_pipeline.m_type = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		tw_pipeline.m_device = m_device;
 
 		return result;

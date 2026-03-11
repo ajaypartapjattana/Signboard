@@ -53,6 +53,8 @@ namespace rhi::procedure {
 		if (result != VK_SUCCESS)
 			return result;
 
+		target_framebuffer.m_nativePass = rm_toBindPass;
+		target_framebuffer.m_extent = { am_bufferExtent.width, am_bufferExtent.height };
 		target_framebuffer.m_device = am_device;
 
 		m_attachments.clear();
@@ -94,6 +96,8 @@ namespace rhi::procedure {
 				return result;
 			}
 			
+			target_framebuffer[i].m_nativePass = rm_toBindPass;
+			target_framebuffer[i].m_extent = a_swapchainExtent;
 			target_framebuffer[i].m_device = am_device;
 		}
 

@@ -10,6 +10,10 @@ namespace rhi::primitive {
 			return p.m_pipeline;
 		}
 
+		static VkPipelineBindPoint get_type(const pipeline& p) noexcept {
+			return p.m_type;
+		}
+
 	};
 
 }

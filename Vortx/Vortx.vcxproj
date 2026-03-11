@@ -192,6 +192,7 @@
     <ClCompile Include="Signboard\RHI\primitive\sampler.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\shader.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\buffer_allocator.cpp" />
+    <ClCompile Include="Signboard\RHI\procedure\cmdbuffer_recorder.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\commandBuffer_allocator.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\commandPool_creator.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\framebuffer_creator.cpp" />
@@ -294,6 +295,7 @@
     <ClInclude Include="Signboard\RHI\primitive\shader_vk.h" />
     <ClInclude Include="Signboard\RHI\procedure\bitops.h" />
     <ClInclude Include="Signboard\RHI\procedure\buffer_allocator.h" />
+    <ClInclude Include="Signboard\RHI\procedure\cmdbuffer_recorder.h" />
     <ClInclude Include="Signboard\RHI\procedure\commandBuffer_allocator.h" />
     <ClInclude Include="Signboard\RHI\procedure\commandPool_creator.h" />
     <ClInclude Include="Signboard\RHI\procedure\framebuffer_creator.h" />

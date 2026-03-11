@@ -29,6 +29,7 @@ namespace rhi::primitive {
 		friend struct pipeline_vkAccess;
 
 		VkPipeline m_pipeline = VK_NULL_HANDLE;
+		VkPipelineBindPoint m_type = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
 		VkDevice m_device = VK_NULL_HANDLE;
 
