@@ -3,17 +3,19 @@
 namespace rhi::primitive {
 
 	pipeline::pipeline() noexcept 
-		: m_pipeline(VK_NULL_HANDLE), m_device(VK_NULL_HANDLE)
+		: 
+		m_pipeline(VK_NULL_HANDLE), 
+		m_device(VK_NULL_HANDLE)
 	{
 
 	}
 
-	pipeline::pipeline(pipeline&& other) noexcept {
-		m_pipeline = other.m_pipeline;
-		m_device = other.m_device;
-
+	pipeline::pipeline(pipeline&& other) noexcept
+		:
+		m_pipeline(other.m_pipeline),
+		m_device(other.m_device)
+	{
 		other.m_pipeline = VK_NULL_HANDLE;
-		other.m_device = VK_NULL_HANDLE;
 	}
 
 	pipeline& pipeline::operator=(pipeline&& other) noexcept {
@@ -27,7 +29,6 @@ namespace rhi::primitive {
 		m_device = other.m_device;
 
 		other.m_pipeline = VK_NULL_HANDLE;
-		other.m_device = VK_NULL_HANDLE;
 
 		return *this;
 	}

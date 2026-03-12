@@ -5,6 +5,7 @@
 #include "commandBuffer_allocator.h"
 
 #include "framebuffer_creator.h"
+#include "cmdbuffer_recorder.h"
 
 #include "image_allocator.h"
 #include "buffer_allocator.h"
@@ -23,6 +24,7 @@ namespace rhi::procedure {
 	class commandBuffer_allocator;
 
 	class framebuffer_creator;
+	class cmdbuffer_recorder;
 
 	class image_allocator;
 	class buffer_allocator;

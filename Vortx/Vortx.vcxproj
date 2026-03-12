@@ -168,6 +168,7 @@
     <ClCompile Include="Signboard\Platform\procedure\window_eventHandler.cpp" />
     <ClCompile Include="Signboard\Renderer\Materials\materials.cpp" />
     <ClCompile Include="Signboard\Renderer\Pass\passes.cpp" />
+    <ClCompile Include="Signboard\Renderer\RenderBackend\rndr_framedraw.cpp" />
     <ClCompile Include="Signboard\Renderer\RenderBackend\rndr_interface.cpp" />
     <ClCompile Include="Signboard\Renderer\RenderBackend\rndr_context.cpp" />
     <ClCompile Include="Signboard\Renderer\RenderBackend\rndr_presentation.cpp" />
@@ -179,7 +180,9 @@
     <ClCompile Include="Signboard\RHI\core\allocator.cpp" />
     <ClCompile Include="Signboard\RHI\core\allocator_vma.h" />
     <ClCompile Include="Signboard\RHI\core\surface.cpp" />
+    <ClCompile Include="Signboard\RHI\primitive\fence.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\framebuffer.cpp" />
+    <ClCompile Include="Signboard\RHI\primitive\semaphore.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\swapchain.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\buffer.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\commandBuffer.cpp" />
@@ -248,6 +251,7 @@
     <ClInclude Include="Signboard\Renderer\Pass\passes.h" />
     <ClInclude Include="Signboard\Renderer\Pass\passes_Access.h" />
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_Backend.h" />
+    <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_framedraw.h" />
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_interface.h" />
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_context.h" />
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_context_Access.h" />
@@ -264,8 +268,10 @@
     <ClInclude Include="Signboard\RHI\core\rhi_core.h" />
     <ClInclude Include="Signboard\RHI\core\surface.h" />
     <ClInclude Include="Signboard\RHI\core\surface_vk.h" />
+    <ClInclude Include="Signboard\RHI\primitive\fence.h" />
     <ClInclude Include="Signboard\RHI\primitive\framebuffer.h" />
     <ClInclude Include="Signboard\RHI\primitive\framebuffer_vkAccess.h" />
+    <ClInclude Include="Signboard\RHI\primitive\semaphore.h" />
     <ClInclude Include="Signboard\RHI\primitive\swapchain.h" />
     <ClInclude Include="Signboard\RHI\primitive\swapchain_vk.h" />
     <ClInclude Include="Signboard\RHI\detail\vkexcept.h" />
