@@ -10,6 +10,9 @@
 #include "renderPass.h"
 #include "framebuffer.h"
 
+#include "semaphore.h"
+#include "fence.h"
+
 #include "descriptorLayout.h"
 #include "pushConstantRange.h"
 #include "pipelineLayout.h"

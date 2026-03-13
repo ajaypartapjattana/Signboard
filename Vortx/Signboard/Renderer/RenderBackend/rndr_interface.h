@@ -4,24 +4,20 @@
 #include "Signboard/RHI/rhi.h"
 
 class rndr_context;
-class rndr_presentation;
-class passes;
 
 struct rndr_interface_Access;
 
 class rndr_interface {
 public:
-	rndr_interface(const rndr_context& context, const rndr_presentation& presentation, const passes& passes);
+	rndr_interface(const rndr_context& context);
 
-	void configure_bufferedFrames();
+	void configure_CMDbuffers();
 
 	rhi::primitive::commandBuffer& active_commandBuffer();
 	void advance_frame() noexcept;
 
 private:
 	VkResult summon_commandPools();
-	VkResult create_primaryPass_framebuffers();
-
 	uint32_t find_graphicsPool_index() const noexcept;
 
 	void allocate_renderCommandBuffers();
@@ -32,12 +28,7 @@ private:
 
 	const rhi::core::device& r_device;
 	const rhi::core::surface& r_surface;
-	const rhi::primitive::swapchain& r_swapchain;
-
-	const rhi::primitive::renderPass& rm_primaryPass;
-
-	std::vector<rhi::primitive::framebuffer> m_primaryFramebuffers;
-
+	
 	uint32_t bufferedFrame_count = 2;
 	uint32_t m_activeFrameIndex = 0;
 

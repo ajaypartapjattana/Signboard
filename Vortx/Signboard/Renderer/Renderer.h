@@ -27,5 +27,6 @@ private:
 	materials m_materials;
 
 	rndr_interface m_interface;
+	rndr_framedraw m_framedraw;
 
 };

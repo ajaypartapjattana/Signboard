@@ -1,13 +1,18 @@
 #include "semaphore.h"
 
+#include "Signboard/RHI/core/device_vk.h"
+
 namespace rhi::primitive {
 
-	semaphore::semaphore() noexcept
+	semaphore::semaphore(const rhi::core::device& device) noexcept
 		:
 		m_semaphore(VK_NULL_HANDLE),
-		m_device(VK_NULL_HANDLE)
+		m_device(rhi::core::device_vkAccess::get(device))
 	{
-
+		VkSemaphoreCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+		
+		vkCreateSemaphore(m_device, &createInfo, nullptr, &m_semaphore);
 	}
 
 	semaphore::semaphore(semaphore&& other) noexcept 

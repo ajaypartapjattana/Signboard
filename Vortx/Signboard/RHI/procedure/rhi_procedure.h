@@ -11,6 +11,8 @@
 #include "buffer_allocator.h"
 #include "sampler_creator.h"
 
+#include "swapchain_handler.h"
+
 #include "renderPass_builder.h"
 #include "pipelineLayout_builder.h"
 #include "shader_wrapper.h"
@@ -29,6 +31,8 @@ namespace rhi::procedure {
 	class image_allocator;
 	class buffer_allocator;
 	class sampler_creator;
+
+	class swapchain_handler;
 
 	class renderPass_builder;
 	class pipelineLayout_builder;

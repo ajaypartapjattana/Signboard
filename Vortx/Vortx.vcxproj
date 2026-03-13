@@ -212,6 +212,7 @@
     <ClCompile Include="Signboard\Renderer\Mesh\VertexLayout.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Signboard\RHI\common\DeviceTypes.h" />
+    <ClCompile Include="Signboard\RHI\procedure\swapchain_handler.cpp" />
     <ClCompile Include="Signboard\Signboard.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -269,9 +270,11 @@
     <ClInclude Include="Signboard\RHI\core\surface.h" />
     <ClInclude Include="Signboard\RHI\core\surface_vk.h" />
     <ClInclude Include="Signboard\RHI\primitive\fence.h" />
+    <ClInclude Include="Signboard\RHI\primitive\fence_vk.h" />
     <ClInclude Include="Signboard\RHI\primitive\framebuffer.h" />
     <ClInclude Include="Signboard\RHI\primitive\framebuffer_vkAccess.h" />
     <ClInclude Include="Signboard\RHI\primitive\semaphore.h" />
+    <ClInclude Include="Signboard\RHI\primitive\semaphore_vkAccess.h" />
     <ClInclude Include="Signboard\RHI\primitive\swapchain.h" />
     <ClInclude Include="Signboard\RHI\primitive\swapchain_vk.h" />
     <ClInclude Include="Signboard\RHI\detail\vkexcept.h" />
@@ -314,6 +317,7 @@
     <ClInclude Include="Signboard\RHI\procedure\shader_wrapper.h" />
     <ClInclude Include="Signboard\RHI\procedure\swapchain_builder.h" />
     <ClInclude Include="Signboard\RHI\detail\vma\vk_mem_alloc.h" />
+    <ClInclude Include="Signboard\RHI\procedure\swapchain_handler.h" />
     <ClInclude Include="Signboard\RHI\rhi.h" />
     <ClInclude Include="Signboard\RHI\core\instance.h" />
     <ClInclude Include="Signboard\RHI\core\instance_vk.h" />

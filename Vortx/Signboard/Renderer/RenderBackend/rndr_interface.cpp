@@ -1,25 +1,19 @@
 #include "rndr_interface.h"
 
 #include "rndr_context_Access.h"
-#include "rndr_presentation_Access.h"
-#include "Signboard/Renderer/Pass/passes_Access.h"
 
 #include <algorithm>
 #include <stdexcept>
 
-rndr_interface::rndr_interface(const rndr_context& context, const rndr_presentation& presentation, const passes& passes)
+rndr_interface::rndr_interface(const rndr_context& context)
 	: 
 	r_device(rndr_context_Access::get_device(context)),
-	r_surface(rndr_context_Access::get_surface(context)),
-
-	r_swapchain(rndr_presentation_Access::get_swapchain(presentation)),
-
-	rm_primaryPass(passes_Access::get_primiaryPass(passes))
+	r_surface(rndr_context_Access::get_surface(context))
 {
 	summon_commandPools();
 	m_graphicsPoolIndex = find_graphicsPool_index();
 
-	configure_bufferedFrames();
+	configure_CMDbuffers();
 }
 
 VkResult rndr_interface::summon_commandPools() {
@@ -61,20 +55,8 @@ uint32_t rndr_interface::find_graphicsPool_index() const noexcept {
 	return it->poolIndex;
 }
 
-void rndr_interface::configure_bufferedFrames() {
-	create_primaryPass_framebuffers();
+void rndr_interface::configure_CMDbuffers() {
 	allocate_renderCommandBuffers();
-}
-
-VkResult rndr_interface::create_primaryPass_framebuffers() {
-	rhi::procedure::framebuffer_creator prcdr{ r_device };
-
-	prcdr.bind_renderpass(rm_primaryPass);
-
-	prcdr.create_swapchainTarget_framebuffer(r_swapchain, &bufferedFrame_count, nullptr);
-
-	m_primaryFramebuffers.resize(bufferedFrame_count);
-	return prcdr.create_swapchainTarget_framebuffer(r_swapchain, &bufferedFrame_count, m_primaryFramebuffers.data());
 }
 
 void rndr_interface::allocate_renderCommandBuffers() {
