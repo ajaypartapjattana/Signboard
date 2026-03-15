@@ -8,7 +8,7 @@ Signboard::Signboard()
 
 void Signboard::run() {
 	while (m_target.target_ready()) {
-
+		m_renderer.render();
 	}
 }
 

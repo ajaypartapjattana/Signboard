@@ -1,24 +1,36 @@
 #include "passes.h"
 
-#include "Signboard/Renderer/RenderBackend/rndr_context_Access.h"
-#include "Signboard/Renderer/RenderBackend/rndr_presentation_Access.h"
+passes::passes(const rhi::core::device& device, const rhi::primitive::swapchain& swapchain) 
+	: 
+	r_device(device),
+	r_swapchain(swapchain),
 
-passes::passes(const rndr_context& context, const rndr_presentation& presentation) 
-	: r_device(rndr_context_Access::get_device(context)),
-	r_swapchain(rndr_presentation_Access::get_swapchain(presentation))
+	m_writeAccess(m_renderPasses)
 {
-	setup_basePass();
+
 }
 
-void passes::setup_basePass() {
-	rhi::procedure::renderPass_builder builder{ r_device };
+storage::storage_handle passes::create_pass(const createInfo* info) {
+	rhi::procedure::renderPass_builder prcdr{ r_device };
+
+	const createInfo& a_info = *info;
 
 	rhi::procedure::renderPass_builder::attachment_desc desc{};
-	desc.format = r_swapchain.native_format();
+	desc.format = a_info.swapchain_pass ? r_swapchain.native_format() : a_info.format;
 	desc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	desc.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 	desc.usageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-	builder.add_colorAttachment(nullptr, desc);
-	builder.build_graphicsPass(m_primiaryPass);
+	prcdr.add_colorAttachment(nullptr, desc);
+
+	auto builder = [&](rhi::primitive::renderPass* pass) {
+		prcdr.build_graphicsPass(*pass);
+	};
+
+	return m_writeAccess.construct(builder);
+}
+
+storage::vault_readAccessor<rhi::primitive::renderPass> passes::get_readAccessor() const noexcept {
+	storage::vault_readAccessor<rhi::primitive::renderPass> accessor{ m_renderPasses };
+	return accessor;
 }

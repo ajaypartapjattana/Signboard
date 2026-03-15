@@ -7,12 +7,9 @@ rndr_presentation::rndr_presentation(const rndr_context& ctx, const uint32_t buf
 	r_device(rndr_context_Access::get_device(ctx)),
 	r_surface(rndr_context_Access::get_surface(ctx)),
 
-	m_swapchain(),
-
-	m_swapchainHandler(r_device)
+	m_swapchain()
 {
 	construct_swapchain();
-	m_swapchainHandler.set_swapchain(m_swapchain);
 }
 
 void rndr_presentation::update_bufferedFrameCount(const uint32_t count) {
@@ -36,11 +33,4 @@ VkResult rndr_presentation::construct_swapchain() {
 	prcdr.recycle_swapchain(m_swapchain);
 
 	return prcdr.build(m_swapchain);
-}
-
-uint32_t rndr_presentation::acquire_toWriteImage(const rhi::primitive::semaphore* semaphore) {
-	uint32_t a_imageIndex;
-	m_swapchainHandler.acquire_freeSwapchainImage(semaphore, a_imageIndex);
-
-	return a_imageIndex;
 }

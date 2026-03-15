@@ -4,20 +4,26 @@ Renderer::Renderer(const platform::primitive::display_window& render_target)
 	: 
 	m_context(render_target),
 	m_presentation(m_context, 2),
-	m_passes(m_context, m_presentation), 
-	m_materials(m_context, m_presentation, m_passes),
-	m_interface(m_context),
-	m_framedraw(m_context, m_presentation, m_passes)
+	m_methods(m_context, m_presentation),
+	m_interface(m_context, m_presentation),
+	m_framedraw(m_context, m_presentation, m_methods)
 {
 
 }
 
+void Renderer::render() {
+	prepareFrame();
+	renderFrame();
+	endFrame();
+}
+
 bool Renderer::prepareFrame() {
+	acquiredImage = m_interface.acquire_toWriteImage();
 	return true;
 }
 
 void Renderer::renderFrame() {
-	
+	m_framedraw.drawFrame(acquiredImage, m_interface.activeFrame_cmd());
 }
 
 void Renderer::endFrame() {

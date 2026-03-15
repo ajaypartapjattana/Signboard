@@ -10,10 +10,15 @@ struct passes_Access;
 
 class passes {
 public:
-	passes(const rndr_context& context, const rndr_presentation& presentation);
+	passes(const rhi::core::device& device, const rhi::primitive::swapchain& swapchain);
 
-private:
-	void setup_basePass();
+	struct createInfo {
+		bool swapchain_pass = true;
+		VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
+	};
+
+	storage::storage_handle create_pass(const createInfo* info);
+	storage::vault_readAccessor<rhi::primitive::renderPass> get_readAccessor() const noexcept;
 
 private:
 	friend struct passes_Access;
@@ -21,7 +26,7 @@ private:
 	const rhi::core::device& r_device;
 	const rhi::primitive::swapchain& r_swapchain;
 
-	rhi::primitive::renderPass m_primiaryPass;
-	storage::vault<rhi::primitive::renderPass> m_passes;
+	storage::vault<rhi::primitive::renderPass> m_renderPasses;
+	storage::vault_writeAccessor<rhi::primitive::renderPass> m_writeAccess;
 
 };

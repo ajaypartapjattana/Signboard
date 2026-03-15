@@ -16,8 +16,6 @@ public:
 	void refresh_swapchain();
 	void update_bufferedFrameCount(const uint32_t count);
 
-	uint32_t acquire_toWriteImage(const rhi::primitive::semaphore* semaphore);
-
 private:
 	VkResult construct_swapchain();
 
@@ -29,7 +27,5 @@ private:
 
 	uint32_t bufferedFrame_count = 2;
 	rhi::primitive::swapchain m_swapchain;
-
-	rhi::procedure::swapchain_handler m_swapchainHandler;
 
 };

@@ -3,9 +3,10 @@
 #include "rndr_context_Access.h"
 #include "rndr_presentation_Access.h"
 
+
 #include "Signboard/Renderer/Pass/passes_Access.h"
 
-rndr_framedraw::rndr_framedraw(const rndr_context& context, const rndr_presentation& presentation, const passes& passes)
+rndr_framedraw::rndr_framedraw(const rndr_context& context, const rndr_presentation& presentation, const rndr_method& methods)
 	:
 	r_device(rndr_context_Access::get_device(context)),
 	r_swapchain(rndr_presentation_Access::get_swapchain(presentation)),
@@ -26,6 +27,13 @@ VkResult rndr_framedraw::create_primaryPass_framebuffers() {
 	return prcdr.create_swapchainTarget_framebuffer(r_swapchain, &bufferedFrame_count, m_primaryFramebuffers.data());
 }
 
-void rndr_framedraw::drawFrame() {
+void rndr_framedraw::drawFrame(const uint32_t target_index, const rhi::primitive::commandBuffer& target_cmd) {
+	rhi::procedure::cmdbuffer_recorder prcdr{ target_cmd };
+
+	prcdr.begin_renderTarget(m_primaryFramebuffers[target_index]);
+	prcdr.bind_pipeline();
+	prcdr.draw();
+	prcdr.end_renderTarget();
+	prcdr.end_recording();
 
 }

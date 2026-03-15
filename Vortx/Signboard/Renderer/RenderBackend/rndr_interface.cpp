@@ -1,19 +1,38 @@
 #include "rndr_interface.h"
 
 #include "rndr_context_Access.h"
+#include "rndr_presentation_Access.h"
 
 #include <algorithm>
 #include <stdexcept>
 
-rndr_interface::rndr_interface(const rndr_context& context)
+rndr_interface::rndr_interface(const rndr_context& context, const rndr_presentation& presentation)
 	: 
 	r_device(rndr_context_Access::get_device(context)),
-	r_surface(rndr_context_Access::get_surface(context))
+	r_swapchain(rndr_presentation_Access::get_swapchain(presentation)),
+
+	m_swapchainHandler(r_device)
 {
 	summon_commandPools();
-	m_graphicsPoolIndex = find_graphicsPool_index();
+	acquire_graphicsPool_index();
 
-	configure_CMDbuffers();
+	configure_bufferedFrames();
+}
+
+rndr_interface::frame::frame(const rhi::core::device& device)
+	: 
+	image_available(device),
+	render_finished(device),
+	in_flight(device, true)
+{
+
+}
+
+uint32_t rndr_interface::acquire_toWriteImage() const noexcept {
+	uint32_t a_imageIndex;
+	m_swapchainHandler.acquire_freeSwapchainImage(&frames[activeFrameIndex].image_available, a_imageIndex);
+
+	return a_imageIndex;
 }
 
 VkResult rndr_interface::summon_commandPools() {
@@ -40,41 +59,42 @@ VkResult rndr_interface::summon_commandPools() {
 	return VK_SUCCESS;
 }
 
-uint32_t rndr_interface::find_graphicsPool_index() const noexcept {
+void rndr_interface::acquire_graphicsPool_index() noexcept {
 	auto it = std::find_if(
 		m_commandPoolBindings.begin(),
 		m_commandPoolBindings.end(),
 		[](const commandPool_binding& binding) {
-			return (binding.capabilities & VK_QUEUE_GRAPHICS_BIT) != 0;
+			return binding.capabilities & VK_QUEUE_GRAPHICS_BIT;
 		}
 	);
 
-	if (it == m_commandPoolBindings.end())
-		return 0;
-
-	return it->poolIndex;
+	m_graphicsPoolIndex = (it == m_commandPoolBindings.end()) ? UINT32_MAX : it->poolIndex;
 }
 
-void rndr_interface::configure_CMDbuffers() {
+void rndr_interface::configure_bufferedFrames() {
+	bufferedFrame_count = r_swapchain.native_imageCount();
+
+	frames.reserve(bufferedFrame_count);
+	for (uint32_t i = 0; i < bufferedFrame_count; ++i)
+		frames.emplace_back(r_device);
+
 	allocate_renderCommandBuffers();
 }
 
 void rndr_interface::allocate_renderCommandBuffers() {
 	release_renderCommandBuffers();
 
-	if (m_commandPools.empty())
+	if (m_graphicsPoolIndex == UINT32_MAX)
 		return;
 
-	m_renderCommandBuffers.resize(bufferedFrame_count);
-
 	rhi::procedure::commandBuffer_allocator l_allocator{ r_device };
-	l_allocator.allocate(m_commandPools[m_graphicsPoolIndex], m_renderCommandBuffers.data(), bufferedFrame_count);
+
+	for (uint32_t i = 0; i < bufferedFrame_count; i++) {
+		l_allocator.allocate(m_commandPools[m_graphicsPoolIndex], &frames[i].cmd, 1);
+	}
 }
 
 void rndr_interface::release_renderCommandBuffers() noexcept {
-	if (m_renderCommandBuffers.empty())
-		return;
-
 	if (m_commandPools.empty())
 		return;
 
@@ -82,13 +102,10 @@ void rndr_interface::release_renderCommandBuffers() noexcept {
 
 }
 
-rhi::primitive::commandBuffer& rndr_interface::active_commandBuffer() {
-	return m_renderCommandBuffers[m_activeFrameIndex];
+rhi::primitive::commandBuffer& rndr_interface::activeFrame_cmd() {
+	return frames[activeFrameIndex].cmd;
 }
 
 void rndr_interface::advance_frame() noexcept {
-	if (bufferedFrame_count == 0)
-		return;
-
-	m_activeFrameIndex = (m_activeFrameIndex + 1) % bufferedFrame_count;
+	activeFrameIndex = (activeFrameIndex + 1) % bufferedFrame_count;
 }

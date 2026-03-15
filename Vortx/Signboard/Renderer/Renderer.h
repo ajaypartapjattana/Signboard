@@ -5,8 +5,6 @@
 #include <memory>
 
 #include "RenderBackend/rndr_Backend.h"
-#include "Materials/materials.h"
-#include "Pass/passes.h"
 
 class Renderer {
 public:
@@ -22,11 +20,10 @@ private:
 private:
 	rndr_context m_context;
 	rndr_presentation m_presentation;
-
-	passes m_passes;
-	materials m_materials;
-
+	rndr_method m_methods;
 	rndr_interface m_interface;
 	rndr_framedraw m_framedraw;
+
+	uint32_t acquiredImage;
 
 };

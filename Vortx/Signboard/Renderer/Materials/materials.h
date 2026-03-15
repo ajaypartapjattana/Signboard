@@ -3,34 +3,31 @@
 #include "Signboard/RHI/rhi.h"
 #include "Signboard/Core/Containers/storage/storage.h"
 
-class rndr_context;
-class rndr_presentation;
-
 class passes;
 
 class materials {
 public:
-	materials(const rndr_context& context, const rndr_presentation& presentation, const passes& passes);
+	materials(const rhi::core::device& device, const rhi::primitive::swapchain& swapchain, const passes& passes);
 
-	struct material {
-		uint32_t targetPass_index;
-		uint32_t targetSubpass_index;
-		rhi::primitive::pipeline pipeline;
+	struct createInfo {
+		const char* vertShader_path;
+		const char* fragShader_path;
 	};
 
-private:
-	void create_baseMaterial(uint32_t targetPass_index, uint32_t subpass);
+	storage::storage_handle create_pipeline(storage::storage_handle passHandle, uint32_t subpass, const createInfo* createInfo);
+	storage::vault_readAccessor<rhi::primitive::pipeline> get_readAccessor() const noexcept;
 
+private:
 	void create_shader(rhi::primitive::shader& tw_shader, const char* path);
 
 private:
 	const rhi::core::device& r_device;
 	const rhi::primitive::swapchain& r_swapchain;
-	const passes& r_passes;
+	const storage::vault_readAccessor<rhi::primitive::renderPass> a_renderPass_RAccess;
 
 	rhi::primitive::pipelineLayout m_pipelineLayout;
 
-	material m_baseMat;
-	storage::vault<material> m_vault;
+	storage::vault<rhi::primitive::pipeline> m_pipelines;
+	storage::vault_writeAccessor<rhi::primitive::pipeline> m_writeAccess;
 
 };

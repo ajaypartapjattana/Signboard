@@ -2,46 +2,46 @@
 
 #include "Signboard/Assets/io/io.h"
 
-#include "Signboard/Renderer/RenderBackend/rndr_context_Access.h"
-#include "Signboard/Renderer/RenderBackend/rndr_presentation_Access.h"
 #include "Signboard/Renderer/Pass/passes_Access.h"
 
 #include <vector>
 #include <stdexcept>
 
-materials::materials(const rndr_context& context, const rndr_presentation& presentation, const passes& passes)
+materials::materials(const rhi::core::device& device, const rhi::primitive::swapchain& swapchain, const passes& passes)
 	: 
-	r_device(rndr_context_Access::get_device(context)), 
-	r_swapchain(rndr_presentation_Access::get_swapchain(presentation)), 
-	r_passes(passes)
+	r_device(device), 
+	r_swapchain(swapchain),
+	a_renderPass_RAccess(passes.get_readAccessor()),
+
+	m_writeAccess(m_pipelines)
 {
 	rhi::procedure::pipelineLayout_builder layout_builder{ r_device };
 	layout_builder.build(m_pipelineLayout);
 }
 
-void materials::create_baseMaterial(uint32_t targetPass_index, uint32_t subpass) {
-
-	m_baseMat.targetPass_index = targetPass_index;
-	m_baseMat.targetSubpass_index = subpass;
-
-	const rhi::primitive::renderPass& a_pass = passes_Access::get_primiaryPass(r_passes);
-	
+storage::storage_handle materials::create_pipeline(storage::storage_handle passHandle, uint32_t subpass, const createInfo* info) {
 	rhi::primitive::shader l_vertShader;
-	create_shader(l_vertShader, "shaders/base.vert.spv");
+	create_shader(l_vertShader, info->vertShader_path);
 
 	rhi::primitive::shader l_fragShader;
-	create_shader(l_fragShader, "shaders/base.frag.spv");
+	create_shader(l_fragShader, info->fragShader_path);
 
-	rhi::procedure::pipeline_builder pipeline_builder{ r_device, r_swapchain, m_pipelineLayout };
-	pipeline_builder.set_vertShader(l_vertShader);
-	pipeline_builder.set_fragShader(l_fragShader);
-	pipeline_builder.set_targetPass(a_pass);
-	pipeline_builder.build_graphicsPipeline(0, m_baseMat.pipeline);
+	rhi::procedure::pipeline_builder prcdr{ r_device, r_swapchain, m_pipelineLayout };
+	prcdr.set_vertShader(l_vertShader);
+	prcdr.set_fragShader(l_fragShader);
 
+	prcdr.set_targetPass(*a_renderPass_RAccess.get(passHandle));
 
-	/*storage::vault_writeAccessor<material> writer{ m_vault };
-	writer.create(baseMat);*/
+	auto builder = [&](rhi::primitive::pipeline* p) {
+		prcdr.build_graphicsPipeline(subpass, *p);
+	};
 	
+	return m_writeAccess.construct(builder);
+}
+
+storage::vault_readAccessor<rhi::primitive::pipeline> materials::get_readAccessor() const noexcept {
+	storage::vault_readAccessor<rhi::primitive::pipeline> accessor{m_pipelines};
+	return accessor;
 }
 
 void materials::create_shader(rhi::primitive::shader& tw_shader, const char* path) {

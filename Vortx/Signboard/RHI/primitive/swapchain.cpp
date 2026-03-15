@@ -52,4 +52,8 @@ namespace rhi::primitive {
 		return m_format;
 	}
 
+	uint32_t swapchain::native_imageCount() const noexcept {
+		return static_cast<uint32_t>(m_images.size());
+	}
+
 }

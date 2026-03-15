@@ -171,6 +171,7 @@
     <ClCompile Include="Signboard\Renderer\RenderBackend\rndr_framedraw.cpp" />
     <ClCompile Include="Signboard\Renderer\RenderBackend\rndr_interface.cpp" />
     <ClCompile Include="Signboard\Renderer\RenderBackend\rndr_context.cpp" />
+    <ClCompile Include="Signboard\Renderer\RenderBackend\rndr_method.cpp" />
     <ClCompile Include="Signboard\Renderer\RenderBackend\rndr_presentation.cpp" />
     <ClCompile Include="Signboard\Renderer\renderTarget\target_surface.cpp" />
     <ClCompile Include="Signboard\Resources\res_images.cpp" />
@@ -257,6 +258,8 @@
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_context.h" />
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_context_Access.h" />
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_interface_Access.h" />
+    <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_method.h" />
+    <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_method_Access.h" />
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_presentation.h" />
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_presentation_Access.h" />
     <ClInclude Include="Signboard\Renderer\renderTarget\target_surface.h" />

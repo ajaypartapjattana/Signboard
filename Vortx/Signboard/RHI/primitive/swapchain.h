@@ -25,6 +25,7 @@ namespace rhi::primitive {
 
 		VkSwapchainKHR native_swapchain() const noexcept;
 		VkFormat native_format() const noexcept;
+		uint32_t native_imageCount() const noexcept;
 
 	private:
 		friend class rhi::procedure::swapchain_builder;
