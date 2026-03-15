@@ -6,7 +6,7 @@ namespace rhi::procedure {
 
 #include <vulkan/vulkan.h>
 
-namespace rhi::core {
+namespace rhi::primitive {
 
 	struct commandPool_vkAccess;
 

@@ -175,7 +175,7 @@
     <ClCompile Include="Signboard\Renderer\RenderBackend\rndr_presentation.cpp" />
     <ClCompile Include="Signboard\Renderer\renderTarget\target_surface.cpp" />
     <ClCompile Include="Signboard\Resources\res_images.cpp" />
-    <ClCompile Include="Signboard\RHI\core\commandPool.cpp" />
+    <ClCompile Include="Signboard\RHI\primitive\commandPool.cpp" />
     <ClCompile Include="Signboard\RHI\core\device.cpp" />
     <ClCompile Include="Signboard\RHI\core\instance.cpp" />
     <ClCompile Include="Signboard\RHI\core\allocator.cpp" />
@@ -203,6 +203,7 @@
     <ClCompile Include="Signboard\RHI\procedure\image_allocator.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\pipelineLayout_builder.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\pipeline_builder.cpp" />
+    <ClCompile Include="Signboard\RHI\procedure\queue_submission.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\renderPass_builder.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\sampler_creator.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\shader_wrapper.cpp" />
@@ -264,8 +265,8 @@
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_presentation_Access.h" />
     <ClInclude Include="Signboard\Renderer\renderTarget\target_surface.h" />
     <ClInclude Include="Signboard\Resources\res_images.h" />
-    <ClInclude Include="Signboard\RHI\core\commandPool_vk.h" />
-    <ClInclude Include="Signboard\RHI\core\commandPool.h" />
+    <ClInclude Include="Signboard\RHI\primitive\commandPool_vk.h" />
+    <ClInclude Include="Signboard\RHI\primitive\commandPool.h" />
     <ClInclude Include="Signboard\RHI\core\device.h" />
     <ClInclude Include="Signboard\RHI\core\device_vk.h" />
     <ClInclude Include="Signboard\RHI\core\allocator.h" />
@@ -314,6 +315,7 @@
     <ClInclude Include="Signboard\RHI\procedure\image_allocator.h" />
     <ClInclude Include="Signboard\RHI\procedure\pipelineLayout_builder.h" />
     <ClInclude Include="Signboard\RHI\procedure\pipeline_builder.h" />
+    <ClInclude Include="Signboard\RHI\procedure\queue_submission.h" />
     <ClInclude Include="Signboard\RHI\procedure\renderPass_builder.h" />
     <ClInclude Include="Signboard\RHI\procedure\rhi_procedure.h" />
     <ClInclude Include="Signboard\RHI\procedure\sampler_creator.h" />
@@ -347,6 +349,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="ShaderBuild.targets" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Deprecated\Text.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <Import Project="$(MSBuildProjectDirectory)\ShaderBuild.targets" />

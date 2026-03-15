@@ -4,7 +4,6 @@
 #include "surface.h"
 #include "device.h"
 #include "allocator.h"
-#include "commandPool.h"
 
 namespace rhi::core {
 
@@ -12,6 +11,5 @@ namespace rhi::core {
 	class surface;
 	class device;
 	class allocator;
-	class commandPool;
 
 }

@@ -11,7 +11,7 @@ materials::materials(const rhi::core::device& device, const rhi::primitive::swap
 	: 
 	r_device(device), 
 	r_swapchain(swapchain),
-	a_renderPass_RAccess(passes.get_readAccessor()),
+	a_renderPass_RAccess(passes.get_rp_readAccessor()),
 
 	m_writeAccess(m_pipelines)
 {

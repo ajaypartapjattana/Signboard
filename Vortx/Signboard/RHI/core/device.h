@@ -12,9 +12,7 @@ namespace rhi::core {
 	struct device_vkAccess;
 	
 	struct device_CI {
-		std::vector<VkQueueFlagBits> requiredQueues;
-		rhi::core::surface* present_surface;
-
+		rhi::core::surface* present_surface = nullptr;
 		std::vector<const char*> requiredExtensions;
 		std::vector<VkBool32 VkPhysicalDeviceFeatures::*> requiredFeatures;
 	};
@@ -31,7 +29,8 @@ namespace rhi::core {
 
 		~device() noexcept;
 
-		const VkDevice* native_device() const noexcept;
+		VkDevice native_device() const noexcept;
+		bool active_feature(const VkBool32 VkPhysicalDeviceFeatures::* feature) const noexcept;
 
 	private:
 		void build(const device_CI& createInfo, const VkInstance instance);
@@ -42,17 +41,24 @@ namespace rhi::core {
 		VkDevice m_device = VK_NULL_HANDLE;
 		VkPhysicalDevice m_physical = VK_NULL_HANDLE;
 
-		struct queue_entry {
-			VkQueue queue;
-			uint32_t family;
-			uint32_t index;
-			VkQueueFlags capabilities;
-			bool present_supported;
+		struct queues {
+			VkQueue graphics = VK_NULL_HANDLE;
+			VkQueue compute = VK_NULL_HANDLE;
+			VkQueue transfer = VK_NULL_HANDLE;
+			VkQueue present = VK_NULL_HANDLE;
 		};
-		std::vector<queue_entry> m_queues;
 
-		VkPhysicalDeviceFeatures m_enabledfeatures{};
-		VkPhysicalDeviceProperties m_properties{};
+		struct queue_families {
+			uint32_t graphics = UINT32_MAX;
+			uint32_t compute = UINT32_MAX;
+			uint32_t transfer = UINT32_MAX;
+			uint32_t present = UINT32_MAX;
+		};
+
+		queues m_queues;
+		queue_families m_families;
+
+		std::vector<VkBool32 VkPhysicalDeviceFeatures::*> m_enabledFeatures;
 
 	};
 

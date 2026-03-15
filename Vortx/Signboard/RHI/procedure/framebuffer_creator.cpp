@@ -53,7 +53,6 @@ namespace rhi::procedure {
 		if (result != VK_SUCCESS)
 			return result;
 
-		target_framebuffer.m_nativePass = rm_toBindPass;
 		target_framebuffer.m_extent = { am_bufferExtent.width, am_bufferExtent.height };
 		target_framebuffer.m_device = am_device;
 
@@ -61,19 +60,13 @@ namespace rhi::procedure {
 		return result;
 	}
 
-	VkResult framebuffer_creator::create_swapchainTarget_framebuffer(const rhi::primitive::swapchain& swapchain, uint32_t* framebuffer_count, rhi::primitive::framebuffer* target_framebuffer) const {
-		if (!framebuffer_count)
-			return VK_ERROR_INITIALIZATION_FAILED;
-		
+	VkResult framebuffer_creator::create_swapchainTarget_framebuffer(const rhi::primitive::swapchain& swapchain, storage::vault_writeAccessor<rhi::primitive::framebuffer>& writer, std::vector<storage::storage_handle>& fb_handles) const {	
 		const std::vector<VkImageView>& a_swapchainViews = rhi::primitive::swapchain_vkAccess::get_views(swapchain);
 		const uint32_t swapchainView_count = static_cast<uint32_t>(a_swapchainViews.size());
-		if (!target_framebuffer) {
-			*framebuffer_count = swapchainView_count;
-			return VK_INCOMPLETE;
-		}
 
 		VkExtent2D a_swapchainExtent = rhi::primitive::swapchain_vkAccess::get_extent(swapchain);
 		
+		std::vector<VkFramebuffer> l_framebuffers{ swapchainView_count };
 		for (uint32_t i = 0; i < swapchainView_count; i++) {
 			VkImageView attachment[] = { a_swapchainViews[i]};
 
@@ -86,19 +79,30 @@ namespace rhi::procedure {
 			createInfo.height = a_swapchainExtent.height;
 			createInfo.layers = 1;
 
-			VkResult result = vkCreateFramebuffer(am_device, &createInfo, nullptr, &target_framebuffer[i].m_framebuffer);
+			VkResult result = vkCreateFramebuffer(am_device, &createInfo, nullptr, &l_framebuffers[i]);
 
 			if (result != VK_SUCCESS) {
 				for (uint32_t j = 0; j < i; j++) {
-					vkDestroyFramebuffer(am_device, target_framebuffer[j].m_framebuffer, nullptr);
-					target_framebuffer[j].m_framebuffer = VK_NULL_HANDLE;
+					vkDestroyFramebuffer(am_device, l_framebuffers[j], nullptr);
+					l_framebuffers[j] = VK_NULL_HANDLE;
 				}
 				return result;
 			}
-			
-			target_framebuffer[i].m_nativePass = rm_toBindPass;
-			target_framebuffer[i].m_extent = a_swapchainExtent;
-			target_framebuffer[i].m_device = am_device;
+		}
+
+		fb_handles.clear();
+		fb_handles.reserve(swapchainView_count);
+		for (const VkFramebuffer handle : l_framebuffers) {
+			auto builder = [handle, a_swapchainExtent, device = am_device](rhi::primitive::framebuffer* fb) {
+				rhi::primitive::framebuffer& tw_fb = *fb;
+
+				tw_fb.m_framebuffer = handle;
+				tw_fb.m_extent = a_swapchainExtent;
+				tw_fb.m_device = device;
+			};
+
+			fb_handles.push_back(writer.construct(builder));
+
 		}
 
 		return VK_SUCCESS;

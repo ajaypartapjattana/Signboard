@@ -27,8 +27,6 @@ namespace rhi::primitive {
 		friend struct framebuffer_vkAccess;
 
 		VkFramebuffer m_framebuffer = VK_NULL_HANDLE;
-		VkRenderPass m_nativePass = VK_NULL_HANDLE;
-
 		VkExtent2D m_extent;
 
 		VkDevice m_device = VK_NULL_HANDLE;

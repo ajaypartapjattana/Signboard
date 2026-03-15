@@ -14,10 +14,11 @@ public:
 
 	void configure_bufferedFrames();
 
-	rhi::primitive::commandBuffer& activeFrame_cmd();
+	rhi::primitive::commandBuffer& get_activeFrame_cmd();
 	void advance_frame() noexcept;
 
 	uint32_t acquire_toWriteImage() const noexcept;
+	void submit_activeFrame_cmd();
 
 private:
 	VkResult summon_commandPools();
@@ -40,8 +41,7 @@ private:
 		VkQueueFlags capabilities;
 		bool presentSupported;
 	};
-	std::vector<commandPool_binding> m_commandPoolBindings;
-	std::vector<rhi::core::commandPool> m_commandPools;
+	std_commandPools m_commandPools;
 	uint32_t m_graphicsPoolIndex = 0;
 
 	uint32_t bufferedFrame_count = 2;

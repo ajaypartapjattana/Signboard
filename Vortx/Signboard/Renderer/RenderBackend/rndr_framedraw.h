@@ -2,9 +2,9 @@
 
 class rndr_context;
 class rndr_presentation;
-class rndr_method;
 
 #include "Signboard/RHI/rhi.h"
+#include "rndr_method.h"
 
 class rndr_framedraw {
 public:
@@ -16,13 +16,14 @@ public:
 	void drawFrame(const uint32_t target_index, const rhi::primitive::commandBuffer& target_cmd);
 
 private:
-	VkResult create_primaryPass_framebuffers();
-
-private:
 	const rhi::core::device& r_device;
 	const rhi::primitive::swapchain& r_swapchain;
 
-	const rhi::primitive::renderPass& r_primaryPass;
+	const storage::vault_readAccessor<render_target> m_targets;
+
+	const storage::vault_readAccessor<rhi::primitive::renderPass> a_renderpassView;
+	const storage::vault_readAccessor<rhi::primitive::framebuffer> a_framebufferView;
+	const storage::vault_readAccessor<rhi::primitive::pipeline> a_pipelineView;
 
 	uint32_t bufferedFrame_count = 2;
 	std::vector<rhi::primitive::framebuffer> m_primaryFramebuffers;

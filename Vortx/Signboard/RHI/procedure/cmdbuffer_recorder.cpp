@@ -2,6 +2,7 @@
 
 #include "Signboard/RHI/primitive/commandBuffer_vk.h"
 #include "Signboard/RHI/primitive/framebuffer_vkAccess.h"
+#include "Signboard/RHI/primitive/renderPass_vk.h"
 #include "Signboard/RHI/primitive/pipeline_vk.h"
 
 namespace rhi::procedure {
@@ -9,7 +10,12 @@ namespace rhi::procedure {
 	cmdbuffer_recorder::cmdbuffer_recorder(const rhi::primitive::commandBuffer& buffer)
 		: m_buffer(rhi::primitive::commandBuffer_vkAccess::get(buffer))
 	{
+		reset_buffer();
 		begin_recording();
+	}
+
+	void cmdbuffer_recorder::reset_buffer() {
+		vkResetCommandBuffer(m_buffer, 0);
 	}
 
 	VkResult cmdbuffer_recorder::begin_recording() {
@@ -21,13 +27,13 @@ namespace rhi::procedure {
 		return vkBeginCommandBuffer(m_buffer, &beginInfo);
 	}
 
-	void cmdbuffer_recorder::begin_renderTarget(const rhi::primitive::framebuffer& target) noexcept {
-		a_targetExtent = rhi::primitive::framebuffer_vkAccess::get_extent(target);
+	void cmdbuffer_recorder::begin_renderTarget(const rhi::primitive::renderPass& renderPass, const rhi::primitive::framebuffer& framebuffer) noexcept {
+		a_targetExtent = rhi::primitive::framebuffer_vkAccess::get_extent(framebuffer);
 
 		VkRenderPassBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		beginInfo.renderPass = rhi::primitive::framebuffer_vkAccess::get_nativePass(target);
-		beginInfo.framebuffer = rhi::primitive::framebuffer_vkAccess::get(target);
+		beginInfo.renderPass = rhi::primitive::renderPass_vkAccess::get(renderPass);
+		beginInfo.framebuffer = rhi::primitive::framebuffer_vkAccess::get(framebuffer);
 
 		beginInfo.renderArea.offset = { 0, 0 };
 		beginInfo.renderArea.extent = a_targetExtent;

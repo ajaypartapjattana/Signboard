@@ -2,7 +2,7 @@
 
 #include "commandPool.h"
 
-namespace rhi::core {
+namespace rhi::primitive {
 
 	struct commandPool_vkAccess {
 

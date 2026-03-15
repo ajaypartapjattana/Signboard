@@ -142,6 +142,11 @@ namespace storage {
 			m_vault.freeList.push_back(h.index);
 		}
 
+		const T* get(storage_handle h) const {
+			const auto& slot = m_vault.slots[h.index];
+			return slot.alive && slot.generation == h.generation ? slot.object_ptr() : nullptr;
+		}
+
 	private:
 		vault<T>& m_vault;
 	};

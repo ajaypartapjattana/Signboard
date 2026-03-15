@@ -1,5 +1,6 @@
 #pragma once
 
+#include "commandPool.h"
 #include "commandBuffer.h"
 #include "swapchain.h"
 
@@ -30,6 +31,9 @@ namespace rhi::primitive {
 
 	class renderPass;
 	class framebuffer;
+
+	class semaphore;
+	class fence;
 
 	class descriptorLayout;
 	class pushConstantRange;

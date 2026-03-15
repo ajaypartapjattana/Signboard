@@ -19,22 +19,12 @@ namespace rhi::procedure {
 		sampler_creator(const sampler_creator&) = delete;
 		sampler_creator& operator=(const sampler_creator&) = delete;
 
-		sampler_creator& set_addressingMode_REPEAT();
-		sampler_creator& set_addressingMode_CLAMP();
-		sampler_creator& set_addressingMode_MIRROR();
-
-		sampler_creator& set_filter_NEAREST();
-		sampler_creator& set_filter_LINEAR();
+		sampler_creator& set_addressingMode(VkSamplerAddressMode mode);
+		sampler_creator& set_filter(VkFilter filter);
 
 		sampler_creator& require_anisotropy();
 
 		VkResult create(rhi::primitive::sampler& target_sampler);
-
-	private:
-		void set_addressingMode(VkSamplerAddressMode mode);
-		void set_filter(VkFilter filter);
-
-		void reset_creator();
 
 	private:
 		VkDevice m_device;

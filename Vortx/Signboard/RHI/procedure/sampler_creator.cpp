@@ -10,35 +10,18 @@ namespace rhi::procedure {
 	sampler_creator::sampler_creator(const rhi::core::device& device)
 		: m_device(rhi::core::device_vkAccess::get(device))
 	{
-		if (rhi::core::device_vkAccess::get_featureEnabled(device, &VkPhysicalDeviceFeatures::samplerAnisotropy)) {
+		if (device.active_feature(&VkPhysicalDeviceFeatures::samplerAnisotropy)) {
 			enabled_anisotropy = VK_TRUE;
 			max_anisotropy = rhi::core::device_vkAccess::get_properties(device).limits.maxSamplerAnisotropy;
 		}
 	}
 
-	sampler_creator& sampler_creator::set_addressingMode_REPEAT() {
-		set_addressingMode(VK_SAMPLER_ADDRESS_MODE_REPEAT);
-		return *this;
+	sampler_creator& sampler_creator::set_addressingMode(VkSamplerAddressMode mode) {
+		final_addressMode = mode;
 	}
 
-	sampler_creator& sampler_creator::set_addressingMode_CLAMP() {
-		set_addressingMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER);
-		return *this;
-	}
-
-	sampler_creator& sampler_creator::set_addressingMode_MIRROR() {
-		set_addressingMode(VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT);
-		return *this;
-	}
-
-	sampler_creator& sampler_creator::set_filter_LINEAR() {
-		set_filter(VK_FILTER_LINEAR);
-		return *this;
-	}
-
-	sampler_creator& sampler_creator::set_filter_NEAREST() {
-		set_filter(VK_FILTER_NEAREST);
-		return *this;
+	sampler_creator& sampler_creator::set_filter(VkFilter filter) {
+		final_filter = filter;
 	}
 
 	sampler_creator& sampler_creator::require_anisotropy() {
@@ -83,21 +66,6 @@ namespace rhi::procedure {
 		target_sampler.m_sampler = vk_sampler;
 
 		return result;
-	}
-
-	void sampler_creator::set_addressingMode(VkSamplerAddressMode mode) {
-		final_addressMode = mode;
-	}
-
-	void sampler_creator::set_filter(VkFilter filter) {
-		final_filter = filter;
-	}
-
-	void sampler_creator::reset_creator() {
-		final_addressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		final_filter = VK_FILTER_LINEAR;
-		final_anisotropy = false;
-		max_anisotropy = 1.0f;
 	}
 
 }

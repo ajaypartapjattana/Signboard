@@ -13,7 +13,6 @@ namespace rhi {
 		class surface;
 		class device;
 		class allocator;
-		class commandPool;
 	
 	}
 
@@ -25,6 +24,18 @@ namespace rhi {
 		class buffer;
 		class image;
 		class sampler;
+
+		class renderPass;
+		class framebuffer;
+
+		class semaphore;
+		class fence;
+
+		class descriptorLayout;
+		class pushConstantRange;
+		class pipelineLayout;
+		class shader;
+		class pipeline;
 	
 	}
 

@@ -12,7 +12,7 @@ namespace rhi::primitive {
 }
 
 #include <vulkan/vulkan.h>
-#include <vector>
+#include "Signboard/Core/Containers/storage/storage.h"
 
 namespace rhi::procedure {
 
@@ -30,7 +30,7 @@ namespace rhi::procedure {
 		framebuffer_creator& set_swapchainExtent(const rhi::primitive::swapchain& swapchain) noexcept;
 
 		VkResult create_offScreenTarget_framebuffer(rhi::primitive::framebuffer& target_framebuffer);
-		VkResult create_swapchainTarget_framebuffer(const rhi::primitive::swapchain& swapchain, uint32_t* framebuffer_count , rhi::primitive::framebuffer* target_framebuffer) const;
+		VkResult create_swapchainTarget_framebuffer(const rhi::primitive::swapchain& swapchain, storage::vault_writeAccessor<rhi::primitive::framebuffer>& writer, std::vector<storage::storage_handle>& fb_handles) const;
 
 	private:
 		VkDevice am_device;

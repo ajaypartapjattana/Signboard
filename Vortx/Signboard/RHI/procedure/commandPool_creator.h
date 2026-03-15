@@ -1,13 +1,20 @@
 #pragma once
 
 namespace rhi::core {
-	class commandPool;
-
 	class device;
 }
 
-#include <vulkan/vulkan.h>
+#include "Signboard/RHI/primitive/commandPool.h"
+
 #include <vector>
+#include <set>
+
+struct std_commandPools {
+	rhi::primitive::commandPool graphicsPool;
+	rhi::primitive::commandPool computePool;
+	rhi::primitive::commandPool transferPool;
+	rhi::primitive::commandPool presentPool;
+};
 
 namespace rhi::procedure {
 
@@ -15,24 +22,10 @@ namespace rhi::procedure {
 	public:
 		commandPool_creator(const rhi::core::device& device);
 
-		struct pool_requirement {
-			uint32_t family;
-			VkQueueFlags capabilities;
-			bool present_supported;
-		};
-
-		const std::vector<pool_requirement>& get_poolRequirements() noexcept;
-		uint32_t get_requiredPoolCount() noexcept;
-
-		VkResult create(rhi::core::commandPool* pools, uint32_t poolCount);
-
-	private:
-		void collect_poolRequirements() noexcept;
+		VkResult create(std_commandPools& commandPools);
 
 	private:
 		const rhi::core::device& m_device;
-
-		std::vector<pool_requirement> m_requirements;
 
 	};
 

@@ -6,7 +6,6 @@ namespace rhi::primitive {
 		: 
 		m_framebuffer(VK_NULL_HANDLE),
 		m_extent(),
-		m_nativePass(VK_NULL_HANDLE),
 		m_device(VK_NULL_HANDLE)
 	{
 
@@ -16,7 +15,6 @@ namespace rhi::primitive {
 		: 
 		m_framebuffer(other.m_framebuffer),
 		m_extent(other.m_extent),
-		m_nativePass(other.m_nativePass),
 		m_device(other.m_device)
 	{
 		other.m_framebuffer = VK_NULL_HANDLE;
@@ -31,7 +29,6 @@ namespace rhi::primitive {
 
 		m_framebuffer = other.m_framebuffer;
 		m_extent = other.m_extent;
-		m_nativePass = other.m_nativePass;
 		m_device = other.m_device;
 
 		other.m_framebuffer = VK_NULL_HANDLE;
