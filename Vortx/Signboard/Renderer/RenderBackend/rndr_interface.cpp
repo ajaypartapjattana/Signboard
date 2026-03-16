@@ -18,8 +18,11 @@ rndr_interface::rndr_interface(const rndr_context& context, const rndr_presentat
 	m_graphics_submission(r_device)
 {
 	summon_commandPools();
-
 	configure_bufferedFrames();
+}
+
+rndr_interface::~rndr_interface() noexcept {
+	m_watchdog.wait_device();
 }
 
 rndr_interface::frame::frame(const rhi::core::device& device)
@@ -32,10 +35,13 @@ rndr_interface::frame::frame(const rhi::core::device& device)
 }
 
 uint32_t rndr_interface::acquire_toWriteImage() noexcept {
-	m_watchdog.watch(frames[activeFrameIndex].in_flight);
+	m_watchdog.watch_fence(frames[activeFrameIndex].in_flight);
 
 	uint32_t a_imageIndex;
-	m_swapchainHandler.acquire_freeSwapchainImage(&frames[activeFrameIndex].image_available, a_imageIndex);
+	VkResult result = m_swapchainHandler.acquire_freeSwapchainImage(&frames[activeFrameIndex].image_available, a_imageIndex);
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+		return -1;
 
 	return a_imageIndex;
 }
@@ -56,17 +62,11 @@ void rndr_interface::configure_bufferedFrames() {
 }
 
 void rndr_interface::allocate_renderCommandBuffers() {
-	release_renderCommandBuffers();
-
 	rhi::procedure::commandBuffer_allocator prcdr{ r_device };
 
 	for (uint32_t i = 0; i < bufferedFrame_count; i++) {
 		prcdr.allocate(m_commandPools.graphicsPool, &frames[i].cmd, 1);
 	}
-}
-
-void rndr_interface::release_renderCommandBuffers() noexcept {
-	// --- todo [add free/release capability to the commandBuffer_allocator->]
 }
 
 rhi::primitive::commandBuffer& rndr_interface::get_activeFrame_cmd() {
@@ -81,6 +81,7 @@ void rndr_interface::submit_activeFrame_cmd() {
 
 	m_graphics_submission.update_toSubmit_cmd(&frames[activeFrameIndex].cmd, 1);
 
+	m_watchdog.reset_fence(frames[activeFrameIndex].in_flight);
 	m_graphics_submission.submit_graphics_cmd();
 }
 

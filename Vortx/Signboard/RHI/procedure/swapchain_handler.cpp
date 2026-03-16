@@ -15,9 +15,9 @@ namespace rhi::procedure {
 
 	}
 
-	void swapchain_handler::acquire_freeSwapchainImage(const rhi::primitive::semaphore* semaphore, uint32_t& index) const noexcept {
+	VkResult swapchain_handler::acquire_freeSwapchainImage(const rhi::primitive::semaphore* semaphore, uint32_t& index) const noexcept {
 		VkSemaphore a_semaphore = semaphore ? rhi::primitive::semaphore_vkAccess::get(*semaphore) : VK_NULL_HANDLE;
-		vkAcquireNextImageKHR(r_device, r_swapchain, UINT64_MAX, a_semaphore, VK_NULL_HANDLE, &index);
+		return vkAcquireNextImageKHR(r_device, r_swapchain, UINT64_MAX, a_semaphore, VK_NULL_HANDLE, &index);
 	}
 
 

@@ -148,6 +148,9 @@ namespace rhi::procedure {
 		if (result != VK_SUCCESS)
 			return result;
 
+		if (target_swapchain.m_swapchain)
+			vkDestroySwapchainKHR(m_device, target_swapchain.m_swapchain, nullptr);
+
 		target_swapchain.m_swapchain = vk_swapchain;
 		target_swapchain.m_format = final_format.format;
 		target_swapchain.m_extent = final_extent;

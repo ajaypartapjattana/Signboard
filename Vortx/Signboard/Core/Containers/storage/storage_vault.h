@@ -19,6 +19,17 @@ namespace storage {
 			freeList.reserve(capacity);
 		}
 
+		~vault() {
+			for (auto& slot : slots) {
+				if (slot.alive) {
+					slot.object_ptr()->~T();
+					slot.alive = false;
+				}
+			}
+
+			slots.clear();
+		}
+
 	private:
 		struct Slot {
 			std::aligned_storage_t<sizeof(T), alignof(T)> storage;

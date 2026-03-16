@@ -5,7 +5,7 @@
 
 #include "cmdbuffer_recorder.h"
 #include "queue_submission.h"
-#include "fence_watchdog.h"
+#include "_watchdog.h"
 
 #include "image_allocator.h"
 #include "buffer_allocator.h"
@@ -28,7 +28,7 @@ namespace rhi::procedure {
 
 	class cmdbuffer_recorder;
 	class queue_submission;
-	class fence_watchdog;
+	class _watchdog;
 
 	class image_allocator;
 	class buffer_allocator;
@@ -43,6 +43,5 @@ namespace rhi::procedure {
 	class shader_wrapper;
 	class pipeline_builder;
 	class framebuffer_creator;
-
 
 }

@@ -23,23 +23,22 @@ namespace rhi::primitive {
 
 		~swapchain() noexcept;
 
-		VkSwapchainKHR native_swapchain() const noexcept;
 		VkFormat native_format() const noexcept;
+		VkExtent2D native_extent() const noexcept;
 		uint32_t native_imageCount() const noexcept;
 
 	private:
 		friend class rhi::procedure::swapchain_builder;
 		friend struct swapchain_vkAccess;
 
-		VkSwapchainKHR m_swapchain = VK_NULL_HANDLE;
-
+		VkSwapchainKHR m_swapchain;
 		std::vector<VkImage> m_images;
 		std::vector<VkImageView> m_views;
 		
-		VkFormat m_format = VK_FORMAT_UNDEFINED;
-		VkExtent2D m_extent{};
+		VkFormat m_format;
+		VkExtent2D m_extent;
 		
-		VkDevice m_device = VK_NULL_HANDLE;
+		VkDevice m_device;
 
 	};
 

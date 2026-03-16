@@ -3,19 +3,29 @@
 namespace rhi::primitive {
 
 	swapchain::swapchain() noexcept
-		: m_swapchain(VK_NULL_HANDLE), m_format(VK_FORMAT_UNDEFINED), m_device(VK_NULL_HANDLE)
+		: 
+		m_swapchain(VK_NULL_HANDLE),
+
+		m_format(VK_FORMAT_UNDEFINED),
+		m_extent(),
+
+		m_device(VK_NULL_HANDLE)
 	{
 
 	}
 
-	swapchain::swapchain(swapchain&& other) noexcept {
-		m_swapchain = other.m_swapchain;
-		m_format = other.m_format;
-		m_extent = other.m_extent;
-		m_device = other.m_device;
+	swapchain::swapchain(swapchain&& other) noexcept
+		:
+		m_swapchain(other.m_swapchain),
+		m_images(other.m_images),
+		m_views(other.m_views),
+		
+		m_extent(other.m_extent),
+		m_format(other.m_format),
 
+		m_device(other.m_device)
+	{
 		other.m_swapchain = VK_NULL_HANDLE;
-		other.m_device = VK_NULL_HANDLE;
 	}
 
 	swapchain& swapchain::operator=(swapchain&& other) noexcept {
@@ -26,12 +36,15 @@ namespace rhi::primitive {
 			vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
 
 		m_swapchain = other.m_swapchain;
-		m_format = other.m_format;
+		m_images = other.m_images;
+		m_views = other.m_views;
+
 		m_extent = other.m_extent;
+		m_format = other.m_format;
+		
 		m_device = other.m_device;
 
 		other.m_swapchain = VK_NULL_HANDLE;
-		other.m_device = VK_NULL_HANDLE;
 
 		return *this;
 	}
@@ -44,12 +57,12 @@ namespace rhi::primitive {
 			vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
 	}
 
-	VkSwapchainKHR swapchain::native_swapchain() const noexcept {
-		return m_swapchain;
-	}
-
 	VkFormat swapchain::native_format() const noexcept {
 		return m_format;
+	}
+
+	VkExtent2D swapchain::native_extent() const noexcept {
+		return m_extent;
 	}
 
 	uint32_t swapchain::native_imageCount() const noexcept {

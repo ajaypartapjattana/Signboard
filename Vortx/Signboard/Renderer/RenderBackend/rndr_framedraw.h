@@ -26,7 +26,5 @@ private:
 	const storage::vault_readAccessor<rhi::primitive::pipeline> a_pipelineView;
 
 	uint32_t bufferedFrame_count = 2;
-	std::vector<rhi::primitive::framebuffer> m_primaryFramebuffers;
-
 
 };

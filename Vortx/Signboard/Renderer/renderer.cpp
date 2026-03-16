@@ -11,14 +11,25 @@ Renderer::Renderer(const platform::primitive::display_window& render_target)
 
 }
 
+Renderer::~Renderer() noexcept {
+
+}
+
 void Renderer::render() {
-	prepareFrame();
+	if (!prepareFrame())
+		configure_presentation();
+		return;
+
 	renderFrame();
 	endFrame();
 }
 
 bool Renderer::prepareFrame() {
 	acquiredImage = m_interface.acquire_toWriteImage();
+
+	if (acquiredImage == -1)
+		return false;
+
 	return true;
 }
 
@@ -30,4 +41,8 @@ void Renderer::renderFrame() {
 void Renderer::endFrame() {
 	m_interface.present_activeFrame(acquiredImage);
 	m_interface.advance_frame();
+}
+
+void Renderer::configure_presentation() {
+	m_presentation.refresh_swapchain();
 }

@@ -199,7 +199,7 @@
     <ClCompile Include="Signboard\RHI\procedure\cmdbuffer_recorder.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\commandBuffer_allocator.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\commandPool_creator.cpp" />
-    <ClCompile Include="Signboard\RHI\procedure\fence_watchdog.cpp" />
+    <ClCompile Include="Signboard\RHI\procedure\_watchdog.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\framebuffer_creator.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\image_allocator.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\pipelineLayout_builder.cpp" />
@@ -214,7 +214,6 @@
     <ClCompile Include="Signboard\Renderer\renderer.cpp" />
     <ClCompile Include="Signboard\Renderer\Mesh\VertexLayout.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Signboard\RHI\common\DeviceTypes.h" />
     <ClCompile Include="Signboard\RHI\procedure\swapchain_handler.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\swapchain_presenter.cpp" />
     <ClCompile Include="Signboard\Signboard.cpp" />
@@ -313,7 +312,7 @@
     <ClInclude Include="Signboard\RHI\procedure\cmdbuffer_recorder.h" />
     <ClInclude Include="Signboard\RHI\procedure\commandBuffer_allocator.h" />
     <ClInclude Include="Signboard\RHI\procedure\commandPool_creator.h" />
-    <ClInclude Include="Signboard\RHI\procedure\fence_watchdog.h" />
+    <ClInclude Include="Signboard\RHI\procedure\_watchdog.h" />
     <ClInclude Include="Signboard\RHI\procedure\framebuffer_creator.h" />
     <ClInclude Include="Signboard\RHI\procedure\image_allocator.h" />
     <ClInclude Include="Signboard\RHI\procedure\pipelineLayout_builder.h" />
@@ -335,16 +334,6 @@
     <ClInclude Include="Signboard\Assets\io\ResourceLoaders\ModelLoader.h" />
     <ClInclude Include="Signboard\Renderer\renderer.h" />
     <ClInclude Include="Signboard\Renderer\DescriptorSchema.h" />
-    <ClInclude Include="Signboard\RHI\common\frameBufferTypes.h" />
-    <ClInclude Include="Signboard\RHI\common\PipelineTypes.h" />
-    <ClInclude Include="Signboard\RHI\common\BufferTypes.h" />
-    <ClInclude Include="Signboard\RHI\common\DescriptorTypes.h" />
-    <ClInclude Include="Signboard\RHI\common\ImageSamplerTypes.h" />
-    <ClInclude Include="Signboard\RHI\common\ImageTypes.h" />
-    <ClInclude Include="Signboard\RHI\common\RenderPassTypes.h" />
-    <ClInclude Include="Signboard\RHI\common\SwapchainTypes.h" />
-    <ClInclude Include="Signboard\RHI\common\VertexTypes.h" />
-    <ClInclude Include="Signboard\RHI\common\base\Flag_type.h" />
     <ClInclude Include="Signboard\Renderer\Mesh\VertexLayout.h" />
     <ClInclude Include="Signboard\Renderer\Mesh\Vertex.h" />
     <ClInclude Include="Signboard\Signboard.h" />

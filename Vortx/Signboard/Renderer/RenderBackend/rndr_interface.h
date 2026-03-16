@@ -12,20 +12,21 @@ class rndr_interface {
 public:
 	rndr_interface(const rndr_context& context, const rndr_presentation& presentation);
 
+	~rndr_interface() noexcept;
+
 	void configure_bufferedFrames();
 
 	rhi::primitive::commandBuffer& get_activeFrame_cmd();
-	void advance_frame() noexcept;
 
 	uint32_t acquire_toWriteImage() noexcept;
 	void submit_activeFrame_cmd();
 	void present_activeFrame(uint32_t toPresent_Image);
 
+	void advance_frame() noexcept;
+
 private:
 	VkResult summon_commandPools();
-
 	void allocate_renderCommandBuffers();
-	void release_renderCommandBuffers() noexcept;
 
 private:
 	friend struct rndr_interface_Access;
@@ -33,7 +34,7 @@ private:
 	const rhi::core::device& r_device;
 	const rhi::primitive::swapchain& r_swapchain;
 
-	rhi::procedure::fence_watchdog m_watchdog;
+	rhi::procedure::_watchdog m_watchdog;
 	rhi::procedure::swapchain_handler m_swapchainHandler;
 	rhi::procedure::swapchain_presenter m_presenter;
 

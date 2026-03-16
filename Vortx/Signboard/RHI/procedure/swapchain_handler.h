@@ -20,7 +20,7 @@ namespace rhi::procedure{
 		swapchain_handler(const swapchain_handler&) = delete;
 		swapchain_handler& operator=(const swapchain_handler&) = delete;
 
-		void acquire_freeSwapchainImage(const rhi::primitive::semaphore* semaphore, uint32_t& index) const noexcept;
+		VkResult acquire_freeSwapchainImage(const rhi::primitive::semaphore* semaphore, uint32_t& index) const noexcept;
 
 	private:
 		VkDevice r_device = VK_NULL_HANDLE;
