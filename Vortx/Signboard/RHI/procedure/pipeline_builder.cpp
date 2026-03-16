@@ -128,6 +128,7 @@ namespace rhi::procedure {
 		pipeInfo.pViewportState = &viewportStateInfo;
 		pipeInfo.pRasterizationState = &rasterizerStateInfo;
 		pipeInfo.pMultisampleState = &multisampleStateInfo;
+		pipeInfo.pColorBlendState = &colorblendStateInfo;
 
 		pipeInfo.layout = m_layout;
 		pipeInfo.renderPass = m_pass;

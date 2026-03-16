@@ -26,7 +26,7 @@ namespace rhi::procedure {
 
 		VkShaderModuleCreateInfo shaderInfo{};
 		shaderInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		shaderInfo.pCode = reinterpret_cast<const uint32_t*>(*data);
+		shaderInfo.pCode = reinterpret_cast<const uint32_t*>(data);
 		shaderInfo.codeSize = size;
 
 		VkShaderModule vk_shaderModule = VK_NULL_HANDLE;

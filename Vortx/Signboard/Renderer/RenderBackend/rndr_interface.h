@@ -17,12 +17,12 @@ public:
 	rhi::primitive::commandBuffer& get_activeFrame_cmd();
 	void advance_frame() noexcept;
 
-	uint32_t acquire_toWriteImage() const noexcept;
+	uint32_t acquire_toWriteImage() noexcept;
 	void submit_activeFrame_cmd();
+	void present_activeFrame(uint32_t toPresent_Image);
 
 private:
 	VkResult summon_commandPools();
-	void acquire_graphicsPool_index() noexcept;
 
 	void allocate_renderCommandBuffers();
 	void release_renderCommandBuffers() noexcept;
@@ -33,16 +33,12 @@ private:
 	const rhi::core::device& r_device;
 	const rhi::primitive::swapchain& r_swapchain;
 
+	rhi::procedure::fence_watchdog m_watchdog;
 	rhi::procedure::swapchain_handler m_swapchainHandler;
+	rhi::procedure::swapchain_presenter m_presenter;
 
-	struct commandPool_binding {
-		uint32_t poolIndex;
-		uint32_t queueFamily;
-		VkQueueFlags capabilities;
-		bool presentSupported;
-	};
 	std_commandPools m_commandPools;
-	uint32_t m_graphicsPoolIndex = 0;
+	rhi::procedure::queue_submission m_graphics_submission;
 
 	uint32_t bufferedFrame_count = 2;
 

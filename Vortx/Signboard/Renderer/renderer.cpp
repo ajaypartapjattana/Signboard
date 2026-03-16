@@ -24,8 +24,10 @@ bool Renderer::prepareFrame() {
 
 void Renderer::renderFrame() {
 	m_framedraw.drawFrame(acquiredImage, m_interface.get_activeFrame_cmd());
+	m_interface.submit_activeFrame_cmd();
 }
 
 void Renderer::endFrame() {
-
+	m_interface.present_activeFrame(acquiredImage);
+	m_interface.advance_frame();
 }

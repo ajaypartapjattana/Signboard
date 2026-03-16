@@ -30,7 +30,7 @@ namespace rhi::procedure {
 		VkDevice m_device;
 		
 		VkBool32 enabled_anisotropy = VK_FALSE;
-		float max_anisotropy = 1.0f;
+		float max_anisotropy = 16.0f;
 
 		bool final_anisotropy = false;
 

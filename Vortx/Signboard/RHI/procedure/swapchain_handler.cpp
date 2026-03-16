@@ -7,16 +7,12 @@
 
 namespace rhi::procedure {
 
-	swapchain_handler::swapchain_handler(const rhi::core::device& device) noexcept
+	swapchain_handler::swapchain_handler(const rhi::core::device& device, const rhi::primitive::swapchain& swapchain) noexcept
 		:
 		r_device(rhi::core::device_vkAccess::get(device)),
-		r_swapchain(VK_NULL_HANDLE)
+		r_swapchain(rhi::primitive::swapchain_vkAccess::get(swapchain))
 	{
 
-	}
-
-	void swapchain_handler::set_swapchain(const rhi::primitive::swapchain& swapchain) noexcept {
-		r_swapchain = rhi::primitive::swapchain_vkAccess::get(swapchain);
 	}
 
 	void swapchain_handler::acquire_freeSwapchainImage(const rhi::primitive::semaphore* semaphore, uint32_t& index) const noexcept {

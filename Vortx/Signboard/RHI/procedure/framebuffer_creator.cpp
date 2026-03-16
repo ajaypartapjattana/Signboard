@@ -66,7 +66,7 @@ namespace rhi::procedure {
 
 		VkExtent2D a_swapchainExtent = rhi::primitive::swapchain_vkAccess::get_extent(swapchain);
 		
-		std::vector<VkFramebuffer> l_framebuffers{ swapchainView_count };
+		std::vector<VkFramebuffer> l_framebuffers(swapchainView_count, VK_NULL_HANDLE);
 		for (uint32_t i = 0; i < swapchainView_count; i++) {
 			VkImageView attachment[] = { a_swapchainViews[i]};
 
@@ -101,7 +101,8 @@ namespace rhi::procedure {
 				tw_fb.m_device = device;
 			};
 
-			fb_handles.push_back(writer.construct(builder));
+			storage::storage_handle fb_handle = writer.construct(builder);
+			fb_handles.push_back(fb_handle);
 
 		}
 

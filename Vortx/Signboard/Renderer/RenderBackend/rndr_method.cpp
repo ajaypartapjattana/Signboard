@@ -17,7 +17,7 @@ rndr_method::rndr_method(const rndr_context& context, const rndr_presentation& p
 }
 
 void rndr_method::create_primaryTarget() {
-
+	create_renderTarget();
 }
 
 void rndr_method::create_renderTarget() {

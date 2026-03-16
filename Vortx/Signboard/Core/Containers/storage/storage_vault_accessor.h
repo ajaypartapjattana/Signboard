@@ -104,6 +104,8 @@ namespace storage {
 			auto& slot = m_vault.slots[index];
 
 			T* obj = slot.object_ptr();
+
+			new (obj) T();
 			builder(obj);
 			
 			slot.alive = true;

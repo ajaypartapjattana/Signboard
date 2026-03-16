@@ -12,16 +12,17 @@ namespace rhi::procedure {
 	{
 		if (device.active_feature(&VkPhysicalDeviceFeatures::samplerAnisotropy)) {
 			enabled_anisotropy = VK_TRUE;
-			max_anisotropy = rhi::core::device_vkAccess::get_properties(device).limits.maxSamplerAnisotropy;
 		}
 	}
 
 	sampler_creator& sampler_creator::set_addressingMode(VkSamplerAddressMode mode) {
 		final_addressMode = mode;
+		return *this;
 	}
 
 	sampler_creator& sampler_creator::set_filter(VkFilter filter) {
 		final_filter = filter;
+		return *this;
 	}
 
 	sampler_creator& sampler_creator::require_anisotropy() {

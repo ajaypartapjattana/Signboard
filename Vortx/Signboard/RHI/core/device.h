@@ -1,5 +1,9 @@
 #pragma once
 
+namespace rhi::procedure {
+	class queue_submission;
+}
+
 #include <vulkan/vulkan.h>
 #include <cstdint>
 #include <vector>
@@ -36,6 +40,7 @@ namespace rhi::core {
 		void build(const device_CI& createInfo, const VkInstance instance);
 
 	private:
+		friend class rhi::procedure::queue_submission;
 		friend struct device_vkAccess;
 
 		VkDevice m_device = VK_NULL_HANDLE;

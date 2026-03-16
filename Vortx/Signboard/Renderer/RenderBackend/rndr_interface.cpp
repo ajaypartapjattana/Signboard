@@ -11,7 +11,11 @@ rndr_interface::rndr_interface(const rndr_context& context, const rndr_presentat
 	r_device(rndr_context_Access::get_device(context)),
 	r_swapchain(rndr_presentation_Access::get_swapchain(presentation)),
 
-	m_swapchainHandler(r_device)
+	m_watchdog(r_device),
+	m_swapchainHandler(r_device, r_swapchain),
+	m_presenter(r_device, r_swapchain),
+
+	m_graphics_submission(r_device)
 {
 	summon_commandPools();
 
@@ -27,7 +31,9 @@ rndr_interface::frame::frame(const rhi::core::device& device)
 
 }
 
-uint32_t rndr_interface::acquire_toWriteImage() const noexcept {
+uint32_t rndr_interface::acquire_toWriteImage() noexcept {
+	m_watchdog.watch(frames[activeFrameIndex].in_flight);
+
 	uint32_t a_imageIndex;
 	m_swapchainHandler.acquire_freeSwapchainImage(&frames[activeFrameIndex].image_available, a_imageIndex);
 
@@ -40,8 +46,6 @@ VkResult rndr_interface::summon_commandPools() {
 }
 
 void rndr_interface::configure_bufferedFrames() {
-	m_swapchainHandler.set_swapchain(r_swapchain);
-
 	bufferedFrame_count = r_swapchain.native_imageCount();
 
 	frames.reserve(bufferedFrame_count);
@@ -54,9 +58,6 @@ void rndr_interface::configure_bufferedFrames() {
 void rndr_interface::allocate_renderCommandBuffers() {
 	release_renderCommandBuffers();
 
-	if (m_graphicsPoolIndex == UINT32_MAX)
-		return;
-
 	rhi::procedure::commandBuffer_allocator prcdr{ r_device };
 
 	for (uint32_t i = 0; i < bufferedFrame_count; i++) {
@@ -65,7 +66,7 @@ void rndr_interface::allocate_renderCommandBuffers() {
 }
 
 void rndr_interface::release_renderCommandBuffers() noexcept {
-	// --- incomplete here! [add free/release capability to the commandBuffer_allocator before proceeding->]
+	// --- todo [add free/release capability to the commandBuffer_allocator->]
 }
 
 rhi::primitive::commandBuffer& rndr_interface::get_activeFrame_cmd() {
@@ -73,7 +74,19 @@ rhi::primitive::commandBuffer& rndr_interface::get_activeFrame_cmd() {
 }
 
 void rndr_interface::submit_activeFrame_cmd() {
+	VkPipelineStageFlags waitStage[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+	m_graphics_submission.update_toWait_semaphores(&frames[activeFrameIndex].image_available, waitStage, 1);
+	m_graphics_submission.update_toSignal_semaphores(&frames[activeFrameIndex].render_finished, 1);
+	m_graphics_submission.set_toTrigger_fence(frames[activeFrameIndex].in_flight);
 
+	m_graphics_submission.update_toSubmit_cmd(&frames[activeFrameIndex].cmd, 1);
+
+	m_graphics_submission.submit_graphics_cmd();
+}
+
+void rndr_interface::present_activeFrame(uint32_t toPresent_Image) {
+	m_presenter.update_toWait_semaphores(&frames[activeFrameIndex].render_finished, 1);
+	m_presenter.present(toPresent_Image);
 }
 
 void rndr_interface::advance_frame() noexcept {

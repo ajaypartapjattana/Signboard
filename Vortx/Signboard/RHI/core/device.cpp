@@ -255,6 +255,11 @@ namespace rhi::core {
 		vkGetDeviceQueue(m_device, idx.transfer, 0, &m_queues.transfer);
 		vkGetDeviceQueue(m_device, idx.present, 0, &m_queues.present);
 
+		m_families.graphics = idx.graphics;
+		m_families.compute = idx.compute;
+		m_families.transfer = idx.transfer;
+		m_families.present = idx.present;
+
 		m_enabledFeatures = ci.requiredFeatures;
 
 	}

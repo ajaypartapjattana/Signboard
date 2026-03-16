@@ -24,6 +24,6 @@ private:
 	rndr_interface m_interface;
 	rndr_framedraw m_framedraw;
 
-	uint32_t acquiredImage;
+	uint32_t acquiredImage = 0;
 
 };

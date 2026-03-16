@@ -52,12 +52,22 @@ namespace rhi::procedure {
 		subpassDesc.colorAttachmentCount = static_cast<uint32_t>(colorAttachmentRef.size());
 		subpassDesc.pColorAttachments = colorAttachmentRef.data();
 
+		VkSubpassDependency dependancy{};
+		dependancy.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependancy.dstSubpass = 0;
+		dependancy.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependancy.srcAccessMask = 0;
+		dependancy.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependancy.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
 		VkRenderPassCreateInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 		renderPassInfo.attachmentCount = static_cast<uint32_t>(m_attachments.size());
-		renderPassInfo.pAttachments = m_attachments.data();
+		renderPassInfo.pAttachments = m_attachments.empty() ? nullptr : m_attachments.data();
 		renderPassInfo.subpassCount = 1;
 		renderPassInfo.pSubpasses = &subpassDesc;
+		renderPassInfo.dependencyCount = 1;
+		renderPassInfo.pDependencies = &dependancy;
 
 		VkRenderPass vk_renderPass = VK_NULL_HANDLE;
 		VkResult result = vkCreateRenderPass(m_device, &renderPassInfo, nullptr, &vk_renderPass);
