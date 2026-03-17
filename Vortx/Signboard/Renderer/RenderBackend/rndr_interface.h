@@ -14,11 +14,12 @@ public:
 
 	~rndr_interface() noexcept;
 
+	void validate_swapchainDependancy();
 	void configure_bufferedFrames();
 
 	rhi::primitive::commandBuffer& get_activeFrame_cmd();
 
-	uint32_t acquire_toWriteImage() noexcept;
+	uint32_t acquire_toWriteImage(VkBool32* aquire_optimal) noexcept;
 	void submit_activeFrame_cmd();
 	void present_activeFrame(uint32_t toPresent_Image);
 

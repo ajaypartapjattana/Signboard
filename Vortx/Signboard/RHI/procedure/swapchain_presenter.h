@@ -21,6 +21,9 @@ namespace rhi::procedure {
 		swapchain_presenter(const swapchain_presenter&) = delete;
 		swapchain_presenter& operator=(const swapchain_presenter&) = delete;
 
+		swapchain_presenter(swapchain_presenter&&) noexcept;
+		swapchain_presenter& operator=(swapchain_presenter&&) noexcept;
+
 		swapchain_presenter& update_toWait_semaphores(const rhi::primitive::semaphore* pSemaphores, uint32_t count);
 
 		VkResult present(uint32_t imageIndex);

@@ -41,13 +41,11 @@ void passes::create_framebuffers(const storage::storage_handle passHandle, const
 	prcdr.bind_renderpass(*rp_writeAccess.get(passHandle));
 
 	if (a_info.tu_swapchain) {
-		uint32_t count = 0;
 		prcdr.create_swapchainTarget_framebuffer(*a_info.tu_swapchain, fb_writeAccess, fb_handles);
 		return;
 	}
 
 }
-
 
 const storage::vault_readAccessor<rhi::primitive::framebuffer> passes::get_fb_readAccessor() const noexcept {
 	storage::vault_readAccessor<rhi::primitive::framebuffer> accessor{ m_framebuffers };

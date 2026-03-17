@@ -30,6 +30,8 @@ public:
 	void create_renderTarget();
 	const storage::vault_readAccessor<render_target> get_readAccessor() const noexcept;
 
+	void validate_primaryTarget();
+
 private:
 	void create_primaryTarget();
 
@@ -42,6 +44,7 @@ private:
 	passes m_passes;
 	materials m_materials;
 
+	storage::storage_handle m_primaryTarget_handle;
 	storage::vault<render_target> targets;
 	storage::vault_writeAccessor<render_target> m_writeAccess;
 

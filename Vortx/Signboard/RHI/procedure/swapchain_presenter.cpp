@@ -19,6 +19,32 @@ namespace rhi::procedure {
 		info.pResults = nullptr;
 	}
 
+	swapchain_presenter::swapchain_presenter(swapchain_presenter&& other) noexcept 
+		: 
+		r_swapchain(other.r_swapchain),
+		r_presentQueue(other.r_presentQueue),
+
+		toWait_semaphores(std::move(other.toWait_semaphores)),
+		info(other.info)
+	{
+		info.pSwapchains = &r_swapchain;
+	}
+
+	swapchain_presenter& swapchain_presenter::operator=(swapchain_presenter&& other) noexcept {
+		if (this == &other)
+			return *this;
+
+		r_swapchain = other.r_swapchain;
+		r_presentQueue = other.r_presentQueue;
+
+		toWait_semaphores = std::move(other.toWait_semaphores);
+		info = other.info;
+
+		info.pSwapchains = &r_swapchain;
+
+		return *this;
+	}
+
 	swapchain_presenter& swapchain_presenter::update_toWait_semaphores(const rhi::primitive::semaphore* pSemaphores, uint32_t count) {
 		toWait_semaphores.resize(count);
 		for (uint32_t i = 0; i < count; ++i) {

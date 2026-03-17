@@ -26,7 +26,6 @@ namespace storage {
 					slot.alive = false;
 				}
 			}
-
 			slots.clear();
 		}
 

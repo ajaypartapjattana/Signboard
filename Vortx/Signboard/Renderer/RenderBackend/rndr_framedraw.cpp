@@ -1,16 +1,9 @@
 #include "rndr_framedraw.h"
 
-#include "rndr_context_Access.h"
-#include "rndr_presentation_Access.h"
 #include "rndr_method_Access.h"
 
-#include "Signboard/Renderer/Pass/passes_Access.h"
-
-rndr_framedraw::rndr_framedraw(const rndr_context& context, const rndr_presentation& presentation, const rndr_method& methods)
+rndr_framedraw::rndr_framedraw(const rndr_method& methods)
 	:
-	r_device(rndr_context_Access::get_device(context)),
-	r_swapchain(rndr_presentation_Access::get_swapchain(presentation)),
-
 	m_targets(methods.get_readAccessor()),
 
 	a_renderpassView(rndr_method_Access::get_renderPassView(methods)),

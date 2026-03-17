@@ -33,7 +33,7 @@ namespace rhi::procedure {
 		VkResult create_swapchainTarget_framebuffer(const rhi::primitive::swapchain& swapchain, storage::vault_writeAccessor<rhi::primitive::framebuffer>& writer, std::vector<storage::storage_handle>& fb_handles) const;
 
 	private:
-		VkDevice am_device;
+		VkDevice r_device;
 
 		VkRenderPass rm_toBindPass = VK_NULL_HANDLE;
 		VkExtent3D am_bufferExtent{};

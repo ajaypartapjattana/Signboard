@@ -10,7 +10,7 @@
 namespace rhi::procedure {
 
 	framebuffer_creator::framebuffer_creator(const rhi::core::device& device) noexcept
-		: am_device(rhi::core::device_vkAccess::get(device)), rm_toBindPass(VK_NULL_HANDLE)
+		: r_device(rhi::core::device_vkAccess::get(device)), rm_toBindPass(VK_NULL_HANDLE)
 	{
 
 	}
@@ -49,12 +49,12 @@ namespace rhi::procedure {
 		createInfo.height = am_bufferExtent.height;
 		createInfo.layers = am_bufferExtent.depth;
 
-		VkResult result = vkCreateFramebuffer(am_device, &createInfo, nullptr, &target_framebuffer.m_framebuffer);
+		VkResult result = vkCreateFramebuffer(r_device, &createInfo, nullptr, &target_framebuffer.m_framebuffer);
 		if (result != VK_SUCCESS)
 			return result;
 
 		target_framebuffer.m_extent = { am_bufferExtent.width, am_bufferExtent.height };
-		target_framebuffer.m_device = am_device;
+		target_framebuffer.m_device = r_device;
 
 		m_attachments.clear();
 		return result;
@@ -66,44 +66,62 @@ namespace rhi::procedure {
 
 		VkExtent2D a_swapchainExtent = rhi::primitive::swapchain_vkAccess::get_extent(swapchain);
 		
+		VkFramebufferCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		createInfo.renderPass = rm_toBindPass;
+		createInfo.attachmentCount = 1;
+		createInfo.width = a_swapchainExtent.width;
+		createInfo.height = a_swapchainExtent.height;
+		createInfo.layers = 1;
+
 		std::vector<VkFramebuffer> l_framebuffers(swapchainView_count, VK_NULL_HANDLE);
 		for (uint32_t i = 0; i < swapchainView_count; i++) {
 			VkImageView attachment[] = { a_swapchainViews[i]};
-
-			VkFramebufferCreateInfo createInfo{};
-			createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			createInfo.renderPass = rm_toBindPass;
-			createInfo.attachmentCount = 1;
 			createInfo.pAttachments = attachment;
-			createInfo.width = a_swapchainExtent.width;
-			createInfo.height = a_swapchainExtent.height;
-			createInfo.layers = 1;
 
-			VkResult result = vkCreateFramebuffer(am_device, &createInfo, nullptr, &l_framebuffers[i]);
+			VkResult result = vkCreateFramebuffer(r_device, &createInfo, nullptr, &l_framebuffers[i]);
 
 			if (result != VK_SUCCESS) {
 				for (uint32_t j = 0; j < i; j++) {
-					vkDestroyFramebuffer(am_device, l_framebuffers[j], nullptr);
+					vkDestroyFramebuffer(r_device, l_framebuffers[j], nullptr);
 					l_framebuffers[j] = VK_NULL_HANDLE;
 				}
 				return result;
 			}
 		}
 
-		fb_handles.clear();
-		fb_handles.reserve(swapchainView_count);
-		for (const VkFramebuffer handle : l_framebuffers) {
-			auto builder = [handle, a_swapchainExtent, device = am_device](rhi::primitive::framebuffer* fb) {
-				rhi::primitive::framebuffer& tw_fb = *fb;
+		uint32_t oldCount = static_cast<uint32_t>(fb_handles.size());
+		uint32_t newCount = swapchainView_count;
 
-				tw_fb.m_framebuffer = handle;
-				tw_fb.m_extent = a_swapchainExtent;
-				tw_fb.m_device = device;
+		uint32_t common = std::min(oldCount, newCount);
+
+		for (uint32_t i = 0; i < common; ++i) {
+			rhi::primitive::framebuffer& a_framebuffer = *writer.get(fb_handles[i]);
+
+			vkDestroyFramebuffer(r_device, a_framebuffer.m_framebuffer, nullptr);
+
+			a_framebuffer.m_framebuffer = l_framebuffers[i];
+			a_framebuffer.m_extent = a_swapchainExtent;
+			a_framebuffer.m_device = r_device;
+		}
+
+		for (uint32_t i = newCount; i < oldCount; ++i) {
+			rhi::primitive::framebuffer& a_framebuffer = *writer.get(fb_handles[i]);
+			vkDestroyFramebuffer(r_device, a_framebuffer.m_framebuffer, nullptr);
+			a_framebuffer.m_framebuffer = VK_NULL_HANDLE;
+		}
+
+		fb_handles.reserve(swapchainView_count);
+		for (uint32_t i = oldCount; i < swapchainView_count; ++i) {
+			auto builder = [vk_framebuffer = l_framebuffers[i], a_swapchainExtent, device = r_device](rhi::primitive::framebuffer* fb) {
+				rhi::primitive::framebuffer& a_framebuffer = *fb;
+
+				a_framebuffer.m_framebuffer = vk_framebuffer;
+				a_framebuffer.m_extent = a_swapchainExtent;
+				a_framebuffer.m_device = device;
 			};
 
-			storage::storage_handle fb_handle = writer.construct(builder);
-			fb_handles.push_back(fb_handle);
-
+			fb_handles.push_back(writer.construct(builder));
 		}
 
 		return VK_SUCCESS;

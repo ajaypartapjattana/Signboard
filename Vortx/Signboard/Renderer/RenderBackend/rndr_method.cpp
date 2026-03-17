@@ -39,8 +39,17 @@ void rndr_method::create_renderTarget() {
 		tw_target.pipelines.push_back(pipeHandle);
 	};
 
-	m_writeAccess.construct(builder);
+	m_primaryTarget_handle = m_writeAccess.construct(builder);
 
+}
+
+void rndr_method::validate_primaryTarget() {
+	render_target& primary = *m_writeAccess.get(m_primaryTarget_handle);
+
+	passes::createInfo info{};
+	info.tu_swapchain = &r_swapchain;
+
+	m_passes.create_framebuffers(primary.pass, &info, primary.framebuffers);
 }
 
 const storage::vault_readAccessor<render_target> rndr_method::get_readAccessor() const noexcept {

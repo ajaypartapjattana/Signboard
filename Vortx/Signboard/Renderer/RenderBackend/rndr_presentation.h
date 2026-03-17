@@ -13,7 +13,7 @@ public:
 	rndr_presentation(const rndr_presentation&) = delete;
 	rndr_presentation& operator=(const rndr_presentation&) = delete;
 
-	void refresh_swapchain();
+	void recreate_swapchain();
 	void update_bufferedFrameCount(const uint32_t count);
 
 private:
@@ -24,6 +24,8 @@ private:
 
 	const rhi::core::device& r_device;
 	const rhi::core::surface& r_surface;
+
+	rhi::procedure::_watchdog m_watchdog;
 
 	uint32_t bufferedFrame_count = 2;
 	rhi::primitive::swapchain m_swapchain;

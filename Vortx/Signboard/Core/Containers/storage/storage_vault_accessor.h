@@ -88,6 +88,16 @@ namespace storage {
 			}
 		}
 
+		void clear() {
+			for (auto& slot : m_vault.slots) {
+				if (slot.alive) {
+					slot.object_ptr()->~T();
+					slot.alive = false;
+				}
+			}
+			m_vault.slots.clear();
+		}
+
 		template<typename F>
 		storage_handle construct(F&& builder) {
 			uint32_t index;
@@ -144,8 +154,8 @@ namespace storage {
 			m_vault.freeList.push_back(h.index);
 		}
 
-		const T* get(storage_handle h) const {
-			const auto& slot = m_vault.slots[h.index];
+		T* get(storage_handle h) const {
+			auto& slot = m_vault.slots[h.index];
 			return slot.alive && slot.generation == h.generation ? slot.object_ptr() : nullptr;
 		}
 

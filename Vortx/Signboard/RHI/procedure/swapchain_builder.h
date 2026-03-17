@@ -42,11 +42,9 @@ namespace rhi::procedure {
 		std::vector<VkSurfaceFormatKHR> available_surfaceFormat;
 		std::vector<VkPresentModeKHR> available_presentMode;
 
-		VkExtent2D final_extent{};
-		bool extent_chosen = false;
+		VkExtent2D final_extent;
 
 		uint32_t final_imageCount = 2;
-		bool imageCount_chosen = false;
 
 		VkSurfaceFormatKHR final_format{};
 		bool format_chosen = false;

@@ -6,7 +6,7 @@ Renderer::Renderer(const platform::primitive::display_window& render_target)
 	m_presentation(m_context, 2),
 	m_methods(m_context, m_presentation),
 	m_interface(m_context, m_presentation),
-	m_framedraw(m_context, m_presentation, m_methods)
+	m_framedraw(m_methods)
 {
 
 }
@@ -16,21 +16,20 @@ Renderer::~Renderer() noexcept {
 }
 
 void Renderer::render() {
-	if (!prepareFrame())
-		configure_presentation();
-		return;
+	if (!prepareFrame()) return;
 
 	renderFrame();
 	endFrame();
 }
 
 bool Renderer::prepareFrame() {
-	acquiredImage = m_interface.acquire_toWriteImage();
+	VkBool32 frameReady = VK_TRUE;
+	acquiredImage = m_interface.acquire_toWriteImage(&frameReady);
 
-	if (acquiredImage == -1)
-		return false;
+	if (frameReady)	return true;
 
-	return true;
+	configure_presentation();
+	return false;
 }
 
 void Renderer::renderFrame() {
@@ -44,5 +43,7 @@ void Renderer::endFrame() {
 }
 
 void Renderer::configure_presentation() {
-	m_presentation.refresh_swapchain();
+	m_presentation.recreate_swapchain();
+	m_methods.validate_primaryTarget();
+	m_interface.validate_swapchainDependancy();
 }

@@ -13,16 +13,21 @@
 namespace rhi::procedure {
 
 	swapchain_builder::swapchain_builder(const rhi::core::device& device, const rhi::core::surface& surface) 
-		: m_device(rhi::core::device_vkAccess::get(device)), m_phys(rhi::core::device_vkAccess::get_physicalDevice(device)), m_surface(rhi::core::surface_vkAccess::get(surface))
+		: 
+		m_device(rhi::core::device_vkAccess::get(device)), 
+		m_phys(rhi::core::device_vkAccess::get_physicalDevice(device)), 
+		m_surface(rhi::core::surface_vkAccess::get(surface))
 	{
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_phys, m_surface, &surface_caps);
+
+		set_extent(surface_caps.currentExtent.width, surface_caps.currentExtent.height);
+		set_imageCount(surface_caps.minImageCount + 1);
 
 		uint32_t count = 0;
 		vkGetPhysicalDeviceSurfaceFormatsKHR(m_phys, m_surface, &count, nullptr);
 		available_surfaceFormat.resize(count);
 		vkGetPhysicalDeviceSurfaceFormatsKHR(m_phys, m_surface, &count, available_surfaceFormat.data());
 
-		count = 0;
 		vkGetPhysicalDeviceSurfacePresentModesKHR(m_phys, m_surface, &count, nullptr);
 		available_presentMode.resize(count);
 		vkGetPhysicalDeviceSurfacePresentModesKHR(m_phys, m_surface, &count, available_presentMode.data());
@@ -75,7 +80,6 @@ namespace rhi::procedure {
 			final_extent.height = std::clamp(h, surface_caps.minImageExtent.height, surface_caps.maxImageExtent.height);
 		}
 
-		extent_chosen = true;
 		return *this;
 	}
 
@@ -91,7 +95,6 @@ namespace rhi::procedure {
 			final_imageCount = count;
 		}
 
-		imageCount_chosen = true;
 		return *this;
 	}
 
@@ -114,12 +117,6 @@ namespace rhi::procedure {
 
 		if (!presentMode_chosen)
 			final_presentMode = VK_PRESENT_MODE_FIFO_KHR;
-
-		if (!extent_chosen)
-			set_extent(surface_caps.currentExtent.width, surface_caps.currentExtent.height);
-
-		if (!imageCount_chosen)
-			set_imageCount(surface_caps.minImageCount + 1);
 
 		VkSwapchainCreateInfoKHR createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -161,6 +158,9 @@ namespace rhi::procedure {
 
 		target_swapchain.m_images.resize(count);
 		vkGetSwapchainImagesKHR(m_device, vk_swapchain, &count, target_swapchain.m_images.data());
+
+		for (const VkImageView view : target_swapchain.m_views)
+			vkDestroyImageView(m_device, view, nullptr);
 
 		target_swapchain.m_views.resize(count);
 		for (uint32_t i = 0; i < count; ++i) {

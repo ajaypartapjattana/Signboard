@@ -7,6 +7,8 @@ rndr_presentation::rndr_presentation(const rndr_context& ctx, const uint32_t buf
 	r_device(rndr_context_Access::get_device(ctx)),
 	r_surface(rndr_context_Access::get_surface(ctx)),
 
+	m_watchdog(r_device),
+
 	m_swapchain()
 {
 	construct_swapchain();
@@ -18,10 +20,13 @@ void rndr_presentation::update_bufferedFrameCount(const uint32_t count) {
 		return;
 
 	bufferedFrame_count = clampedFrames;
+
+	m_watchdog.wait_device();
 	construct_swapchain();
 }
 
-void rndr_presentation::refresh_swapchain() {
+void rndr_presentation::recreate_swapchain() {
+	m_watchdog.wait_device();
 	construct_swapchain();
 }
 

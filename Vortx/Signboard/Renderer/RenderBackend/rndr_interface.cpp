@@ -34,14 +34,15 @@ rndr_interface::frame::frame(const rhi::core::device& device)
 
 }
 
-uint32_t rndr_interface::acquire_toWriteImage() noexcept {
+uint32_t rndr_interface::acquire_toWriteImage(VkBool32* acquire_optimal) noexcept {
 	m_watchdog.watch_fence(frames[activeFrameIndex].in_flight);
 
 	uint32_t a_imageIndex;
 	VkResult result = m_swapchainHandler.acquire_freeSwapchainImage(&frames[activeFrameIndex].image_available, a_imageIndex);
+	*acquire_optimal = VK_TRUE;
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
-		return -1;
+		*acquire_optimal = VK_FALSE;
 
 	return a_imageIndex;
 }
@@ -49,6 +50,14 @@ uint32_t rndr_interface::acquire_toWriteImage() noexcept {
 VkResult rndr_interface::summon_commandPools() {
 	rhi::procedure::commandPool_creator prcdr{ r_device };
 	return prcdr.create(m_commandPools);
+}
+
+void rndr_interface::validate_swapchainDependancy() {
+	rhi::procedure::swapchain_handler l_handler{ r_device, r_swapchain };
+	m_swapchainHandler = std::move(l_handler);
+
+	rhi::procedure::swapchain_presenter l_presenter{ r_device, r_swapchain };
+	m_presenter = std::move(l_presenter);
 }
 
 void rndr_interface::configure_bufferedFrames() {
