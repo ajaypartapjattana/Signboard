@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstdint>
+
 struct Time {
-	static float now();
+	static uint64_t now_ns();
+	static double now();
 };

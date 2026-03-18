@@ -23,7 +23,7 @@ namespace platform {
 
 		class display_window_builder;
 		class eventState_initializer;
-		class window_eventHandler;
+		class eventState_handler;
 
 	}
 

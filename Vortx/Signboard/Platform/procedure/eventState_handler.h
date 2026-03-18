@@ -5,6 +5,10 @@ namespace platform::primitive {
 	class window_eventState;
 }
 
+namespace platform::detail {
+	class InputEvent;
+}
+
 struct InputEvent;
 
 #include <GLFW/glfw3.h>
@@ -12,12 +16,12 @@ struct InputEvent;
 
 namespace platform::procedure {
 
-	class window_eventHandler {
+	class eventState_handler {
 	public:
-		window_eventHandler(platform::primitive::window_eventState& state);
+		eventState_handler(platform::primitive::window_eventState& state);
 
 		void poll();
-		void fetch_eventList(std::vector<InputEvent>& target_list);
+		void fetch_eventList(std::vector<platform::detail::InputEvent>& target_list);
 		bool target_isAlive();
 
 	private:

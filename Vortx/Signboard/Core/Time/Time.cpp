@@ -2,7 +2,13 @@
 
 #include <chrono>
 
-float Time::now() {
+uint64_t Time::now_ns() {
 	static const auto start = std::chrono::steady_clock::now();
-	return std::chrono::duration<float>(std::chrono::steady_clock::now() - start).count();
+	
+	auto now = std::chrono::steady_clock::now();
+	return std::chrono::duration_cast<std::chrono::nanoseconds>(now - start).count();
+}
+
+double Time::now() {
+	return now_ns() * 1e-9;
 }

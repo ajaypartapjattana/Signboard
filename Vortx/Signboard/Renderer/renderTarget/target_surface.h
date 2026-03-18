@@ -19,4 +19,6 @@ private:
 	platform::primitive::display_window m_primary;
 	platform::primitive::window_eventState m_eventState{};
 
+	platform::procedure::eventState_handler m_handler;
+
 };
