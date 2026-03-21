@@ -2,7 +2,7 @@
 
 namespace platform::procedure {
 	class eventState_initializer;
-	class eventState_handler;
+	class displayWindowHandler;
 }
 
 namespace platform::detail {
@@ -13,30 +13,66 @@ namespace platform::detail {
 #include <vector>
 #include <functional>
 
-#include "Signboard/Platform/detail/InputEvent.h"
+#include "Signboard/Core/Frame/Frame_event.h"
 
 namespace platform::primitive {
 
-	class window_eventState {
+	class eventStateInputsAccess;
+	class eventStateSurfaceAccess;
+
+	class windowEventState {
 	public:
-		window_eventState();
+		windowEventState();
 
-		window_eventState(const window_eventState&) = delete;
-		window_eventState& operator=(const window_eventState&) = delete;
+		windowEventState(const windowEventState&) = delete;
+		windowEventState& operator=(const windowEventState&) = delete;
 
-		static window_eventState* from(GLFWwindow* window);
-
-		bool window_isAlive() const;
+		static windowEventState* from(GLFWwindow* window);
 
 	private:
 		friend class platform::procedure::eventState_initializer;
-		friend class platform::procedure::eventState_handler;
+		friend class platform::procedure::displayWindowHandler;
 
 		friend struct detail::glfw_callbacks;
 
+		friend class eventStateInputsAccess;
+		friend class eventStateSurfaceAccess;
+
 		GLFWwindow* m_window = nullptr;
 
-		std::vector<platform::detail::InputEvent> m_resolveList;
+		std::vector<InputEvent> m_inputEvents;
+		std::vector<std::string> m_fileDrops;
+		uint64_t windowResize;
+
+	};
+
+	class eventStateInputsAccess {
+	public:
+		eventStateInputsAccess(windowEventState& eventState) noexcept;
+
+		auto begin() const noexcept { return r_eventState.m_inputEvents.begin(); }
+		auto end() const noexcept {	return r_eventState.m_inputEvents.end(); }
+
+		size_t size() const noexcept;
+		void drainInputList() noexcept;
+
+	private:
+		windowEventState& r_eventState;
+
+	};
+
+	class eventStateSurfaceAccess {
+	public:
+		eventStateSurfaceAccess(windowEventState& eventState) noexcept;
+
+		const std::vector<std::string>& fileDrops() const noexcept;
+		uint64_t windowResizeState() const noexcept;
+
+		void clearFileDrops() noexcept;
+		void consumeResize() noexcept;
+
+	private:
+		windowEventState& r_eventState;
 
 	};
 

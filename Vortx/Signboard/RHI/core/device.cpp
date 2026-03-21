@@ -10,7 +10,7 @@
 
 namespace rhi::core {
 
-	device::device(const device_CI& createInfo, const instance& instance)
+	device::device(const createInfo& createInfo, const instance& instance)
 		: m_device(VK_NULL_HANDLE), m_physical(VK_NULL_HANDLE)
 	{
 		VkInstance vkInstance = rhi::core::instance_vkAccess::get(instance);
@@ -57,7 +57,7 @@ namespace rhi::core {
 		return std::find(m_enabledFeatures.begin(),	m_enabledFeatures.end(), feature) != m_enabledFeatures.end();
 	}
 
-	void device::build(const device_CI& ci, const VkInstance instance) {
+	void device::build(const createInfo& ci, const VkInstance instance) {
 
 		struct phys_candidate {
 			VkPhysicalDevice phys = VK_NULL_HANDLE;

@@ -1,9 +1,11 @@
 #pragma once
 
 #include "Renderer/renderTarget/target_surface.h"
+#include "ECS/ECS.h"
+
 #include "Renderer/Renderer.h"
 
-struct FrameCommand;
+constexpr uint32_t MAX_COMMAND_COUNT = 32;
 
 class Signboard {
 public:
@@ -12,10 +14,23 @@ public:
 	void run();
 
 private:
-	void handleCommand(const FrameCommand& cmd);
+	using CommandFn = bool(*)(Signboard&, glm::vec2);
+	std::array<CommandFn, MAX_COMMAND_COUNT> commandTable;
+
+	void populateCommandTable();
+	bool executeCommands();
+
+	bool targetVisible;
+
+	static bool routine_Config(Signboard&, glm::vec2);
 
 private:
-	target_surface m_target{};
+
+	target_surface m_target;
 	Renderer m_renderer;
+
+	InputMapping bindings = { {GLFW_KEY_W, InputTrigger::Pressed, CommandID::CONFIG} };
+	std::vector<FrameCommand> toExecuteCommands;
+	CommandDispatcher m_dispatcher;
 
 };

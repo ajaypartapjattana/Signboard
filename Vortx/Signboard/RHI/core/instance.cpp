@@ -4,7 +4,7 @@
 
 namespace rhi::core {
 
-	instance::instance(const instance_CI& createInfo) noexcept
+	instance::instance(const createInfo& createInfo) noexcept
 		: m_instance(VK_NULL_HANDLE)
 	{
 		build(createInfo);
@@ -39,7 +39,7 @@ namespace rhi::core {
 		return m_instance;
 	}
 
-	void instance::build(const instance_CI& ci) {
+	void instance::build(const createInfo& ci) {
 		std::vector<const char*> l_extensions = ci.extensions;
 		std::vector<const char*> l_layers = ci.layers;
 

@@ -1,11 +1,13 @@
 #pragma once
 
-#include "ReadTypes/ApplicationReadTypes.h"
-#include "common/MLTypes.h"
+#include <string>
+#include <vector>
+
+#include "XMLLoader/XMLConfigLoader.h"
 
 class ConfigLoader {
 public:
-	void Build_StartupConfig(const std::string& path, StartupConfig& config);
+	void Build_StartupConfig(const std::string& path);
 
 private:
 	const ML_Attribute* FindAttr(const ML_Node& node, const std::string& name);

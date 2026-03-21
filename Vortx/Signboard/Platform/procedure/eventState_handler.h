@@ -1,31 +1,26 @@
 #pragma once
 
 namespace platform::primitive {
-	class display_window;
-	class window_eventState;
-}
-
-namespace platform::detail {
-	class InputEvent;
+	class displayWindow;
 }
 
 struct InputEvent;
 
 #include <GLFW/glfw3.h>
-#include <vector>
 
 namespace platform::procedure {
 
-	class eventState_handler {
+	class displayWindowHandler {
 	public:
-		eventState_handler(platform::primitive::window_eventState& state);
+		displayWindowHandler(platform::primitive::displayWindow& displayWindow);
 
-		void poll();
-		void fetch_eventList(std::vector<platform::detail::InputEvent>& target_list);
-		bool target_isAlive();
+		bool isAlive() const noexcept;
+		
+		void waitEvents() const noexcept;
+		void poll() const noexcept;
 
 	private:
-		platform::primitive::window_eventState& m_eventState;
+		GLFWwindow* r_window;
 
 	};
 

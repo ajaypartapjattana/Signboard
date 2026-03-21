@@ -3,33 +3,45 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 
-#include "Signboard/Platform/primitive/display_window_glfwAccess.h"
-
-CommandDispatcher::CommandDispatcher(const platform::primitive::display_window& window, const InputMapping& mapping) 
-	: platformEvents(platform::primitive::display_window_glfwAccess::get(window)), m_mapping(mapping)
+CommandDispatcher::CommandDispatcher(const InputMapping& mapping, std::vector<FrameCommand>& appEventQueue, bool& appRoutine)
+	:
+	m_mapping(mapping),
+	targetCommandList(appEventQueue),
+	targetVisibility(appRoutine)
 {
 
 }
 
-#include "Signboard/Core/Frame/FrameCommand.h"
+#include "Signboard/Core/Frame/Frame_command.h"
 
-void CommandDispatcher::dispatch(std::vector<FrameCommand>& appEventQueue) {
-	platformEvents.poll();
+void CommandDispatcher::resolveSurfaceEvents(platform::primitive::windowEventState& eventState) {
+	platform::primitive::eventStateSurfaceAccess l_surfaceAccess{ eventState };
 
-	auto& events = m_resolver.getFrameEvents();
-	platformEvents.fetchEvents(events);
+	uint64_t a_resizeState = l_surfaceAccess.windowResizeState();
+	if (verifyWindowVisibility(a_resizeState))
+		l_surfaceAccess.consumeResize();
+}
 
-	m_resolver.resolveInputs();
+bool CommandDispatcher::verifyWindowVisibility(uint64_t state) noexcept {
+	auto data = frame::event::decode_resize(state);
 
-	if (m_resolver.isKeyHeld(GLFW_KEY_W))
-		std::cout << "keypressed : W" << std::endl;
+	if (!data.dirty)
+		return false;
+	
+	targetVisibility = (data.width != 0 && data.height != 0);
+
+	if (targetVisibility)
+		targetCommandList.push_back(makeCommand(CommandID::CONFIG));
+
+	return true;
+}
+
+void CommandDispatcher::resolveInputEvents(platform::primitive::windowEventState& eventState) {
+	m_resolver.resolveInputs(platform::primitive::eventStateInputsAccess{ eventState });
 
 	for (const InputBinding& binding : m_mapping) {
 		if(istriggered(binding)) {
-			FrameCommand cmd;
-			cmd.payload = ResourceCommand{ResourceType::Model, ResourceAction::LOAD, "assets_data/models/Femhand.obj"};
-
-			appEventQueue.push_back(cmd);
+			targetCommandList.push_back(makeCommand(binding.command));
 		}
 	}
 }

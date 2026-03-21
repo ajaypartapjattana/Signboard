@@ -1,6 +1,6 @@
 #include "renderer.h"
 
-Renderer::Renderer(const platform::primitive::display_window& render_target) 
+Renderer::Renderer(const platform::primitive::displayWindow& render_target) 
 	: 
 	m_context(render_target),
 	m_presentation(m_context, 2),
@@ -28,7 +28,7 @@ bool Renderer::prepareFrame() {
 
 	if (frameReady)	return true;
 
-	configure_presentation();
+	configurePresentation();
 	return false;
 }
 
@@ -42,7 +42,7 @@ void Renderer::endFrame() {
 	m_interface.advance_frame();
 }
 
-void Renderer::configure_presentation() {
+void Renderer::configurePresentation() {
 	m_presentation.recreate_swapchain();
 	m_methods.validate_primaryTarget();
 	m_interface.validate_swapchainDependancy();

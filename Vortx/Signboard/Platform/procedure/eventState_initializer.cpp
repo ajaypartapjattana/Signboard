@@ -7,14 +7,14 @@
 
 namespace platform::procedure {
 
-	eventState_initializer::eventState_initializer(const platform::primitive::display_window& window)
+	eventState_initializer::eventState_initializer(const platform::primitive::displayWindow& window)
 		:
-		r_window(platform::primitive::display_window_glfwAccess::get(window))
+		r_window(platform::primitive::displayWindow_pAccess::get(window))
 	{
 		
 	}
 
-	void eventState_initializer::attach(platform::primitive::window_eventState& eventState) const {
+	void eventState_initializer::attach(platform::primitive::windowEventState& eventState) const {
 		eventState.m_window = r_window;
 		glfwSetWindowUserPointer(r_window, &eventState);
 	}

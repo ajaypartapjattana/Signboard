@@ -8,18 +8,18 @@
 
 class Renderer {
 public:
-	Renderer(const platform::primitive::display_window& render_target);
+	Renderer(const platform::primitive::displayWindow& render_target);
 
 	~Renderer() noexcept;
 
 	void render();
 
+	void configurePresentation();
+
 private:
 	bool prepareFrame();
 	void renderFrame();
 	void endFrame();
-
-	void configure_presentation();
 
 private:
 	rndr_context m_context;

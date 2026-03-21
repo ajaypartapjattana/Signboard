@@ -1,7 +1,7 @@
 #pragma once
 
 namespace platform::primitive {
-	class display_window;
+	class displayWindow;
 }
 
 #include <vulkan/vulkan.h>
@@ -14,7 +14,7 @@ namespace rhi::core {
 
 	class surface {
 	public:
-		surface(const platform::primitive::display_window& window, const instance& instance);
+		surface(const platform::primitive::displayWindow& window, const instance& instance);
 
 		surface(const surface&) = delete;
 		surface& operator=(const surface&) = delete;

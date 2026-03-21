@@ -1,27 +1,26 @@
 #include "eventState_handler.h"
 
-#include "Signboard/Platform/primitive/window_eventState.h"
+#include "Signboard/Platform/primitive/display_window_glfwAccess.h"
 
 namespace platform::procedure {
 
-	eventState_handler::eventState_handler(platform::primitive::window_eventState& state)
-		: m_eventState(state)
+	displayWindowHandler::displayWindowHandler(platform::primitive::displayWindow& displayWindow)
+		: 
+		r_window(platform::primitive::displayWindow_pAccess::get(displayWindow))
 	{
 
 	}
 
-	void eventState_handler::poll() {
-		m_eventState.m_resolveList.clear();
+	bool displayWindowHandler::isAlive() const noexcept {
+		return !glfwWindowShouldClose(r_window);
+	}
+
+	void displayWindowHandler::waitEvents() const noexcept {
+		glfwWaitEvents();
+	}
+
+	void displayWindowHandler::poll() const noexcept {
 		glfwPollEvents();
-	}
-
-	void eventState_handler::fetch_eventList(std::vector<platform::detail::InputEvent>& target_list) {
-		target_list.clear();
-		target_list.swap(m_eventState.m_resolveList);
-	}
-
-	bool eventState_handler::target_isAlive() {
-		return !glfwWindowShouldClose(m_eventState.m_window);
 	}
 
 }

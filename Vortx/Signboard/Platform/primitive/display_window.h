@@ -1,32 +1,38 @@
 #pragma once
 
-namespace platform::procedure {
-    class display_window_builder;
-}
-
 #include <GLFW/glfw3.h>
+#include <string>
 
 namespace platform::primitive {
 
-    struct display_window_glfwAccess;
+    struct displayWindow_pAccess;
 
-    class display_window {
+    class displayWindow {
     public:
-        display_window(const display_window&) = delete;
-        display_window& operator=(const display_window&) = delete;
+        struct createInfo {
+            std::string title;
 
-        display_window(display_window&&) noexcept;
-        display_window& operator=(display_window&&) noexcept;
+            bool fullscreen = false;
+            struct Extent2D {
+                uint32_t width;
+                uint32_t height;
+            } extent;
+        };
 
-        ~display_window() noexcept;
+        displayWindow(const createInfo& createInfo);
+
+        displayWindow(const displayWindow&) = delete;
+        displayWindow& operator=(const displayWindow&) = delete;
+
+        displayWindow(displayWindow&&) noexcept;
+        displayWindow& operator=(displayWindow&&) noexcept;
+
+        ~displayWindow() noexcept;
 
         const GLFWwindow* native_window() const noexcept;
 
     private:
-        friend class platform::procedure::display_window_builder;
-        friend struct display_window_glfwAccess;
-
-        display_window() = default;
+        friend struct displayWindow_pAccess;
 
         GLFWwindow* m_window;
     };

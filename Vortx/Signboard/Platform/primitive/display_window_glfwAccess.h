@@ -4,9 +4,9 @@
 
 namespace platform::primitive {
 
-	struct display_window_glfwAccess {
+	struct displayWindow_pAccess {
 
-		static GLFWwindow* get(const display_window& w) {
+		static GLFWwindow* get(const displayWindow& w) {
 			return w.m_window;
 		}
 

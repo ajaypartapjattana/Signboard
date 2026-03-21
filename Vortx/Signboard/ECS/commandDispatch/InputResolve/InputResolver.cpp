@@ -1,69 +1,90 @@
 #include "InputResolver.h"
 
-#include <GLFW/glfw3.h>
+InputResolver::InputResolver() noexcept {
 
-void InputResolver::resolveInputs() {
+}
+
+void InputResolver::resolveInputs(platform::primitive::eventStateInputsAccess&& m_inputsAccess) {
 	m_mousePosPrev = m_mousePos;
 	m_scrollDelta = { 0.0f, 0.0f };
 
 	m_keysPrev = m_keys;
 	m_mouseButtonsPrev = m_mouseButtons;
 
-	for (const InputEvent& e : m_events) {
-		switch (e.type) {
-		case InputEvent::Type::CursorMove:
-			m_mousePos = {
-				(float)e.cursorMove.x, 
-				(float)e.cursorMove.y 
+	using type = frame::event::InputType;
+
+	for (const InputEvent& e : m_inputsAccess) {
+		type a_type = frame::event::getType(e.payload);
+
+		switch (a_type) {
+
+		case type::CURSOR_MOVE: {
+			auto pos = frame::event::decode_analog(e.payload);
+			m_mousePos = glm::vec2{
+				(float)pos.x,
+				(float)pos.y
 			};
-			break;
-
-		case InputEvent::Type::Scroll:
-			m_scrollDelta += glm::vec2{
-				(float)e.scroll.xOffset, 
-				(float)e.scroll.yOffset
-			};
-			break;
-
-		case InputEvent::Type::Key:
-			if (e.key.action == GLFW_PRESS)
-				m_keys.insert(e.key.key);
-			else if (e.key.action == GLFW_RELEASE)
-				m_keys.erase(e.key.key);
-			break;
-
-		case InputEvent::Type::MouseButton:
-			if (e.mouseButton.action == GLFW_PRESS)
-				m_mouseButtons.insert(e.mouseButton.button);
-			else if (e.mouseButton.action == GLFW_RELEASE)
-				m_mouseButtons.erase(e.mouseButton.button);
 			break;
 		}
+
+		case type::SCROLL: {
+			auto delta = frame::event::decode_analog(e.payload);
+			m_scrollDelta += glm::vec2{
+				(float)delta.x,
+				(float)delta.y
+			};
+			break;
+		}
+
+		case type::KEY_BUTTON: {
+			auto key = frame::event::decode_digital(e.payload);
+			if (key.flags == GLFW_PRESS)
+				m_keys.set(key.payload);
+			else if (key.flags == GLFW_RELEASE)
+				m_keys.reset(key.payload);
+			break;
+		}
+
+		case type::MOUSE_BUTTON: {
+			auto mouseButton = frame::event::decode_digital(e.payload);
+			if (mouseButton.flags == GLFW_PRESS)
+				m_mouseButtons.set(mouseButton.payload);
+			else if (mouseButton.flags == GLFW_RELEASE)
+				m_mouseButtons.reset(mouseButton.payload);
+			break;
+		}
+
+		default:
+			break;
+			
+		}
 	}
+
+	m_inputsAccess.drainInputList();
 }
 
 bool InputResolver::isKeyPressed(int key) const {
-	return m_keys.find(key) != m_keys.end() && m_keysPrev.find(key) == m_keysPrev.end();
+	return m_keys.test(key) && !m_keysPrev.test(key);
 }
 
 bool InputResolver::isKeyHeld(int key) const {
-	return m_keys.find(key) != m_keys.end();
+	return m_keys.test(key);
 }
 
 bool InputResolver::isKeyReleased(int key) const {
-	return m_keys.find(key) == m_keys.end() && m_keysPrev.find(key) != m_keysPrev.end();
+	return !m_keys.test(key) && m_keysPrev.test(key);
 }
 
 bool InputResolver::isMousePressed(int button) const {
-	return m_mouseButtons.find(button) != m_mouseButtons.end() && m_mouseButtonsPrev.find(button) != m_mouseButtonsPrev.end();
+	return m_mouseButtons.test(button) && !m_mouseButtonsPrev.test(button);
 }
 
 bool InputResolver::isMouseHeld(int button) const {
-	return m_mouseButtons.find(button) != m_mouseButtons.end();
+	return m_mouseButtons.test(button);
 }
 
 bool InputResolver::isMouseReleased(int button) const {
-	return m_mouseButtons.find(button) == m_mouseButtons.end() && m_mouseButtonsPrev.find(button) != m_mouseButtonsPrev.end();
+	return !m_mouseButtons.test(button) && m_mouseButtonsPrev.test(button);
 }
 
 glm::vec2 InputResolver::MousePosition() const {

@@ -15,15 +15,15 @@ namespace rhi::core {
 
 	struct device_vkAccess;
 	
-	struct device_CI {
-		rhi::core::surface* present_surface = nullptr;
-		std::vector<const char*> requiredExtensions;
-		std::vector<VkBool32 VkPhysicalDeviceFeatures::*> requiredFeatures;
-	};
-
 	class device {
 	public:
-		device(const device_CI& createInfo, const instance& instance);
+		struct createInfo {
+			rhi::core::surface* present_surface = nullptr;
+			std::vector<const char*> requiredExtensions;
+			std::vector<VkBool32 VkPhysicalDeviceFeatures::*> requiredFeatures;
+		};
+
+		device(const createInfo& createInfo, const instance& instance);
 
 		device(const device&) = delete;
 		device& operator=(const device&) = delete;
@@ -37,7 +37,7 @@ namespace rhi::core {
 		bool active_feature(const VkBool32 VkPhysicalDeviceFeatures::* feature) const noexcept;
 
 	private:
-		void build(const device_CI& createInfo, const VkInstance instance);
+		void build(const createInfo& createInfo, const VkInstance instance);
 
 	private:
 		friend class rhi::procedure::queue_submission;

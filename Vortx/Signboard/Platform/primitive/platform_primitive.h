@@ -5,7 +5,7 @@
 
 namespace platform::primitive {
 
-	class display_window;
-	class window_eventState;
+	class displayWindow;
+	class windowEventState;
 
 }

@@ -6,16 +6,16 @@
 namespace rhi::core {
 
 	struct instance_vkAccess;
-	
-	struct instance_CI {
-		std::vector<const char*> extensions;
-		std::vector<const char*> layers;
-		bool enable_validation = false;
-	};
 
 	class instance {
 	public:
-		instance(const instance_CI& createInfo) noexcept;
+		struct createInfo {
+			std::vector<const char*> extensions;
+			std::vector<const char*> layers;
+			bool enable_validation = false;
+		};
+
+		instance(const createInfo& createInfo) noexcept;
 
 		instance(const instance&) = delete;
 		instance& operator=(const instance&) = delete;
@@ -28,7 +28,7 @@ namespace rhi::core {
 		const VkInstance native_instance() const noexcept;
 
 	private:
-		void build(const instance_CI& createInfo);
+		void build(const createInfo& createInfo);
 
 		bool validateExtension(const char* extName);
 		bool validateLayer(const char* layerName);

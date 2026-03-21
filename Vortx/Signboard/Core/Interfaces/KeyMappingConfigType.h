@@ -1,15 +1,14 @@
 #pragma once
 
+#include "Signboard/Core/Frame/Frame_command.h"
+
 #include <vector>
-#include <cstdint>
 
 enum class InputTrigger {
 	Pressed,
 	Released,
 	Held
 };
-
-using CommandID = uint32_t;
 
 struct InputBinding {
 	int key;

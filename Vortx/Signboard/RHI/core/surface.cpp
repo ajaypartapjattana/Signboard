@@ -8,10 +8,10 @@
 
 namespace rhi::core {
 
-	surface::surface(const platform::primitive::display_window& window, const instance& instance)
+	surface::surface(const platform::primitive::displayWindow& window, const instance& instance)
 		: m_surface(VK_NULL_HANDLE), m_instance(rhi::core::instance_vkAccess::get(instance))
 	{
-		GLFWwindow* a_window = platform::primitive::display_window_glfwAccess::get(window);
+		GLFWwindow* a_window = platform::primitive::displayWindow_pAccess::get(window);
 
 		VkResult result = glfwCreateWindowSurface(m_instance, a_window, nullptr, &m_surface);
 		if (result != VK_SUCCESS)

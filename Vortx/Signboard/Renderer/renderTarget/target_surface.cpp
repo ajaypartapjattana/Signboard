@@ -2,34 +2,38 @@
 
 target_surface::target_surface() 
 	: 
-	m_primary(setup_primiary()),
-
-	m_handler(m_eventState)
+	m_primaryWindow(get_windowCreateInfo()),
+	m_handler(m_primaryWindow)
 {
-	platform::procedure::eventState_initializer l_stateInitializer{ m_primary };
+	platform::procedure::eventState_initializer l_stateInitializer{ m_primaryWindow };
 
 	l_stateInitializer.attach(m_eventState);
 	l_stateInitializer.initiate_callbacks();
 }
 
-bool target_surface::target_ready() {
+platform::primitive::displayWindow::createInfo target_surface::get_windowCreateInfo() {
+	platform::primitive::displayWindow::createInfo info{};
+
+	info.title = "Signboard";
+	info.fullscreen = false;
+	info.extent = { 1200, 800 };
+
+	return info;
+}
+
+bool target_surface::isAvailable() const noexcept {
 	m_handler.poll();
-
-	return m_handler.target_isAlive();
+	return m_handler.isAlive();
 }
 
-const platform::primitive::display_window& target_surface::native_target() const noexcept {
-	return m_primary;
+void target_surface::waitForEvents() const noexcept {
+	m_handler.waitEvents();
 }
 
-platform::primitive::display_window target_surface::setup_primiary() {
-	platform::procedure::display_window_builder l_builder{ m_ctx };
+const platform::primitive::displayWindow& target_surface::native_target() const noexcept {
+	return m_primaryWindow;
+}
 
-	platform::procedure::display_window_builder::window_extent extent = { 1200, 800 };
-	l_builder.setMode_windowed(extent);
-
-	std::string title = "My window";
-	l_builder.set_windowTitle(title);
-
-	return l_builder.build();
+platform::primitive::windowEventState& target_surface::get_eventState() noexcept {
+	return m_eventState;
 }

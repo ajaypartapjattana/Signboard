@@ -7,14 +7,14 @@ struct rndr_context_Access;
 
 class rndr_context {
 public:
-	rndr_context(const platform::primitive::display_window& window);
+	rndr_context(const platform::primitive::displayWindow& window);
 
 	rndr_context(const rndr_context&) = delete;
 	rndr_context& operator=(const rndr_context&) = delete;
 
 private:
-	rhi::core::instance_CI get_instanceCI() noexcept;
-	rhi::core::device_CI get_deviceCI() noexcept;
+	rhi::core::instance::createInfo get_instanceCreateInfo() noexcept;
+	rhi::core::device::createInfo get_deviceCreateInfo() noexcept;
 
 private:
 	friend struct rndr_context_Access;

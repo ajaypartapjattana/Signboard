@@ -3,6 +3,7 @@
 #include "core/platform_core.h"
 #include "primitive/platform_primitive.h"
 #include "procedure/platform_procedure.h"
+#include "detail/platform_detail.h"
 
 namespace platform {
 
@@ -14,16 +15,19 @@ namespace platform {
 
 	namespace primitive {
 
-		class display_window;
-		class window_eventState;
+		class displayWindow;
+		class windowEventState;
 
 	}
 
 	namespace procedure {
 
-		class display_window_builder;
 		class eventState_initializer;
-		class eventState_handler;
+		class displayWindowHandler;
+
+	}
+
+	namespace detail{
 
 	}
 
