@@ -6,6 +6,8 @@
 
 #include "RenderBackend/rndr_Backend.h"
 
+constexpr uint32_t IMAGE_COUNT = 2;
+
 class Renderer {
 public:
 	Renderer(const platform::primitive::displayWindow& render_target);
@@ -14,7 +16,7 @@ public:
 
 	void render();
 
-	void configurePresentation();
+	void configurePresentation(uint32_t* imageCount);
 
 private:
 	bool prepareFrame();

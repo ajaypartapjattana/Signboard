@@ -13,7 +13,7 @@ public:
 	rndr_presentation(const rndr_presentation&) = delete;
 	rndr_presentation& operator=(const rndr_presentation&) = delete;
 
-	void recreate_swapchain();
+	void recreate_swapchain(uint32_t* imageCount);
 	void update_bufferedFrameCount(const uint32_t count);
 
 private:
@@ -27,7 +27,7 @@ private:
 
 	rhi::procedure::_watchdog m_watchdog;
 
-	uint32_t bufferedFrame_count = 2;
+	uint32_t bufferedFrame_count;
 	rhi::primitive::swapchain m_swapchain;
 
 };

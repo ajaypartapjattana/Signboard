@@ -42,19 +42,22 @@ private:
 	std_commandPools m_commandPools;
 	rhi::procedure::queue_submission m_graphics_submission;
 
-	uint32_t bufferedFrame_count = 2;
+	uint32_t bufferedFrame_count;
 
+	std::vector<uint32_t> imagesInFlight;
+	
 	struct frame {
-		rhi::primitive::semaphore image_available;
-		rhi::primitive::semaphore render_finished;
-		rhi::primitive::fence in_flight;
+		rhi::primitive::fence frameInFlight;
 		
+		rhi::primitive::semaphore imageAvailable;
 		rhi::primitive::commandBuffer cmd;
 
 		frame(const rhi::core::device& device);
 	};
 	std::vector<frame> frames;
-
 	uint32_t activeFrameIndex = 0;
+	uint32_t a_imageIndex;
+
+	std::vector<rhi::primitive::semaphore> imageRenderFinished;
 
 };

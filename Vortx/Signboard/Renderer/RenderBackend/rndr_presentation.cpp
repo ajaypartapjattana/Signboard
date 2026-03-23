@@ -9,7 +9,8 @@ rndr_presentation::rndr_presentation(const rndr_context& ctx, const uint32_t buf
 
 	m_watchdog(r_device),
 
-	m_swapchain()
+	m_swapchain(),
+	bufferedFrame_count(bufferedFrame_count)
 {
 	construct_swapchain();
 }
@@ -25,8 +26,12 @@ void rndr_presentation::update_bufferedFrameCount(const uint32_t count) {
 	construct_swapchain();
 }
 
-void rndr_presentation::recreate_swapchain() {
+void rndr_presentation::recreate_swapchain(uint32_t* imageCount) {
 	m_watchdog.wait_device();
+
+	if (imageCount) {
+		bufferedFrame_count = *imageCount;
+	}
 	construct_swapchain();
 }
 

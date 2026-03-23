@@ -47,7 +47,7 @@ bool Signboard::executeCommands() {
 }
 
 bool Signboard::routine_Config(Signboard& board, glm::vec2 data) {
-	board.m_renderer.configurePresentation();
+	board.m_renderer.configurePresentation(nullptr);
 	return true;
 }
 	
