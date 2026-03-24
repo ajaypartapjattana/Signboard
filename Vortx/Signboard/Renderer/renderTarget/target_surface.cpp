@@ -15,7 +15,7 @@ platform::primitive::displayWindow::createInfo target_surface::get_windowCreateI
 	platform::primitive::displayWindow::createInfo info{};
 
 	info.title = "Signboard";
-	info.fullscreen = false;
+	info.fullscreen = true;
 	info.extent = { 1200, 800 };
 
 	return info;

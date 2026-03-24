@@ -21,7 +21,7 @@ public:
 
 	uint32_t acquire_toWriteImage(VkBool32* aquire_optimal) noexcept;
 	void submit_activeFrame_cmd();
-	void present_activeFrame(uint32_t toPresent_Image);
+	void present_activeFrame();
 
 	void advance_frame() noexcept;
 

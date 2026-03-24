@@ -42,7 +42,7 @@ void Renderer::renderFrame() {
 }
 
 void Renderer::endFrame() {
-	m_interface.present_activeFrame(acquiredImage);
+	m_interface.present_activeFrame();
 	m_interface.advance_frame();
 }
 

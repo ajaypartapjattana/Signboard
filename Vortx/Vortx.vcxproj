@@ -160,8 +160,8 @@
     <ClCompile Include="Signboard\Assets\io\ResourceLoaders\TextureLoader.cpp" />
     <ClCompile Include="Signboard\Assets\Utility\convStr.cpp" />
     <ClCompile Include="Signboard\Core\Time\Time.cpp" />
-    <ClCompile Include="Signboard\ECS\commandDispatch\AppCommandDispatch.cpp" />
-    <ClCompile Include="Signboard\ECS\commandDispatch\InputResolve\InputResolver.cpp" />
+    <ClCompile Include="Signboard\Input\AppCommandDispatch.cpp" />
+    <ClCompile Include="Signboard\Input\InputResolve\InputResolver.cpp" />
     <ClCompile Include="Signboard\Platform\core\context.cpp" />
     <ClCompile Include="Signboard\Core\Frame\Frame_event.h" />
     <ClCompile Include="Signboard\Platform\primitive\window_eventState.cpp" />
@@ -245,8 +245,8 @@
     <ClInclude Include="Signboard\Core\Interfaces\startupConfigType.h" />
     <ClInclude Include="Signboard\Assets\configLoader\XMLLoader\XMLConfigLoader.h" />
     <ClInclude Include="Signboard\Assets\Utility\convStr.h" />
-    <ClInclude Include="Signboard\ECS\commandDispatch\AppCommandDisptach.h" />
-    <ClInclude Include="Signboard\ECS\commandDispatch\InputResolve\InputResolver.h" />
+    <ClInclude Include="Signboard\Input\AppCommandDisptach.h" />
+    <ClInclude Include="Signboard\Input\InputResolve\InputResolver.h" />
     <ClInclude Include="Signboard\ECS\ECS.h" />
     <ClInclude Include="Signboard\Platform\detail\glfw_callbacks.h" />
     <ClInclude Include="Signboard\Platform\detail\platform_detail.h" />
@@ -350,6 +350,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="ShaderBuild.targets" />
+    <None Include="shaders\base.frag" />
+    <None Include="shaders\base.vert" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Deprecated\Text.txt" />

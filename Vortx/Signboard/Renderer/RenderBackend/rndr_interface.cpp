@@ -77,7 +77,7 @@ uint32_t rndr_interface::acquire_toWriteImage(VkBool32* acquire_optimal) noexcep
 
 	VkResult result = m_swapchainHandler.acquire_freeSwapchainImage(&frames[activeFrameIndex].imageAvailable, a_imageIndex);
 
-	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 		*acquire_optimal = VK_FALSE;
 		return 0;
 	}
@@ -110,9 +110,9 @@ void rndr_interface::submit_activeFrame_cmd() {
 	m_graphics_submission.submit_graphics_cmd();
 }
 
-void rndr_interface::present_activeFrame(uint32_t toPresent_Image) {
+void rndr_interface::present_activeFrame() {
 	m_presenter.update_toWait_semaphores(&imageRenderFinished[a_imageIndex], 1);
-	m_presenter.present(toPresent_Image);
+	m_presenter.present(a_imageIndex);
 }
 
 void rndr_interface::advance_frame() noexcept {
