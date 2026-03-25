@@ -14,10 +14,10 @@ private:
 
 
 private:
-	const rhi::core::device& r_device;
-	const rhi::core::allocator& r_allocator;
+	const rhi::creDevice& r_device;
+	const rhi::creAllocator& r_allocator;
 
-	storage::vault<rhi::primitive::image> m_attachmentImages;
-	storage::vault<rhi::primitive::image> m_textureImages;
+	storage::vault<rhi::pmvImage> m_attachmentImages;
+	storage::vault<rhi::pmvImage> m_textureImages;
 
 };

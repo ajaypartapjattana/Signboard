@@ -3,11 +3,13 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 
-namespace rhi::core {
+namespace rhi::access {
+	struct instance_pAccess;
+}
 
-	struct instance_vkAccess;
+namespace rhi {
 
-	class instance {
+	class creInstance {
 	public:
 		struct createInfo {
 			std::vector<const char*> extensions;
@@ -15,17 +17,15 @@ namespace rhi::core {
 			bool enable_validation = false;
 		};
 
-		instance(const createInfo& createInfo) noexcept;
+		creInstance(const createInfo& createInfo) noexcept;
 
-		instance(const instance&) = delete;
-		instance& operator=(const instance&) = delete;
+		creInstance(const creInstance&) = delete;
+		creInstance& operator=(const creInstance&) = delete;
 
-		instance(instance&&) noexcept;
-		instance& operator=(instance&&) noexcept;
+		creInstance(creInstance&&) noexcept;
+		creInstance& operator=(creInstance&&) noexcept;
 
-		~instance() noexcept;
-
-		const VkInstance native_instance() const noexcept;
+		~creInstance() noexcept;
 
 	private:
 		void build(const createInfo& createInfo);
@@ -34,9 +34,9 @@ namespace rhi::core {
 		bool validateLayer(const char* layerName);
 
 	private:
-		friend struct instance_vkAccess;
+		friend struct rhi::access::instance_pAccess;
 
-		VkInstance m_instance = VK_NULL_HANDLE;
+		VkInstance m_instance;
 
 	};
 

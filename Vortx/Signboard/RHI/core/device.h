@@ -1,67 +1,53 @@
 #pragma once
 
-namespace rhi::procedure {
-	class queue_submission;
-}
-
 #include <vulkan/vulkan.h>
-#include <cstdint>
 #include <vector>
 
-namespace rhi::core {
+#include "Signboard/RHI/detail/standardQueues.h"
 
-	class instance;
-	class surface;
+namespace rhi::access {
+	struct device_pAccess;
+}
 
-	struct device_vkAccess;
-	
-	class device {
+namespace rhi {
+
+	class creInstance;
+	class creSurface;
+
+	class pcdQueueSubmission;
+
+	class creDevice {
 	public:
 		struct createInfo {
-			rhi::core::surface* present_surface = nullptr;
+			rhi::creSurface* present_surface = nullptr;
 			std::vector<const char*> requiredExtensions;
 			std::vector<VkBool32 VkPhysicalDeviceFeatures::*> requiredFeatures;
 		};
 
-		device(const createInfo& createInfo, const instance& instance);
+		creDevice(const createInfo& createInfo, const creInstance& instance);
 
-		device(const device&) = delete;
-		device& operator=(const device&) = delete;
+		creDevice(const creDevice&) = delete;
+		creDevice& operator=(const creDevice&) = delete;
 
-		device(device&&) noexcept;
-		device& operator=(device&&) noexcept;
+		creDevice(creDevice&&) noexcept;
+		creDevice& operator=(creDevice&&) noexcept;
 
-		~device() noexcept;
+		~creDevice() noexcept;
 
-		VkDevice native_device() const noexcept;
 		bool active_feature(const VkBool32 VkPhysicalDeviceFeatures::* feature) const noexcept;
 
 	private:
 		void build(const createInfo& createInfo, const VkInstance instance);
 
 	private:
-		friend class rhi::procedure::queue_submission;
-		friend struct device_vkAccess;
+		friend class pcdQueueSubmission;
+		friend struct rhi::access::device_pAccess;
 
-		VkDevice m_device = VK_NULL_HANDLE;
-		VkPhysicalDevice m_physical = VK_NULL_HANDLE;
+		VkDevice m_device;
+		VkPhysicalDevice m_physical;
 
-		struct queues {
-			VkQueue graphics = VK_NULL_HANDLE;
-			VkQueue compute = VK_NULL_HANDLE;
-			VkQueue transfer = VK_NULL_HANDLE;
-			VkQueue present = VK_NULL_HANDLE;
-		};
-
-		struct queue_families {
-			uint32_t graphics = UINT32_MAX;
-			uint32_t compute = UINT32_MAX;
-			uint32_t transfer = UINT32_MAX;
-			uint32_t present = UINT32_MAX;
-		};
-
-		queues m_queues;
-		queue_families m_families;
+		standardQueues m_queues;
+		standardQueueFamilies m_families;
 
 		std::vector<VkBool32 VkPhysicalDeviceFeatures::*> m_enabledFeatures;
 

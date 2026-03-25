@@ -17,7 +17,7 @@ public:
 	void validate_swapchainDependancy();
 	void configure_bufferedFrames();
 
-	rhi::primitive::commandBuffer& get_activeFrame_cmd();
+	rhi::pmvCommandBuffer& get_activeFrame_cmd();
 
 	uint32_t acquire_toWriteImage(VkBool32* aquire_optimal) noexcept;
 	void submit_activeFrame_cmd();
@@ -32,32 +32,32 @@ private:
 private:
 	friend struct rndr_interface_Access;
 
-	const rhi::core::device& r_device;
-	const rhi::primitive::swapchain& r_swapchain;
+	const rhi::creDevice& r_device;
+	const rhi::pmvSwapchain& r_swapchain;
 
-	rhi::procedure::_watchdog m_watchdog;
-	rhi::procedure::swapchain_handler m_swapchainHandler;
-	rhi::procedure::swapchain_presenter m_presenter;
+	rhi::pcdWatchdog m_watchdog;
+	rhi::pcdSwapchainHandler m_swapchainHandler;
+	rhi::pcdSwapchainPresenter m_presenter;
 
-	std_commandPools m_commandPools;
-	rhi::procedure::queue_submission m_graphics_submission;
+	rhi::standardCommandPools m_commandPools;
+	rhi::pcdQueueSubmission m_graphics_submission;
 
 	uint32_t bufferedFrame_count;
 
 	std::vector<uint32_t> imagesInFlight;
 	
 	struct frame {
-		rhi::primitive::fence frameInFlight;
+		rhi::pmvFence frameInFlight;
 		
-		rhi::primitive::semaphore imageAvailable;
-		rhi::primitive::commandBuffer cmd;
+		rhi::pmvSemaphore imageAvailable;
+		rhi::pmvCommandBuffer cmd;
 
-		frame(const rhi::core::device& device);
+		frame(const rhi::creDevice& device);
 	};
 	std::vector<frame> frames;
 	uint32_t activeFrameIndex = 0;
 	uint32_t a_imageIndex;
 
-	std::vector<rhi::primitive::semaphore> imageRenderFinished;
+	std::vector<rhi::pmvSemaphore> imageRenderFinished;
 
 };

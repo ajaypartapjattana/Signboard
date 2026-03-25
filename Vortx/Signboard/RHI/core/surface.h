@@ -6,32 +6,31 @@ namespace platform::primitive {
 
 #include <vulkan/vulkan.h>
 
-namespace rhi::core {
+namespace rhi::access {
+	struct surface_pAccess;
+}
 
-	class instance;
+namespace rhi {
 
-	struct surface_vkAccess;
+	class creInstance;
 
-	class surface {
+	class creSurface {
 	public:
-		surface(const platform::primitive::displayWindow& window, const instance& instance);
+		creSurface(const platform::primitive::displayWindow& window, const creInstance& instance);
 
-		surface(const surface&) = delete;
-		surface& operator=(const surface&) = delete;
+		creSurface(const creSurface&) = delete;
+		creSurface& operator=(const creSurface&) = delete;
 
-		surface(surface&&) noexcept;
-		surface& operator=(surface&&) noexcept;
+		creSurface(creSurface&&) noexcept;
+		creSurface& operator=(creSurface&&) noexcept;
 
-		~surface() noexcept;
-
-		const VkSurfaceKHR* native_surface() const noexcept;
+		~creSurface() noexcept;
 
 	private:
-		friend struct surface_vkAccess;
+		friend struct rhi::access::surface_pAccess;
 
-		VkSurfaceKHR m_surface = VK_NULL_HANDLE;
-
-		VkInstance m_instance = VK_NULL_HANDLE;
+		VkSurfaceKHR m_surface;
+		VkInstance m_instance;
 
 	};
 

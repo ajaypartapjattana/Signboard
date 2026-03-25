@@ -11,9 +11,9 @@ res_images::res_images(const rndr_context& ctx)
 }
 
 void res_images::create_image() {
-	rhi::primitive::image l_image;
+	rhi::pmvImage l_image;
 
-	rhi::procedure::image_allocator allocator{ r_device, r_allocator };
+	rhi::pcdImageAllocator allocator{ r_device, r_allocator };
 	allocator.allocate(l_image);
 
 	/*storage::vault_writeAccessor<rhi::primitive::image> write{ m_textureImages };

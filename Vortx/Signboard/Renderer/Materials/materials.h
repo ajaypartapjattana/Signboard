@@ -7,7 +7,7 @@ class passes;
 
 class materials {
 public:
-	materials(const rhi::core::device& device, const rhi::primitive::swapchain& swapchain, const passes& passes);
+	materials(const rhi::creDevice& device, const rhi::pmvSwapchain& swapchain, const passes& passes);
 
 	struct createInfo {
 		const char* vertShader_path;
@@ -15,19 +15,19 @@ public:
 	};
 
 	storage::storage_handle create_pipeline(storage::storage_handle passHandle, uint32_t subpass, const createInfo* createInfo);
-	storage::vault_readAccessor<rhi::primitive::pipeline> get_readAccessor() const noexcept;
+	storage::vault_readAccessor<rhi::pmvPipeline> get_readAccessor() const noexcept;
 
 private:
-	void create_shader(rhi::primitive::shader& tw_shader, const char* path);
+	void create_shader(rhi::pmvShader& tw_shader, const char* path);
 
 private:
-	const rhi::core::device& r_device;
-	const rhi::primitive::swapchain& r_swapchain;
-	const storage::vault_readAccessor<rhi::primitive::renderPass> a_renderPass_RAccess;
+	const rhi::creDevice& r_device;
+	const rhi::pmvSwapchain& r_swapchain;
+	const storage::vault_readAccessor<rhi::pmvRenderPass> a_renderPass_RAccess;
 
-	rhi::primitive::pipelineLayout m_pipelineLayout;
+	rhi::pmvPipelineLayout m_pipelineLayout;
 
-	storage::vault<rhi::primitive::pipeline> m_pipelines;
-	storage::vault_writeAccessor<rhi::primitive::pipeline> m_writeAccess;
+	storage::vault<rhi::pmvPipeline> m_pipelines;
+	storage::vault_writeAccessor<rhi::pmvPipeline> m_writeAccess;
 
 };

@@ -38,8 +38,8 @@ private:
 private:
 	friend struct rndr_method_Access;
 
-	const rhi::core::device& r_device;
-	const rhi::primitive::swapchain& r_swapchain;
+	const rhi::creDevice& r_device;
+	const rhi::pmvSwapchain& r_swapchain;
 
 	passes m_passes;
 	materials m_materials;

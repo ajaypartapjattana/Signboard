@@ -1,35 +1,32 @@
 #pragma once
 
-namespace rhi::procedure {
-	class renderPass_builder;
-}
-
 #include <vulkan/vulkan.h>
 
-namespace rhi::primitive {
+namespace rhi::access {
+	struct renderPass_pAccess;
+}
 
-	struct renderPass_vkAccess;
+namespace rhi {
 
-	class renderPass {
+	class pcdRenderPassBuilder;
+
+	class pmvRenderPass {
 	public:
-		renderPass() noexcept;
+		pmvRenderPass() noexcept;
 
-		renderPass(const renderPass&) = delete;
-		renderPass& operator=(const renderPass&) = delete;
+		pmvRenderPass(const pmvRenderPass&) = delete;
+		pmvRenderPass& operator=(const pmvRenderPass&) = delete;
 
-		renderPass(renderPass&&) noexcept;
-		renderPass& operator=(renderPass&&) noexcept;
+		pmvRenderPass(pmvRenderPass&&) noexcept;
+		pmvRenderPass& operator=(pmvRenderPass&&) noexcept;
 
-		~renderPass() noexcept;
-
-		VkRenderPass native_renderPass() const noexcept;
+		~pmvRenderPass() noexcept;
 
 	private:
-		friend class rhi::procedure::renderPass_builder;
-		friend struct renderPass_vkAccess;
+		friend class pcdRenderPassBuilder;
+		friend struct rhi::access::renderPass_pAccess;
 
 		VkRenderPass m_renderPass;
-
 		VkDevice m_device;
 
 	};

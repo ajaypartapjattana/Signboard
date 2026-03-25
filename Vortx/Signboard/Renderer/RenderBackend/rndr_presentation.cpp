@@ -36,7 +36,7 @@ void rndr_presentation::recreate_swapchain(uint32_t* imageCount) {
 }
 
 VkResult rndr_presentation::construct_swapchain() {
-	rhi::procedure::swapchain_builder prcdr{ r_device, r_surface };
+	rhi::pcdSwapchainBuilder prcdr{ r_device, r_surface };
 
 	prcdr.prefer_format(VK_FORMAT_B8G8R8A8_SRGB);
 	prcdr.set_imageCount(bufferedFrame_count);

@@ -7,62 +7,41 @@
 
 namespace rhi {
 	
-	namespace core {
+	class creInstance;
+	class creSurface;
+	class creDevice;
+	class creAllocator;
 
-		class instance;
-		class surface;
-		class device;
-		class allocator;
-	
-	}
+	class pmvCommandBuffer;
+	class pmvSwapchain;
+	class pmvBuffer;
+	class pmvImage;
+	class pmvSampler;
+	class pmvRenderPass;
+	class pmvFramebuffer;
+	class pmvSemaphore;
+	class pmvFence;
+	class pmvDescriptorLayout;
+	class pmvPushConstantRange;
+	class pmvPipelineLayout;
+	class pmvShader;
+	class pmvPipeline;
 
-	namespace primitive {
-	
-		class commandBuffer;
-		class swapchain;
-
-		class buffer;
-		class image;
-		class sampler;
-
-		class renderPass;
-		class framebuffer;
-
-		class semaphore;
-		class fence;
-
-		class descriptorLayout;
-		class pushConstantRange;
-		class pipelineLayout;
-		class shader;
-		class pipeline;
-	
-	}
-
-	namespace procedure {
-	
-		class swapchain_builder;
-		class commandPool_creator;
-		class commandBuffer_allocator;
-
-		class cmdbuffer_recorder;
-		class queue_submission;
-
-		class image_allocator;
-		class buffer_allocator;
-		class sampler_creator;
-
-		class swapchain_handler;
-
-		class renderPass_builder;
-		class pipelineLayout_builder;
-		class shader_wrapper;
-		class pipeline_builder;
-		class framebuffer_creator;
-	}
-
-	namespace detail {
-
-	}
+	class pcdCommandPoolCreator;
+	class pcdCommandBufferAllocator;
+	class pcdCommandBufferRecorder;
+	class pcdQueueSubmission;
+	class pcdWatchdog;
+	class pcdImageAllocator;
+	class pcdBufferAllocator;
+	class pcdSamplerCreator;
+	class pcdSwapchainBuilder;
+	class pcdSwapchainHandler;
+	class pcdSwapchainPresenter;
+	class pcdRenderPassBuilder;
+	class pcdPipelineLayoutBuilder;
+	class pcdShaderWrapper;
+	class pcdPipelineBuilder;
+	class pcdFramebufferCreator;
 
 }

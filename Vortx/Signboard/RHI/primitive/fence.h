@@ -1,37 +1,36 @@
 #pragma once
 
-namespace rhi::core {
-	class device;
-}
-
 #include <vulkan/vulkan.h>
 
-namespace rhi::primitive {
-	
-	struct fence_vkAccess;
+namespace rhi::access {
+	struct fence_pAccess;
+}
 
-	class fence {
+namespace rhi {
+
+	class creDevice;
+
+	class pmvFence {
 	public:
-		fence(const rhi::core::device& device) noexcept;
-		fence(const rhi::core::device& device, const bool signaled) noexcept;
+		pmvFence(const rhi::creDevice& device) noexcept;
+		pmvFence(const rhi::creDevice& device, const bool signaled) noexcept;
 
-		fence(const fence&) = delete;
-		fence& operator=(const fence&) = delete;
+		pmvFence(const pmvFence&) = delete;
+		pmvFence& operator=(const pmvFence&) = delete;
 
-		fence(fence&&) noexcept;
-		fence& operator=(fence&&) noexcept;
+		pmvFence(pmvFence&&) noexcept;
+		pmvFence& operator=(pmvFence&&) noexcept;
 
-		~fence() noexcept;
+		~pmvFence() noexcept;
 
 	private:
 		void create(const bool signaled);
 
 	private:
-		friend struct fence_vkAccess;
+		friend struct rhi::access::fence_pAccess;
 
-		VkFence m_fence = VK_NULL_HANDLE;
-
-		VkDevice m_device = VK_NULL_HANDLE;
+		VkFence m_fence;
+		VkDevice m_device;
 
 	};
 

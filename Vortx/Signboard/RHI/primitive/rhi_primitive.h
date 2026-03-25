@@ -20,25 +20,25 @@
 #include "shader.h"
 #include "pipeline.h"
 
-namespace rhi::primitive {
+namespace rhi {
 
-	class commandBuffer;
-	class swapchain;
+	class pmvCommandBuffer;
+	class pmvSwapchain;
 
-	class buffer;
-	class image;
-	class sampler;
+	class pmvBuffer;
+	class pmvImage;
+	class pmvSampler;
 
-	class renderPass;
-	class framebuffer;
+	class pmvRenderPass;
+	class pmvFramebuffer;
 
-	class semaphore;
-	class fence;
+	class pmvSemaphore;
+	class pmvFence;
 
-	class descriptorLayout;
-	class pushConstantRange;
-	class pipelineLayout;
-	class shader;
-	class pipeline;
+	class pmvDescriptorLayout;
+	class pmvPushConstantRange;
+	class pmvPipelineLayout;
+	class pmvShader;
+	class pmvPipeline;
 
 }

@@ -1,8 +1,8 @@
 #include "swapchain.h"
 
-namespace rhi::primitive {
+namespace rhi {
 
-	swapchain::swapchain() noexcept
+	pmvSwapchain::pmvSwapchain() noexcept
 		: 
 		m_swapchain(VK_NULL_HANDLE),
 
@@ -14,7 +14,7 @@ namespace rhi::primitive {
 
 	}
 
-	swapchain::swapchain(swapchain&& other) noexcept
+	pmvSwapchain::pmvSwapchain(pmvSwapchain&& other) noexcept
 		:
 		m_swapchain(other.m_swapchain),
 		m_images(other.m_images),
@@ -26,9 +26,10 @@ namespace rhi::primitive {
 		m_device(other.m_device)
 	{
 		other.m_swapchain = VK_NULL_HANDLE;
+		other.m_views.clear();
 	}
 
-	swapchain& swapchain::operator=(swapchain&& other) noexcept {
+	pmvSwapchain& pmvSwapchain::operator=(pmvSwapchain&& other) noexcept {
 		if (this == &other)
 			return *this;
 
@@ -45,11 +46,12 @@ namespace rhi::primitive {
 		m_device = other.m_device;
 
 		other.m_swapchain = VK_NULL_HANDLE;
+		other.m_views.clear();
 
 		return *this;
 	}
 
-	swapchain::~swapchain() noexcept {
+	pmvSwapchain::~pmvSwapchain() noexcept {
 		for (VkImageView view : m_views)
 			vkDestroyImageView(m_device, view, nullptr);
 
@@ -57,15 +59,15 @@ namespace rhi::primitive {
 			vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
 	}
 
-	VkFormat swapchain::native_format() const noexcept {
+	VkFormat pmvSwapchain::native_format() const noexcept {
 		return m_format;
 	}
 
-	VkExtent2D swapchain::native_extent() const noexcept {
+	VkExtent2D pmvSwapchain::native_extent() const noexcept {
 		return m_extent;
 	}
 
-	uint32_t swapchain::native_imageCount() const noexcept {
+	uint32_t pmvSwapchain::native_imageCount() const noexcept {
 		return static_cast<uint32_t>(m_images.size());
 	}
 

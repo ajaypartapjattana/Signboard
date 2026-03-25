@@ -1,43 +1,40 @@
 #pragma once
 
-namespace rhi::procedure {
-	class image_allocator;
-}
-
 #include "Signboard/RHI/detail/vma/vma.h"
 
-namespace rhi::primitive {
+namespace rhi::access{
+	struct image_pAccess;
+}
 
-	struct image_vkAccess;
+namespace rhi {
 
-	class image {
+	class pcdImageAllocator;
+
+	class pmvImage {
 	public:
-		image() noexcept;
+		pmvImage() noexcept;
 
-		image(const image&) = delete;
-		image& operator=(const image&) = delete;
+		pmvImage(const pmvImage&) = delete;
+		pmvImage& operator=(const pmvImage&) = delete;
 
-		image(image&&) noexcept;
-		image& operator=(image&&) noexcept;
+		pmvImage(pmvImage&&) noexcept;
+		pmvImage& operator=(pmvImage&&) noexcept;
 
-		~image() noexcept;
-
-		const VkImage native_image() const noexcept;
-		const VkImageView native_view() const noexcept;
+		~pmvImage() noexcept;
 
 	private:
-		friend class rhi::procedure::image_allocator;
-		friend struct image_vkAccess;
+		friend class pcdImageAllocator;
+		friend struct rhi::access::image_pAccess;
 
-		VkImage m_image = VK_NULL_HANDLE;
-		VmaAllocation m_allocation = VK_NULL_HANDLE;
-		VkImageView m_view = VK_NULL_HANDLE;
+		VkImage m_image;
+		VmaAllocation m_allocation;
+		VkImageView m_view;
 
-		VkExtent3D m_extent{};
-		VkFormat m_format = VK_FORMAT_UNDEFINED;
+		VkExtent3D m_extent;
+		VkFormat m_format;
 
-		VkDevice m_device = VK_NULL_HANDLE;
-		VmaAllocator m_allocator = VK_NULL_HANDLE;
+		VkDevice m_device;
+		VmaAllocator m_allocator;
 
 	};
 

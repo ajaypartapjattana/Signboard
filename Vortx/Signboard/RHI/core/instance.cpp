@@ -2,21 +2,23 @@
 
 #include <stdexcept>
 
-namespace rhi::core {
+namespace rhi {
 
-	instance::instance(const createInfo& createInfo) noexcept
-		: m_instance(VK_NULL_HANDLE)
+	creInstance::creInstance(const createInfo& createInfo) noexcept
+		: 
+		m_instance(VK_NULL_HANDLE)
 	{
 		build(createInfo);
 	}
 
-	instance::instance(instance&& other) noexcept 
-		: m_instance(other.m_instance)
+	creInstance::creInstance(creInstance&& other) noexcept 
+		: 
+		m_instance(other.m_instance)
 	{
 		other.m_instance = VK_NULL_HANDLE;
 	}
 
-	instance& instance::operator=(instance&& other) noexcept {
+	creInstance& creInstance::operator=(creInstance&& other) noexcept {
 		if (this == &other)
 			return *this;
 
@@ -30,16 +32,12 @@ namespace rhi::core {
 		return *this;
 	}
 
-	instance::~instance() noexcept {
+	creInstance::~creInstance() noexcept {
 		if (m_instance != VK_NULL_HANDLE)
 			vkDestroyInstance(m_instance, nullptr);
 	}
 
-	const VkInstance instance::native_instance() const noexcept {
-		return m_instance;
-	}
-
-	void instance::build(const createInfo& ci) {
+	void creInstance::build(const createInfo& ci) {
 		std::vector<const char*> l_extensions = ci.extensions;
 		std::vector<const char*> l_layers = ci.layers;
 
@@ -94,7 +92,7 @@ namespace rhi::core {
 		return extensions;
 	}
 
-	bool instance::validateExtension(const char* extName) {
+	bool creInstance::validateExtension(const char* extName) {
 
 		for (const auto& extension : availableExtensions()) {
 			if (strcmp(extName, extension.extensionName) == 0)
@@ -118,7 +116,7 @@ namespace rhi::core {
 		return layers;
 	}
 
-	bool instance::validateLayer(const char* layerName) {
+	bool creInstance::validateLayer(const char* layerName) {
 
 		for (const auto& layer : availableLayers()) {
 			if (strcmp(layerName, layer.layerName) == 0)

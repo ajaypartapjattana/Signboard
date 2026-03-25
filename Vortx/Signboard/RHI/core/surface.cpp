@@ -1,15 +1,16 @@
 #include "surface.h"
 
-#include <vulkan/vulkan.h>
 #include <stdexcept>
 
-#include "instance_vk.h"
+#include "instance_pAccess.h"
 #include "Signboard/Platform/primitive/display_window_glfwAccess.h"
 
-namespace rhi::core {
+namespace rhi {
 
-	surface::surface(const platform::primitive::displayWindow& window, const instance& instance)
-		: m_surface(VK_NULL_HANDLE), m_instance(rhi::core::instance_vkAccess::get(instance))
+	creSurface::creSurface(const platform::primitive::displayWindow& window, const creInstance& instance)
+		: 
+		m_surface(VK_NULL_HANDLE), 
+		m_instance(rhi::access::instance_pAccess::get(instance))
 	{
 		GLFWwindow* a_window = platform::primitive::displayWindow_pAccess::get(window);
 
@@ -19,36 +20,32 @@ namespace rhi::core {
 
 	}
 
-	surface::surface(surface&& other) noexcept {
-		m_surface = other.m_surface;
-		m_instance = other.m_instance;
-
+	creSurface::creSurface(creSurface&& other) noexcept 
+		:
+		m_surface(other.m_surface),
+		m_instance(other.m_instance)
+	{
 		other.m_surface = VK_NULL_HANDLE;
-		other.m_instance = VK_NULL_HANDLE;
 	}
 
-	surface& surface::operator=(surface&& other) noexcept {
+	creSurface& creSurface::operator=(creSurface&& other) noexcept {
 		if (this == &other)
 			return *this;
-
-		vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
+		
+		if(m_surface)
+			vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
 
 		m_surface = other.m_surface;
 		m_instance = other.m_instance;
 
 		other.m_surface = VK_NULL_HANDLE;
-		other.m_instance = VK_NULL_HANDLE;
 
 		return *this;
 	}
 
-	surface::~surface() noexcept {
-		if(m_surface != VK_NULL_HANDLE)
+	creSurface::~creSurface() noexcept {
+		if(m_surface)
 			vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
-	}
-
-	const VkSurfaceKHR* surface::native_surface() const noexcept {
-		return &m_surface;
 	}
 
 }

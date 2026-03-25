@@ -1,26 +1,26 @@
 #include "fence.h"
 
-#include "Signboard/RHI/core/device_vk.h"
+#include "Signboard/RHI/core/device_pAccess.h"
 
-namespace rhi::primitive {
+namespace rhi {
 
-	fence::fence(const rhi::core::device& device) noexcept
+	pmvFence::pmvFence(const rhi::creDevice& device) noexcept
 		:
 		m_fence(VK_NULL_HANDLE),
-		m_device(rhi::core::device_vkAccess::get(device))
+		m_device(rhi::access::device_pAccess::get(device))
 	{
 		create(false);
 	}
 
-	fence::fence(const rhi::core::device& device, const bool signaled) noexcept
+	pmvFence::pmvFence(const rhi::creDevice& device, const bool signaled) noexcept
 		:
 		m_fence(VK_NULL_HANDLE),
-		m_device(rhi::core::device_vkAccess::get(device))
+		m_device(rhi::access::device_pAccess::get(device))
 	{
 		create(true);
 	}
 
-	void fence::create(const bool signaled) {
+	void pmvFence::create(const bool signaled) {
 		VkFenceCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		createInfo.flags = signaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0;
@@ -28,7 +28,7 @@ namespace rhi::primitive {
 		vkCreateFence(m_device, &createInfo, nullptr, &m_fence);
 	}
 
-	fence::fence(fence&& other) noexcept
+	pmvFence::pmvFence(pmvFence&& other) noexcept
 		:
 		m_fence(other.m_fence),
 		m_device(other.m_device)
@@ -37,7 +37,7 @@ namespace rhi::primitive {
 		other.m_device = VK_NULL_HANDLE;
 	}
 
-	fence& fence::operator=(fence&& other) noexcept {
+	pmvFence& pmvFence::operator=(pmvFence&& other) noexcept {
 		if (this == &other)
 			return *this;
 
@@ -53,7 +53,7 @@ namespace rhi::primitive {
 		return *this;
 	}
 
-	fence::~fence() noexcept {
+	pmvFence::~pmvFence() noexcept {
 		if (m_fence)
 			vkDestroyFence(m_device, m_fence, nullptr);
 	}

@@ -1,32 +1,30 @@
 #pragma once
 
-namespace rhi::procedure {
-	class pushConstantRange_creator;
-}
-
 #include <vulkan/vulkan.h>
 
-namespace rhi::primitive {
+namespace rhi::access {
+	struct pushConstantRange_pAccess;
+}
 
-	struct pushConstantRange_vkAccess;
+namespace rhi {
 
-	class pushConstantRange {
+	class pcdPushConstantRangeCreator;
+
+	class pmvPushConstantRange {
 	public:
-		pushConstantRange() noexcept;
+		pmvPushConstantRange() noexcept;
 
-		pushConstantRange(const pushConstantRange&) = delete;
-		pushConstantRange& operator=(const pushConstantRange&) = delete;
+		pmvPushConstantRange(const pmvPushConstantRange&) = delete;
+		pmvPushConstantRange& operator=(const pmvPushConstantRange&) = delete;
 
-		pushConstantRange(pushConstantRange&&) noexcept;
-		pushConstantRange& operator=(pushConstantRange&&) noexcept;
+		pmvPushConstantRange(pmvPushConstantRange&&) noexcept;
+		pmvPushConstantRange& operator=(pmvPushConstantRange&&) noexcept;
 
-		~pushConstantRange() noexcept;
-
-		VkPushConstantRange native_pushConstantRange() const noexcept;
+		~pmvPushConstantRange() noexcept;
 
 	private:
-		friend class rhi::procedure::pushConstantRange_creator;
-		friend pushConstantRange_vkAccess;
+		friend class pcdPushConstantRangeCreator;
+		friend rhi::access::pushConstantRange_pAccess;
 
 		VkPushConstantRange m_range;
 

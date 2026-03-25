@@ -25,7 +25,7 @@ rndr_interface::~rndr_interface() noexcept {
 	m_watchdog.wait_device();
 }
 
-rndr_interface::frame::frame(const rhi::core::device& device)
+rndr_interface::frame::frame(const rhi::creDevice& device)
 	: 
 	imageAvailable(device),
 	frameInFlight(device, true)
@@ -34,15 +34,15 @@ rndr_interface::frame::frame(const rhi::core::device& device)
 }
 
 VkResult rndr_interface::summon_commandPools() {
-	rhi::procedure::commandPool_creator prcdr{ r_device };
+	rhi::pcdCommandPoolCreator prcdr{ r_device };
 	return prcdr.create(m_commandPools);
 }
 
 void rndr_interface::validate_swapchainDependancy() {
-	rhi::procedure::swapchain_handler l_handler{ r_device, r_swapchain };
+	rhi::pcdSwapchainHandler l_handler{ r_device, r_swapchain };
 	m_swapchainHandler = std::move(l_handler);
 
-	rhi::procedure::swapchain_presenter l_presenter{ r_device, r_swapchain };
+	rhi::pcdSwapchainPresenter l_presenter{ r_device, r_swapchain };
 	m_presenter = std::move(l_presenter);
 }
 
@@ -65,7 +65,7 @@ void rndr_interface::configure_bufferedFrames() {
 }
 
 void rndr_interface::allocate_renderCommandBuffers() {
-	rhi::procedure::commandBuffer_allocator prcdr{ r_device };
+	rhi::pcdCommandBufferAllocator prcdr{ r_device };
 
 	for (uint32_t i = 0; i < bufferedFrame_count; i++) {
 		prcdr.allocate(m_commandPools.graphicsPool, &frames[i].cmd, 1);
@@ -94,7 +94,7 @@ uint32_t rndr_interface::acquire_toWriteImage(VkBool32* acquire_optimal) noexcep
 	return a_imageIndex;
 }
 
-rhi::primitive::commandBuffer& rndr_interface::get_activeFrame_cmd() {
+rhi::pmvCommandBuffer& rndr_interface::get_activeFrame_cmd() {
 	return frames[activeFrameIndex].cmd;
 }
 

@@ -1,30 +1,30 @@
 #pragma once
 
-namespace rhi::procedure {
-	class framebuffer_creator;
+#include <vulkan/vulkan.h>
+	
+namespace rhi::access {
+	struct framebuffer_pAccess;
 }
 
-#include <vulkan/vulkan.h>
+namespace rhi {
 
-namespace rhi::primitive {
-	
-	struct framebuffer_vkAccess;
+	class pcdFramebufferCreator;
 
-	class framebuffer {
+	class pmvFramebuffer {
 	public:
-		framebuffer() noexcept;
+		pmvFramebuffer() noexcept;
 
-		framebuffer(const framebuffer&) = delete;
-		framebuffer& operator=(const framebuffer&) = delete;
+		pmvFramebuffer(const pmvFramebuffer&) = delete;
+		pmvFramebuffer& operator=(const pmvFramebuffer&) = delete;
 
-		framebuffer(framebuffer&&) noexcept;
-		framebuffer& operator=(framebuffer&&) noexcept;
+		pmvFramebuffer(pmvFramebuffer&&) noexcept;
+		pmvFramebuffer& operator=(pmvFramebuffer&&) noexcept;
 
-		~framebuffer() noexcept;
+		~pmvFramebuffer() noexcept;
 
 	private:
-		friend class rhi::procedure::framebuffer_creator;
-		friend struct framebuffer_vkAccess;
+		friend class pcdFramebufferCreator;
+		friend struct rhi::access::framebuffer_pAccess;
 
 		VkFramebuffer m_framebuffer = VK_NULL_HANDLE;
 		VkExtent2D m_extent;

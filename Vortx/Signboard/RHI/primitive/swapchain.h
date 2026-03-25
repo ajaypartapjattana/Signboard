@@ -1,35 +1,35 @@
 #pragma once
 
-namespace rhi::procedure {
-	class swapchain_builder;
-}
-
 #include <vulkan/vulkan.h>
 #include <vector>
 
-namespace rhi::primitive {
+namespace rhi::access {
+	struct swapchain_pAccess;
+}
 
-	struct swapchain_vkAccess;
+namespace rhi {
 
-	class swapchain {
+	class pcdSwapchainBuilder;
+
+	class pmvSwapchain {
 	public:
-		swapchain() noexcept;
+		pmvSwapchain() noexcept;
 
-		swapchain(const swapchain&) = delete;
-		swapchain& operator=(const swapchain&) = delete;
+		pmvSwapchain(const pmvSwapchain&) = delete;
+		pmvSwapchain& operator=(const pmvSwapchain&) = delete;
 
-		swapchain(swapchain&&) noexcept;
-		swapchain& operator=(swapchain&&) noexcept;
+		pmvSwapchain(pmvSwapchain&&) noexcept;
+		pmvSwapchain& operator=(pmvSwapchain&&) noexcept;
 
-		~swapchain() noexcept;
+		~pmvSwapchain() noexcept;
 
 		VkFormat native_format() const noexcept;
 		VkExtent2D native_extent() const noexcept;
 		uint32_t native_imageCount() const noexcept;
 
 	private:
-		friend class rhi::procedure::swapchain_builder;
-		friend struct swapchain_vkAccess;
+		friend class pcdSwapchainBuilder;
+		friend struct rhi::access::swapchain_pAccess;
 
 		VkSwapchainKHR m_swapchain;
 		std::vector<VkImage> m_images;

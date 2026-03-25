@@ -5,11 +5,11 @@
 #include "device.h"
 #include "allocator.h"
 
-namespace rhi::core {
+namespace rhi {
 
-	class instance;
-	class surface;
-	class device;
-	class allocator;
+	class creInstance;
+	class creSurface;
+	class creDevice;
+	class creAllocator;
 
 }

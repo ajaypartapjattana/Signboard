@@ -1,37 +1,35 @@
 #pragma once
 
-namespace rhi::procedure {
-	class pipeline_builder;
-}
-
 #include <vulkan/vulkan.h>
 
-namespace rhi::primitive {
+namespace rhi::access {
+	struct pipeline_pAccess;
+}
 
-	struct pipeline_vkAccess;
+namespace rhi {
 
-	class pipeline {
+	class pcdPipelineBuilder;
+
+	class pmvPipeline {
 	public:
-		pipeline() noexcept;
+		pmvPipeline() noexcept;
 
-		pipeline(const pipeline&) = delete;
-		pipeline& operator=(const pipeline&) = delete;
+		pmvPipeline(const pmvPipeline&) = delete;
+		pmvPipeline& operator=(const pmvPipeline&) = delete;
 
-		pipeline(pipeline&&) noexcept;
-		pipeline& operator=(pipeline&&) noexcept;
+		pmvPipeline(pmvPipeline&&) noexcept;
+		pmvPipeline& operator=(pmvPipeline&&) noexcept;
 
-		~pipeline() noexcept;
-
-		VkPipeline native_pipeline() const noexcept;
+		~pmvPipeline() noexcept;
 
 	private:
-		friend class rhi::procedure::pipeline_builder;
-		friend struct pipeline_vkAccess;
+		friend class pcdPipelineBuilder;
+		friend struct rhi::access::pipeline_pAccess;
 
-		VkPipeline m_pipeline = VK_NULL_HANDLE;
-		VkPipelineBindPoint m_type = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		VkPipeline m_pipeline;
+		VkPipelineBindPoint m_type;
 
-		VkDevice m_device = VK_NULL_HANDLE;
+		VkDevice m_device;
 
 	};
 

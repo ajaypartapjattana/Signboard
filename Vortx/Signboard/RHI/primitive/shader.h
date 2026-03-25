@@ -1,36 +1,33 @@
 #pragma once
 
-namespace rhi::procedure {
-	class shader_wrapper;
-}
-
 #include <vulkan/vulkan.h>
 
-namespace rhi::primitive {
+namespace rhi::access {
+	struct shader_pAccess;
+}
+
+namespace rhi {
 	
-	struct shader_vkAccess;
+	class pcdShaderWrapper;
 
-	class shader {
+	class pmvShader {
 	public:
-		shader() noexcept;
+		pmvShader() noexcept;
 
-		shader(const shader&) = delete;
-		shader& operator=(const shader&) = delete;
+		pmvShader(const pmvShader&) = delete;
+		pmvShader& operator=(const pmvShader&) = delete;
 
-		shader(shader&&) noexcept;
-		shader& operator=(shader&&) noexcept;
+		pmvShader(pmvShader&&) noexcept;
+		pmvShader& operator=(pmvShader&&) noexcept;
 
-		~shader() noexcept;
-
-		VkShaderModule native_shader() const noexcept;
+		~pmvShader() noexcept;
 
 	private:
-		friend class rhi::procedure::shader_wrapper;
-		friend struct shader_vkAccess;
+		friend class pcdShaderWrapper;
+		friend struct rhi::access::shader_pAccess;
 
-		VkShaderModule m_shader = VK_NULL_HANDLE;
-
-		VkDevice m_device = VK_NULL_HANDLE;
+		VkShaderModule m_shader;
+		VkDevice m_device;
 
 	};
 

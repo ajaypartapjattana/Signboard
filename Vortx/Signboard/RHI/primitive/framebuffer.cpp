@@ -1,8 +1,8 @@
 #include "framebuffer.h"
 
-namespace rhi::primitive {
+namespace rhi {
 
-	framebuffer::framebuffer() noexcept
+	pmvFramebuffer::pmvFramebuffer() noexcept
 		: 
 		m_framebuffer(VK_NULL_HANDLE),
 		m_extent(),
@@ -11,7 +11,7 @@ namespace rhi::primitive {
 
 	}
 
-	framebuffer::framebuffer(framebuffer&& other) noexcept
+	pmvFramebuffer::pmvFramebuffer(pmvFramebuffer&& other) noexcept
 		: 
 		m_framebuffer(other.m_framebuffer),
 		m_extent(other.m_extent),
@@ -20,7 +20,7 @@ namespace rhi::primitive {
 		other.m_framebuffer = VK_NULL_HANDLE;
 	}
 
-	framebuffer& framebuffer::operator=(framebuffer&& other) noexcept {
+	pmvFramebuffer& pmvFramebuffer::operator=(pmvFramebuffer&& other) noexcept {
 		if (this == &other)
 			return *this;
 
@@ -36,7 +36,7 @@ namespace rhi::primitive {
 		return *this;
 	}
 
-	framebuffer::~framebuffer() noexcept {
+	pmvFramebuffer::~pmvFramebuffer() noexcept {
 		if (m_framebuffer)
 			vkDestroyFramebuffer(m_device, m_framebuffer, nullptr);
 	}

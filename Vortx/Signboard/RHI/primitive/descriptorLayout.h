@@ -1,32 +1,30 @@
 #pragma once
 
-namespace rhi::procedure {
-	class descriptorLayout_creator;
-}
-
 #include <vulkan/vulkan.h>
 
-namespace rhi::primitive {
+namespace rhi::access {
+	struct descriptorLayout_pAccess;
+}
 
-	struct descriptorLayout_vkAccess;
+namespace rhi {
 
-	class descriptorLayout {
+	class pcdDescriptorLayoutCreator;
+
+	class pmvDescriptorLayout {
 	public:
-		descriptorLayout() noexcept;
+		pmvDescriptorLayout() noexcept;
 
-		descriptorLayout(const descriptorLayout&) = delete;
-		descriptorLayout& operator=(const descriptorLayout&) = delete;
+		pmvDescriptorLayout(const pmvDescriptorLayout&) = delete;
+		pmvDescriptorLayout& operator=(const pmvDescriptorLayout&) = delete;
 
-		descriptorLayout(descriptorLayout&&) noexcept;
-		descriptorLayout& operator=(descriptorLayout&&) noexcept;
+		pmvDescriptorLayout(pmvDescriptorLayout&&) noexcept;
+		pmvDescriptorLayout& operator=(pmvDescriptorLayout&&) noexcept;
 
-		~descriptorLayout() noexcept;
-
-		VkDescriptorSetLayout native_setLayout() const noexcept;
+		~pmvDescriptorLayout() noexcept;
 
 	private:
-		friend class rhi::procedure::descriptorLayout_creator;
-		friend struct descriptorLayout_vkAccess;
+		friend class pcdDescriptorLayoutCreator;
+		friend struct rhi::access::descriptorLayout_pAccess;
 
 		VkDescriptorSetLayout m_setLayout;
 

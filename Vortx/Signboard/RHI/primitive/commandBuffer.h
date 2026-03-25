@@ -1,35 +1,35 @@
 #pragma once
 
-namespace rhi::procedure {
-	class commandBuffer_allocator;
-}
-
 #include <vulkan/vulkan.h>
 
-namespace rhi::primitive {
+namespace rhi::access {
+	struct commandBuffer_pAccess;
+}
 
-	struct commandBuffer_vkAccess;
+namespace rhi {
 
-	class commandBuffer {
+	class pcdCommandBufferAllocator;
+	class pcdQueueSubmission;
+
+	class pmvCommandBuffer {
 	public:
-		commandBuffer() noexcept;
+		pmvCommandBuffer() noexcept;
 
-		commandBuffer(const commandBuffer&) = delete;
-		commandBuffer& operator=(const commandBuffer&) = delete;
+		pmvCommandBuffer(const pmvCommandBuffer&) = delete;
+		pmvCommandBuffer& operator=(const pmvCommandBuffer&) = delete;
 
-		commandBuffer(commandBuffer&&) noexcept;
-		commandBuffer& operator=(commandBuffer&&) noexcept;
+		pmvCommandBuffer(pmvCommandBuffer&&) noexcept;
+		pmvCommandBuffer& operator=(pmvCommandBuffer&&) noexcept;
 
-		~commandBuffer() noexcept;
-
-		VkCommandBuffer native_commandBuffer() const noexcept;
+		~pmvCommandBuffer() noexcept;
 
 	private:
-		friend class rhi::procedure::commandBuffer_allocator;
-		friend struct commandBuffer_vkAccess;
+		friend class pcdCommandBufferAllocator;
+		friend class pcdQueueSubmission;
+		friend struct rhi::access::commandBuffer_pAccess;
 
-		VkCommandBuffer m_commandBuffer = VK_NULL_HANDLE;
-		VkCommandPool m_commandPool = VK_NULL_HANDLE;
+		VkCommandBuffer m_commandBuffer;
+		VkCommandPool m_commandPool;
 
 	};
 

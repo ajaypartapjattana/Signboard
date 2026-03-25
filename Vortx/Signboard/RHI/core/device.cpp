@@ -5,19 +5,21 @@
 #include <cstring>
 #include <set>
 
-#include "instance_vk.h"
-#include "surface_vk.h"
+#include "instance_pAccess.h"
+#include "surface_pAccess.h"
 
-namespace rhi::core {
+namespace rhi {
 
-	device::device(const createInfo& createInfo, const instance& instance)
-		: m_device(VK_NULL_HANDLE), m_physical(VK_NULL_HANDLE)
+	creDevice::creDevice(const createInfo& createInfo, const creInstance& instance)
+		: 
+		m_device(VK_NULL_HANDLE), 
+		m_physical(VK_NULL_HANDLE)
 	{
-		VkInstance vkInstance = rhi::core::instance_vkAccess::get(instance);
+		VkInstance vkInstance = rhi::access::instance_pAccess::get(instance);
 		build(createInfo, vkInstance);
 	}
 
-	device::device(device&& other) noexcept 
+	creDevice::creDevice(creDevice&& other) noexcept 
 		: 
 		m_device(other.m_device),
 		m_physical(other.m_physical),
@@ -27,7 +29,7 @@ namespace rhi::core {
 		other.m_device = VK_NULL_HANDLE;
 	}
 
-	device& device::operator=(device&& other) noexcept {
+	creDevice& creDevice::operator=(creDevice&& other) noexcept {
 		if (this == &other)
 			return *this;
 
@@ -44,33 +46,23 @@ namespace rhi::core {
 		return *this;
 	}
 
-	device::~device() noexcept {
+	creDevice::~creDevice() noexcept {
 		if (m_device != VK_NULL_HANDLE)
 			vkDestroyDevice(m_device, nullptr);
 	}
 
-	VkDevice device::native_device() const noexcept {
-		return m_device;
-	}
-
-	bool device::active_feature(const VkBool32 VkPhysicalDeviceFeatures::* feature) const noexcept {
+	bool creDevice::active_feature(const VkBool32 VkPhysicalDeviceFeatures::* feature) const noexcept {
 		return std::find(m_enabledFeatures.begin(),	m_enabledFeatures.end(), feature) != m_enabledFeatures.end();
 	}
 
-	void device::build(const createInfo& ci, const VkInstance instance) {
-
+	void creDevice::build(const createInfo& ci, const VkInstance instance) {
 		struct phys_candidate {
 			VkPhysicalDevice phys = VK_NULL_HANDLE;
 			bool suitable = true;
 			uint32_t type_score = 0;
 			uint32_t queue_score = 0;
 
-			struct family_index_selection {
-				uint32_t graphics = UINT32_MAX;
-				uint32_t compute = UINT32_MAX;
-				uint32_t transfer = UINT32_MAX;
-				uint32_t present = UINT32_MAX;
-			} assigned_indecies ;
+			standardQueueFamilies assigned_indecies ;
 
 			VkPhysicalDeviceFeatures enabledFeatures;
 		};
@@ -95,7 +87,7 @@ namespace rhi::core {
 			vkGetPhysicalDeviceQueueFamilyProperties(phys, &qCount, nullptr);
 			std::vector<VkQueueFamilyProperties> families{ qCount };
 			vkGetPhysicalDeviceQueueFamilyProperties(phys, &qCount, families.data());
-			phys_candidate::family_index_selection& idx = c.assigned_indecies;
+			standardQueueFamilies& idx = c.assigned_indecies;
 			for (uint32_t i = 0; i < qCount; ++i) {
 				const VkQueueFlags& q = families[i].queueFlags;
 
@@ -124,7 +116,7 @@ namespace rhi::core {
 			if (idx.transfer == UINT32_MAX) idx.transfer = idx.compute;
 
 			if (ci.present_surface) {
-				VkSurfaceKHR a_surface = rhi::core::surface_vkAccess::get(*ci.present_surface);
+				VkSurfaceKHR a_surface = rhi::access::surface_pAccess::get(*ci.present_surface);
 				for (uint32_t i = 0; i < qCount; ++i) {
 					VkBool32 supported = false;
 					vkGetPhysicalDeviceSurfaceSupportKHR(phys, i, a_surface, &supported);
@@ -218,7 +210,7 @@ namespace rhi::core {
 		if (!suited_physical)
 			throw std::runtime_error("FAILURE: no_satisfactory_physicalDevice!");
 
-		const phys_candidate::family_index_selection& idx = suited_physical->assigned_indecies;
+		const standardQueueFamilies& idx = suited_physical->assigned_indecies;
 		std::set<uint32_t> uniqueFamilies = { idx.graphics, idx.compute, idx.transfer, idx.present };
 
 		std::vector<float> priority = { 1.0f };

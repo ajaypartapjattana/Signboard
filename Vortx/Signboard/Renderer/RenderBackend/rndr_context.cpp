@@ -9,8 +9,8 @@ rndr_context::rndr_context(const platform::primitive::displayWindow& window)
 
 }
 
-rhi::core::instance::createInfo rndr_context::get_instanceCreateInfo() noexcept {
-	rhi::core::instance::createInfo info{};
+rhi::creInstance::createInfo rndr_context::get_instanceCreateInfo() noexcept {
+	rhi::creInstance::createInfo info{};
 	
 	uint32_t ext_count = 0;
 	const char** exts = platform::core::context::native_extensions(ext_count);
@@ -28,8 +28,8 @@ rhi::core::instance::createInfo rndr_context::get_instanceCreateInfo() noexcept 
 	return info;
 }
 
-rhi::core::device::createInfo rndr_context::get_deviceCreateInfo() noexcept {
-	rhi::core::device::createInfo info{};
+rhi::creDevice::createInfo rndr_context::get_deviceCreateInfo() noexcept {
+	rhi::creDevice::createInfo info{};
 
 	info.present_surface = &m_surface;
 	info.requiredFeatures = { &VkPhysicalDeviceFeatures::samplerAnisotropy };

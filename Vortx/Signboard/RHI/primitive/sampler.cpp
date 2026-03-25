@@ -1,16 +1,23 @@
 #include "sampler.h"
 
-namespace rhi::primitive {
+namespace rhi {
 
-	sampler::sampler(sampler&& other) noexcept {
-		m_sampler = other.m_sampler;
-		m_device = other.m_device;
+	pmvSampler::pmvSampler() noexcept 
+		:
+		m_sampler(VK_NULL_HANDLE),
+		m_device(VK_NULL_HANDLE)
+	{
 
-		other.m_sampler = VK_NULL_HANDLE;
-		other.m_device = VK_NULL_HANDLE;
 	}
 
-	sampler& sampler::operator=(sampler&& other) noexcept {
+	pmvSampler::pmvSampler(pmvSampler&& other) noexcept 
+		:m_sampler(other.m_sampler),
+		m_device(other.m_device)
+	{
+		other.m_sampler = VK_NULL_HANDLE;
+	}
+
+	pmvSampler& pmvSampler::operator=(pmvSampler&& other) noexcept {
 		if (this == &other)
 			return *this;
 
@@ -21,18 +28,13 @@ namespace rhi::primitive {
 		m_device = other.m_device;
 
 		other.m_sampler = VK_NULL_HANDLE;
-		other.m_device = VK_NULL_HANDLE;
 
 		return *this;
 	}
 
-	sampler::~sampler() noexcept {
+	pmvSampler::~pmvSampler() noexcept {
 		if (m_sampler)
 			vkDestroySampler(m_device, m_sampler, nullptr);
-	}
-
-	VkSampler sampler::native_sampler() const noexcept {
-		return m_sampler;
 	}
 
 }

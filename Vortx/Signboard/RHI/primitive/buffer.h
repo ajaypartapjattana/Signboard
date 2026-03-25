@@ -2,36 +2,35 @@
 
 #include "Signboard/RHI/detail/vma/vma.h"
 
-namespace rhi::procedure {
-	class buffer_allocator;
+namespace rhi::access {
+	struct buffer_vkAccess;
 }
 
-namespace rhi::primitive {
+namespace rhi {
 
-	struct buffer_vkAccess;
+	class pcdBufferAllocator;
 
-	class buffer {
+	class pmvBuffer {
 	public:
-		buffer(const buffer&) = delete;
-		buffer& operator=(const buffer&) = delete;
+		pmvBuffer() noexcept;
 
-		buffer(buffer&&) noexcept;
-		buffer& operator=(buffer&&) noexcept;
+		pmvBuffer(const pmvBuffer&) = delete;
+		pmvBuffer& operator=(const pmvBuffer&) = delete;
 
-		~buffer() noexcept;
+		pmvBuffer(pmvBuffer&&) noexcept;
+		pmvBuffer& operator=(pmvBuffer&&) noexcept;
 
-		VkBuffer native_buffer() const noexcept;
+		~pmvBuffer() noexcept;
 
 	private:
-		friend class rhi::procedure::buffer_allocator;
-		friend struct buffer_vkAccess;
-
-		buffer() = default;
+		friend class pcdBufferAllocator;
+		friend struct rhi::access::buffer_vkAccess;
 
 		VkBuffer m_buffer = VK_NULL_HANDLE;
 		VmaAllocation m_allocation = VK_NULL_HANDLE;
 
 		VmaAllocator m_allocator = VK_NULL_HANDLE;
+
 	};
 
 }

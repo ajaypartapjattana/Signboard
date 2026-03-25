@@ -13,8 +13,8 @@ rndr_framedraw::rndr_framedraw(const rndr_method& methods)
 
 }
 
-void rndr_framedraw::drawFrame(const uint32_t target_index, const rhi::primitive::commandBuffer& target_cmd) {
-	rhi::procedure::cmdbuffer_recorder prcdr{ target_cmd };
+void rndr_framedraw::drawFrame(const uint32_t target_index, const rhi::pmvCommandBuffer& target_cmd) {
+	rhi::pcdCommandBufferRecorder prcdr{ target_cmd };
 
 	for (const render_target& target : m_targets) {
 		prcdr.begin_renderTarget(*a_renderpassView.get(target.pass), *a_framebufferView.get(target.framebuffers[target_index]));

@@ -1,32 +1,32 @@
 #pragma once
 
-namespace rhi::procedure {
-	class commandPool_creator;
-}
-
 #include <vulkan/vulkan.h>
 
-namespace rhi::primitive {
+namespace rhi::access {
+	struct commandPool_pAccess;
+}
 
-	struct commandPool_vkAccess;
+namespace rhi {
 
-	class commandPool {
+	class pcdCommandPoolCreator;
+
+	class pmvCommandPool {
 	public:
-		commandPool() noexcept;
+		pmvCommandPool() noexcept;
 
-		commandPool(const commandPool&) = delete;
-		commandPool& operator=(const commandPool&) = delete;
+		pmvCommandPool(const pmvCommandPool&) = delete;
+		pmvCommandPool& operator=(const pmvCommandPool&) = delete;
 
-		commandPool(commandPool&&) noexcept;
-		commandPool& operator=(commandPool&&) noexcept;
+		pmvCommandPool(pmvCommandPool&&) noexcept;
+		pmvCommandPool& operator=(pmvCommandPool&&) noexcept;
 
-		~commandPool() noexcept;
+		~pmvCommandPool() noexcept;
 
 		VkCommandPool native_commandPool() const noexcept;
 
 	private:
-		friend class rhi::procedure::commandPool_creator;
-		friend struct commandPool_vkAccess;
+		friend class pcdCommandPoolCreator;
+		friend struct rhi::access::commandPool_pAccess;
 
 		VkCommandPool m_commandPool = VK_NULL_HANDLE;
 		uint32_t m_queueFamilyIndex = 0;

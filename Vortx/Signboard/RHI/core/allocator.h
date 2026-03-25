@@ -2,32 +2,32 @@
 
 #include "Signboard/RHI/detail/vma/vma.h"
 
-namespace rhi::core {
+namespace rhi::access {
+	struct allocator_pAccess;
+}
 
-	class instance;
-	class device;
+namespace rhi {
 
-	struct allocator_vmaAccess;
+	class creInstance;
+	class creDevice;
 
-	class allocator {
+	class creAllocator {
 	public:
-		allocator(const instance&, const device&);
+		creAllocator(const creInstance&, const creDevice&);
 
-		allocator(const allocator&) = delete;
-		allocator& operator=(const allocator&) = delete;
+		creAllocator(const creAllocator&) = delete;
+		creAllocator& operator=(const creAllocator&) = delete;
 
-		allocator(allocator&&) noexcept;
-		allocator& operator=(allocator&&) noexcept;
+		creAllocator(creAllocator&&) noexcept;
+		creAllocator& operator=(creAllocator&&) noexcept;
 
-		~allocator() noexcept;
-
-		VmaAllocator native_allocator() const noexcept;
+		~creAllocator() noexcept;
 
 	private:
-		friend struct allocator_vmaAccess;
+		friend struct rhi::access::allocator_pAccess;
 
-		VmaAllocator m_allocator = VK_NULL_HANDLE;
-		VmaVulkanFunctions m_vkfuncs{};
+		VmaAllocator m_allocator;
+		static const VmaVulkanFunctions m_vkfuncs;
 
 	};
 

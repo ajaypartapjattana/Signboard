@@ -1,32 +1,30 @@
 #pragma once
 
-namespace rhi::procedure {
-	class pipelineLayout_builder;
-}
-
 #include <vulkan/vulkan.h>
 
-namespace rhi::primitive {
+namespace rhi::access {
+	struct pipelineLayout_pAccess;
+}
 
-	struct pipelineLayout_vkAccess;
+namespace rhi {
 
-	class pipelineLayout {
+	class pcdPipelineLayoutBuilder;
+
+	class pmvPipelineLayout {
 	public:
-		pipelineLayout() noexcept;
+		pmvPipelineLayout() noexcept;
 
-		pipelineLayout(const pipelineLayout&) = delete;
-		pipelineLayout& operator=(const pipelineLayout&) = delete;
+		pmvPipelineLayout(const pmvPipelineLayout&) = delete;
+		pmvPipelineLayout& operator=(const pmvPipelineLayout&) = delete;
 
-		pipelineLayout(pipelineLayout&&) noexcept;
-		pipelineLayout& operator=(pipelineLayout&&) noexcept;
+		pmvPipelineLayout(pmvPipelineLayout&&) noexcept;
+		pmvPipelineLayout& operator=(pmvPipelineLayout&&) noexcept;
 
-		~pipelineLayout() noexcept;
-
-		VkPipelineLayout native_layout() const noexcept;
+		~pmvPipelineLayout() noexcept;
 
 	private:
-		friend class rhi::procedure::pipelineLayout_builder;
-		friend struct pipelineLayout_vkAccess;
+		friend class pcdPipelineLayoutBuilder;
+		friend struct rhi::access::pipelineLayout_pAccess;
 
 		VkPipelineLayout m_layout;
 

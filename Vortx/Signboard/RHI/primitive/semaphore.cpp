@@ -1,13 +1,21 @@
 #include "semaphore.h"
 
-#include "Signboard/RHI/core/device_vk.h"
+#include "Signboard/RHI/core/device_pAccess.h"
 
-namespace rhi::primitive {
+namespace rhi {
 
-	semaphore::semaphore(const rhi::core::device& device) noexcept
+	pmvSemaphore::pmvSemaphore() noexcept 
 		:
 		m_semaphore(VK_NULL_HANDLE),
-		m_device(rhi::core::device_vkAccess::get(device))
+		m_device(VK_NULL_HANDLE)
+	{
+
+	}
+
+	pmvSemaphore::pmvSemaphore(const rhi::creDevice& device) noexcept
+		:
+		m_semaphore(VK_NULL_HANDLE),
+		m_device(rhi::access::device_pAccess::get(device))
 	{
 		VkSemaphoreCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -15,16 +23,15 @@ namespace rhi::primitive {
 		vkCreateSemaphore(m_device, &createInfo, nullptr, &m_semaphore);
 	}
 
-	semaphore::semaphore(semaphore&& other) noexcept 
+	pmvSemaphore::pmvSemaphore(pmvSemaphore&& other) noexcept 
 		: 
 		m_semaphore(other.m_semaphore),
 		m_device(other.m_device)
 	{
 		other.m_semaphore = VK_NULL_HANDLE;
-		other.m_device = VK_NULL_HANDLE;
 	}
 
-	semaphore& semaphore::operator=(semaphore&& other) noexcept {
+	pmvSemaphore& pmvSemaphore::operator=(pmvSemaphore&& other) noexcept {
 		if (this == &other)
 			return *this;
 
@@ -35,12 +42,11 @@ namespace rhi::primitive {
 		m_device = other.m_device;
 
 		other.m_semaphore = VK_NULL_HANDLE;
-		other.m_device = VK_NULL_HANDLE;
 
 		return *this;
 	}
 
-	semaphore::~semaphore() noexcept {
+	pmvSemaphore::~pmvSemaphore() noexcept {
 		if (m_semaphore)
 			vkDestroySemaphore(m_device, m_semaphore, nullptr);
 	}

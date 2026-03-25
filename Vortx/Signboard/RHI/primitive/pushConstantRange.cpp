@@ -1,18 +1,22 @@
 #include "pushConstantRange.h"
 
-namespace rhi::primitive {
+namespace rhi {
 
-	pushConstantRange::pushConstantRange() noexcept
-		: m_range()
+	pmvPushConstantRange::pmvPushConstantRange() noexcept
+		: 
+		m_range()
 	{
 
 	}
 
-	pushConstantRange::pushConstantRange(pushConstantRange&& other) noexcept{
-		m_range = other.m_range;
+	pmvPushConstantRange::pmvPushConstantRange(pmvPushConstantRange&& other) noexcept
+		:
+		m_range(other.m_range)
+	{
+
 	}
 
-	pushConstantRange& pushConstantRange::operator=(pushConstantRange&& other) noexcept {
+	pmvPushConstantRange& pmvPushConstantRange::operator=(pmvPushConstantRange&& other) noexcept {
 		if (this == &other)
 			return *this;
 
@@ -21,12 +25,8 @@ namespace rhi::primitive {
 		return *this;
 	}
 
-	pushConstantRange::~pushConstantRange() noexcept {
+	pmvPushConstantRange::~pmvPushConstantRange() noexcept {
 
-	}
-
-	VkPushConstantRange pushConstantRange::native_pushConstantRange() const noexcept {
-		return m_range;
 	}
 
 }

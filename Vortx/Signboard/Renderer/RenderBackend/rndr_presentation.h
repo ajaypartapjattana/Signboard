@@ -22,12 +22,12 @@ private:
 private:
 	friend struct rndr_presentation_Access;
 
-	const rhi::core::device& r_device;
-	const rhi::core::surface& r_surface;
+	const rhi::creDevice& r_device;
+	const rhi::creSurface& r_surface;
 
-	rhi::procedure::_watchdog m_watchdog;
+	rhi::pcdWatchdog m_watchdog;
 
 	uint32_t bufferedFrame_count;
-	rhi::primitive::swapchain m_swapchain;
+	rhi::pmvSwapchain m_swapchain;
 
 };

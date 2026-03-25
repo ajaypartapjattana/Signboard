@@ -1,37 +1,33 @@
 #pragma once
 
-namespace rhi::procedure {
-	class sampler_creator;
-}
-
 #include <vulkan/vulkan.h>
 
-namespace rhi::primitive {
+namespace rhi::access {
+	struct sampler_pAccess;
+}
 
-	struct sampler_vkAccess;
+namespace rhi {
 
-	class sampler {
+	class pcdSamplerCreator;
+
+	class pmvSampler {
 	public:
-		sampler(const sampler&) = delete;
-		sampler& operator=(const sampler&) = delete;
+		pmvSampler() noexcept;
 
-		sampler(sampler&&) noexcept;
-		sampler& operator=(sampler&&) noexcept;
+		pmvSampler(const pmvSampler&) = delete;
+		pmvSampler& operator=(const pmvSampler&) = delete;
 
-		~sampler();
+		pmvSampler(pmvSampler&&) noexcept;
+		pmvSampler& operator=(pmvSampler&&) noexcept;
 
-		VkSampler native_sampler() const noexcept;
+		~pmvSampler();
 
 	private:
-		friend class rhi::procedure::sampler_creator;
-		friend struct sampler_vkAccess;
-
-		sampler() = default;
+		friend class pcdSamplerCreator;
+		friend struct rhi::access::sampler_pAccess;
 
 		VkSampler m_sampler;
-
 		VkDevice m_device;
-
 
 	};
 

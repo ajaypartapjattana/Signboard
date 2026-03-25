@@ -1,33 +1,33 @@
 #pragma once
 
-namespace rhi::core {
-	class device;
-}
-
 #include <vulkan/vulkan.h>
 
-namespace rhi::primitive {
-	
-	struct semaphore_vkAccess;
+namespace rhi::access {
+	struct semaphore_pAccess;
+}
 
-	class semaphore {
+namespace rhi {
+
+	class creDevice;
+
+	class pmvSemaphore {
 	public:
-		semaphore(const rhi::core::device& device) noexcept;
+		pmvSemaphore() noexcept;
+		pmvSemaphore(const rhi::creDevice& device) noexcept;
 
-		semaphore(const semaphore&) = delete;
-		semaphore& operator=(const semaphore&) = delete;
+		pmvSemaphore(const pmvSemaphore&) = delete;
+		pmvSemaphore& operator=(const pmvSemaphore&) = delete;
 
-		semaphore(semaphore&&) noexcept;
-		semaphore& operator=(semaphore&&) noexcept;
+		pmvSemaphore(pmvSemaphore&&) noexcept;
+		pmvSemaphore& operator=(pmvSemaphore&&) noexcept;
 
-		~semaphore() noexcept;
+		~pmvSemaphore() noexcept;
 
 	private:
-		friend struct semaphore_vkAccess;
+		friend struct rhi::access::semaphore_pAccess;
 
-		VkSemaphore m_semaphore = VK_NULL_HANDLE;
-
-		VkDevice m_device = VK_NULL_HANDLE;
+		VkSemaphore m_semaphore;
+		VkDevice m_device;
 
 	};
 
