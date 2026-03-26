@@ -21,10 +21,10 @@ materials::materials(const rhi::creDevice& device, const rhi::pmvSwapchain& swap
 
 storage::storage_handle materials::create_pipeline(storage::storage_handle passHandle, uint32_t subpass, const createInfo* info) {
 	rhi::pmvShader l_vertShader;
-	create_shader(l_vertShader, info->vertShader_path);
+	createShader(l_vertShader, info->vertShader_path);
 
 	rhi::pmvShader l_fragShader;
-	create_shader(l_fragShader, info->fragShader_path);
+	createShader(l_fragShader, info->fragShader_path);
 
 	rhi::pcdPipelineBuilder prcdr{ r_device, r_swapchain, m_pipelineLayout };
 	prcdr.set_vertShader(l_vertShader);
@@ -44,16 +44,16 @@ storage::vault_readAccessor<rhi::pmvPipeline> materials::get_readAccessor() cons
 	return accessor;
 }
 
-void materials::create_shader(rhi::pmvShader& tw_shader, const char* path) {
+VkResult materials::createShader(rhi::pmvShader& tw_shader, const char* path) {
 	char* spv_data = nullptr;
 	size_t spv_size= 0;
 
 	io::loader::file_loader loader{ &spv_data, &spv_size };
-	if (loader.load_binary(path) != true)
-		throw std::runtime_error("LOAD_FAILURE: " + std::string(path));
+	if (!loader.load_binary(path))
+		return VK_INCOMPLETE;
 
 	rhi::pcdShaderWrapper wrapper{ r_device };
-	wrapper.set_target(tw_shader);
-	if (wrapper.warpShaderCode(spv_data, spv_size) != VK_SUCCESS)
-		throw std::runtime_error("FAILURE: shaderModule_creation!");
+	wrapper.addBinary(spv_data, spv_size);
+
+	return wrapper.warpShaderCode(tw_shader);
 }

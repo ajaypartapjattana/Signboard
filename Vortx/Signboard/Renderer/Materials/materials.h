@@ -18,7 +18,7 @@ public:
 	storage::vault_readAccessor<rhi::pmvPipeline> get_readAccessor() const noexcept;
 
 private:
-	void create_shader(rhi::pmvShader& tw_shader, const char* path);
+	VkResult createShader(rhi::pmvShader& tw_shader, const char* path);
 
 private:
 	const rhi::creDevice& r_device;

@@ -154,6 +154,31 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="external\spirv_cross\main.cpp" />
+    <ClCompile Include="external\spirv_cross\samples\cpp\atomics.cpp" />
+    <ClCompile Include="external\spirv_cross\samples\cpp\multiply.cpp" />
+    <ClCompile Include="external\spirv_cross\samples\cpp\shared.cpp" />
+    <ClCompile Include="external\spirv_cross\spirv_cfg.cpp" />
+    <ClCompile Include="external\spirv_cross\spirv_cpp.cpp" />
+    <ClCompile Include="external\spirv_cross\spirv_cross.cpp" />
+    <ClCompile Include="external\spirv_cross\spirv_cross_c.cpp" />
+    <ClCompile Include="external\spirv_cross\spirv_cross_parsed_ir.cpp" />
+    <ClCompile Include="external\spirv_cross\spirv_cross_util.cpp" />
+    <ClCompile Include="external\spirv_cross\spirv_glsl.cpp" />
+    <ClCompile Include="external\spirv_cross\spirv_hlsl.cpp" />
+    <ClCompile Include="external\spirv_cross\spirv_msl.cpp" />
+    <ClCompile Include="external\spirv_cross\spirv_parser.cpp" />
+    <ClCompile Include="external\spirv_cross\spirv_reflect.cpp" />
+    <ClCompile Include="external\spirv_cross\tests-other\c_api_test.c" />
+    <ClCompile Include="external\spirv_cross\tests-other\debug-info.cpp" />
+    <ClCompile Include="external\spirv_cross\tests-other\debug-lines.cpp" />
+    <ClCompile Include="external\spirv_cross\tests-other\hlsl_resource_bindings.cpp" />
+    <ClCompile Include="external\spirv_cross\tests-other\hlsl_wave_mask.cpp" />
+    <ClCompile Include="external\spirv_cross\tests-other\msl_constexpr_test.cpp" />
+    <ClCompile Include="external\spirv_cross\tests-other\msl_resource_bindings.cpp" />
+    <ClCompile Include="external\spirv_cross\tests-other\msl_ycbcr_conversion_test.cpp" />
+    <ClCompile Include="external\spirv_cross\tests-other\small_vector.cpp" />
+    <ClCompile Include="external\spirv_cross\tests-other\typed_id_test.cpp" />
     <ClCompile Include="Signboard\Assets\configLoader\ConfigLoader.cpp" />
     <ClCompile Include="Signboard\Assets\configLoader\XMLLoader\XMLConfigLoader.cpp" />
     <ClCompile Include="Signboard\Assets\io\ResourceLoaders\file_loader.cpp" />
@@ -223,6 +248,31 @@
     <ClCompile Include="Signboard\Signboard.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="external\spirv_cross\cmake\gitversion.in.h" />
+    <ClInclude Include="external\spirv_cross\GLSL.std.450.h" />
+    <ClInclude Include="external\spirv_cross\include\spirv_cross\barrier.hpp" />
+    <ClInclude Include="external\spirv_cross\include\spirv_cross\external_interface.h" />
+    <ClInclude Include="external\spirv_cross\include\spirv_cross\image.hpp" />
+    <ClInclude Include="external\spirv_cross\include\spirv_cross\internal_interface.hpp" />
+    <ClInclude Include="external\spirv_cross\include\spirv_cross\sampler.hpp" />
+    <ClInclude Include="external\spirv_cross\include\spirv_cross\thread_group.hpp" />
+    <ClInclude Include="external\spirv_cross\NonSemanticShaderDebugInfo100.h" />
+    <ClInclude Include="external\spirv_cross\spirv.h" />
+    <ClInclude Include="external\spirv_cross\spirv.hpp" />
+    <ClInclude Include="external\spirv_cross\spirv_cfg.hpp" />
+    <ClInclude Include="external\spirv_cross\spirv_common.hpp" />
+    <ClInclude Include="external\spirv_cross\spirv_cpp.hpp" />
+    <ClInclude Include="external\spirv_cross\spirv_cross.hpp" />
+    <ClInclude Include="external\spirv_cross\spirv_cross_c.h" />
+    <ClInclude Include="external\spirv_cross\spirv_cross_containers.hpp" />
+    <ClInclude Include="external\spirv_cross\spirv_cross_error_handling.hpp" />
+    <ClInclude Include="external\spirv_cross\spirv_cross_parsed_ir.hpp" />
+    <ClInclude Include="external\spirv_cross\spirv_cross_util.hpp" />
+    <ClInclude Include="external\spirv_cross\spirv_glsl.hpp" />
+    <ClInclude Include="external\spirv_cross\spirv_hlsl.hpp" />
+    <ClInclude Include="external\spirv_cross\spirv_msl.hpp" />
+    <ClInclude Include="external\spirv_cross\spirv_parser.hpp" />
+    <ClInclude Include="external\spirv_cross\spirv_reflect.hpp" />
     <ClInclude Include="Signboard\Assets\configLoader\ConfigLoader.h" />
     <ClInclude Include="Signboard\Assets\configLoader\ReadTypes\ApplicationReadTypes.h" />
     <ClInclude Include="Signboard\Assets\io\io.h" />
@@ -274,7 +324,6 @@
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_presentation.h" />
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_presentation_Access.h" />
     <ClInclude Include="Signboard\Renderer\renderTarget\target_surface.h" />
-    <ClInclude Include="Signboard\Renderer\Vertex\VertexLayout.h" />
     <ClInclude Include="Signboard\Resources\res_images.h" />
     <ClInclude Include="Signboard\RHI\detail\standardCommandPools.h" />
     <ClInclude Include="Signboard\RHI\detail\standardQueues.h" />
@@ -320,6 +369,7 @@
     <ClInclude Include="Signboard\RHI\primitive\shader.h" />
     <ClInclude Include="Signboard\RHI\primitive\shader_pAccess.h" />
     <ClInclude Include="Signboard\RHI\primitive\vertexLayout.h" />
+    <ClInclude Include="Signboard\RHI\primitive\vertexLayout_pAccess.h" />
     <ClInclude Include="Signboard\RHI\procedure\bitops.h" />
     <ClInclude Include="Signboard\RHI\procedure\bufferAllocator.h" />
     <ClInclude Include="Signboard\RHI\procedure\commandBufferRecorder.h" />
@@ -354,6 +404,7 @@
     <ClInclude Include="Signboard\Platform\primitive\display_window.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="external\spirv_cross\shaders-other\aliased-entry-point-names.asm" />
     <None Include="ShaderBuild.targets" />
     <None Include="shaders\base.frag" />
     <None Include="shaders\base.vert" />
