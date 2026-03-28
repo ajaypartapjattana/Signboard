@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
+#include <vector>
 
 namespace rhi {
 
@@ -34,7 +35,7 @@ namespace rhi {
 		pcdShaderWrapper& addBinary(const char* data, size_t size);
 		
 		VkResult warpShaderCode(pmvShader& targetShader) const;
-		ValidationResult validateVertexLayout(const pmvVertexLayout& layout);
+		ValidationResult validateVertexLayout(const pmvVertexLayout& layout) const;
 
 	private:
 		VkDevice m_Device;

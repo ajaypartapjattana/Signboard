@@ -35,7 +35,8 @@ namespace io::loader {
 			return false;
 		}
 
-		delete[] *m_target;
+		if(*m_target)
+			delete[] *m_target;
 
 		*m_target = newBuffer;
 		*m_targetSize = static_cast<size_t>(size);

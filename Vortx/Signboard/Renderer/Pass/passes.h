@@ -17,11 +17,11 @@ public:
 		VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
 	};
 
-	storage::storage_handle create_pass(const createInfo* info);
-	const storage::vault_readAccessor<rhi::pmvRenderPass> get_rp_readAccessor() const noexcept;
+	storage::storage_handle createRenderPass(const createInfo* info);
+	const storage::vault_readAccessor<rhi::pmvRenderPass> get_renderPassReadAccess() const noexcept;
 
-	void create_framebuffers(const storage::storage_handle passHandle, const createInfo* info, std::vector<storage::storage_handle>& framebuffers);
-	const storage::vault_readAccessor<rhi::pmvFramebuffer>get_fb_readAccessor() const noexcept;
+	void createFramebuffers(const storage::storage_handle passHandle, const createInfo* info, std::vector<storage::storage_handle>& framebuffers);
+	const storage::vault_readAccessor<rhi::pmvFramebuffer>get_framebufferReadAccess() const noexcept;
 
 private:
 	friend struct passes_Access;

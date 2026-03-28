@@ -30,7 +30,7 @@ namespace rhi {
 		return *this;
 	}
 
-	VkResult pcdBufferAllocator::allocateBuffer(rhi::pmvBuffer tgtBuffer) const noexcept {
+	VkResult pcdBufferAllocator::allocateBuffer(rhi::pmvBuffer& tgtBuffer) const noexcept {
 		if (requestedSize == 0)
 			return VK_INCOMPLETE;
 

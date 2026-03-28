@@ -7,14 +7,14 @@ class passes;
 
 class materials {
 public:
-	materials(const rhi::creDevice& device, const rhi::pmvSwapchain& swapchain, const passes& passes);
+	materials(const rhi::creDevice& device, const rhi::pmvSwapchain& swapchain, storage::vault_readAccessor<rhi::pmvRenderPass> passAccess, storage::vault_readAccessor<rhi::pmvVertexLayout> fieldsAccess);
 
 	struct createInfo {
 		const char* vertShader_path;
 		const char* fragShader_path;
 	};
 
-	storage::storage_handle create_pipeline(storage::storage_handle passHandle, uint32_t subpass, const createInfo* createInfo);
+	storage::storage_handle createPipeline(storage::storage_handle passHandle, storage::storage_handle vertexLayoutHandle, uint32_t subpass, const createInfo& createInfo);
 	storage::vault_readAccessor<rhi::pmvPipeline> get_readAccessor() const noexcept;
 
 private:
@@ -23,7 +23,9 @@ private:
 private:
 	const rhi::creDevice& r_device;
 	const rhi::pmvSwapchain& r_swapchain;
-	const storage::vault_readAccessor<rhi::pmvRenderPass> a_renderPass_RAccess;
+
+	const storage::vault_readAccessor<rhi::pmvRenderPass> a_renderPassAccess;
+	const storage::vault_readAccessor<rhi::pmvVertexLayout> a_vertexLayoutAccess;
 
 	rhi::pmvPipelineLayout m_pipelineLayout;
 

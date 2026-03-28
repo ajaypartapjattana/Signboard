@@ -9,17 +9,33 @@
 #include "Signboard/RHI/primitive/renderPass_pAccess.h"
 #include "Signboard/RHI/primitive/shader_pAccess.h"
 
+#include "Signboard/RHI/primitive/vertexLayout_pAccess.h"
+
 namespace rhi {
 
 	pcdPipelineBuilder::pcdPipelineBuilder(const rhi::creDevice& device, const rhi::pmvSwapchain& swapchain, const rhi::pmvPipelineLayout& pipelineLayout) noexcept
 		: 
 		m_device(rhi::access::device_pAccess::get(device)), 
-		m_layout(rhi::access::pipelineLayout_pAccess::get(pipelineLayout)),
-		m_viewportExtent(rhi::access::swapchain_pAccess::get_extent(swapchain)),
-
-		m_pass(VK_NULL_HANDLE)
+		m_pipelineLayout(rhi::access::pipelineLayout_pAccess::get(pipelineLayout)),
+		
+		r_renderPass(nullptr),
+		r_vertexLayout(nullptr),
+		
+		m_viewportExtent(rhi::access::swapchain_pAccess::get_extent(swapchain))
 	{
 	
+	}
+
+	pcdPipelineBuilder& pcdPipelineBuilder::set_vertexLayout(const pmvVertexLayout* layout) noexcept {
+		r_vertexLayout = layout;
+
+		return *this;
+	}
+
+	pcdPipelineBuilder& pcdPipelineBuilder::set_targetPass(const rhi::pmvRenderPass* renderPass) noexcept {
+		r_renderPass = renderPass;
+
+		return *this;
 	}
 
 	pcdPipelineBuilder& pcdPipelineBuilder::set_vertShader(const rhi::pmvShader& s) noexcept {
@@ -36,15 +52,8 @@ namespace rhi {
 		return *this;
 	}
 
-	pcdPipelineBuilder& pcdPipelineBuilder::set_targetPass(const rhi::pmvRenderPass& renderPass) noexcept {
-		m_pass = rhi::access::renderPass_pAccess::get(renderPass);
-
-		return *this;
-	}
-
 	VkResult pcdPipelineBuilder::build_graphicsPipeline(const uint32_t target_subpass, rhi::pmvPipeline& tw_pipeline) {
-
-		if (m_moduleRef.empty() || !m_pass)
+		if (m_moduleRef.empty() || !r_renderPass || !r_vertexLayout)
 			return VK_INCOMPLETE;
 
 		std::vector<VkPipelineShaderStageCreateInfo> shaders;
@@ -64,12 +73,13 @@ namespace rhi {
 		dynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
 		dynamicStateInfo.pDynamicStates = dynamicStates.data();
 
+		VertexInputDescription desc = rhi::access::vertexLayout_pAccess::getDescription(*r_vertexLayout);
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertexInputInfo.vertexBindingDescriptionCount = 0;
-		vertexInputInfo.pVertexBindingDescriptions = nullptr;
-		vertexInputInfo.vertexAttributeDescriptionCount = 0;
-		vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+		vertexInputInfo.vertexBindingDescriptionCount = 1;
+		vertexInputInfo.pVertexBindingDescriptions = &desc.binding;
+		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(desc.attributes.size());
+		vertexInputInfo.pVertexAttributeDescriptions = desc.attributes.data();
 
 		VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo{};
 		inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -135,8 +145,8 @@ namespace rhi {
 		pipeInfo.pMultisampleState = &multisampleStateInfo;
 		pipeInfo.pColorBlendState = &colorblendStateInfo;
 
-		pipeInfo.layout = m_layout;
-		pipeInfo.renderPass = m_pass;
+		pipeInfo.layout = m_pipelineLayout;
+		pipeInfo.renderPass = rhi::access::renderPass_pAccess::get(*r_renderPass);
 		pipeInfo.subpass = target_subpass;
 
 		pipeInfo.basePipelineHandle = VK_NULL_HANDLE;

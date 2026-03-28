@@ -14,6 +14,7 @@
 #include "semaphore.h"
 #include "fence.h"
 
+#include "vertexLayout.h"
 #include "descriptorLayout.h"
 #include "pushConstantRange.h"
 #include "pipelineLayout.h"

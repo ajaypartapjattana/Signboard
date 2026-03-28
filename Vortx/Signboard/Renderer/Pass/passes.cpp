@@ -10,7 +10,7 @@ passes::passes(const rhi::creDevice& device)
 
 }
 
-storage::storage_handle passes::create_pass(const createInfo* info) {
+storage::storage_handle passes::createRenderPass(const createInfo* info) {
 	const createInfo& a_info = *info;
 
 	rhi::pcdRenderPassBuilder::attachment_desc desc{};
@@ -29,12 +29,12 @@ storage::storage_handle passes::create_pass(const createInfo* info) {
 	return rp_writeAccess.construct(builder);
 }
 
-const storage::vault_readAccessor<rhi::pmvRenderPass> passes::get_rp_readAccessor() const noexcept {
+const storage::vault_readAccessor<rhi::pmvRenderPass> passes::get_renderPassReadAccess() const noexcept {
 	storage::vault_readAccessor<rhi::pmvRenderPass> accessor{ m_renderPasses };
 	return accessor;
 }
 
-void passes::create_framebuffers(const storage::storage_handle passHandle, const createInfo* info, std::vector<storage::storage_handle>& fb_handles) {
+void passes::createFramebuffers(const storage::storage_handle passHandle, const createInfo* info, std::vector<storage::storage_handle>& fb_handles) {
 	const createInfo& a_info = *info;
 
 	rhi::pcdFramebufferCreator prcdr{ r_device };
@@ -47,7 +47,7 @@ void passes::create_framebuffers(const storage::storage_handle passHandle, const
 
 }
 
-const storage::vault_readAccessor<rhi::pmvFramebuffer> passes::get_fb_readAccessor() const noexcept {
+const storage::vault_readAccessor<rhi::pmvFramebuffer> passes::get_framebufferReadAccess() const noexcept {
 	storage::vault_readAccessor<rhi::pmvFramebuffer> accessor{ m_framebuffers };
 	return accessor;
 }

@@ -13,7 +13,10 @@ namespace rhi {
 	public:
 		pmvVertexLayout() noexcept;
 
-		void addAttribute(VkFormat format);
+		void addAttribute(uint32_t location, VkFormat format);
+		void addMatrix(uint32_t startLoaction, uint32_t columnCount, VkFormat columnFormat);
+		void resetLayout() noexcept;
+
 		uint32_t stride() const;
 
 	private:

@@ -19,7 +19,7 @@ namespace rhi {
 		pcdBufferAllocator& setMemoryPreference(VmaMemoryUsage memory) noexcept;
 		pcdBufferAllocator& setBufferSize(VkDeviceSize size) noexcept;
 
-		VkResult allocateBuffer(rhi::pmvBuffer targetBuffer) const noexcept;
+		VkResult allocateBuffer(rhi::pmvBuffer& targetBuffer) const noexcept;
 
 	private:
 		VmaAllocator m_allocator;

@@ -154,10 +154,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="external\spirv_cross\main.cpp" />
-    <ClCompile Include="external\spirv_cross\samples\cpp\atomics.cpp" />
-    <ClCompile Include="external\spirv_cross\samples\cpp\multiply.cpp" />
-    <ClCompile Include="external\spirv_cross\samples\cpp\shared.cpp" />
     <ClCompile Include="external\spirv_cross\spirv_cfg.cpp" />
     <ClCompile Include="external\spirv_cross\spirv_cpp.cpp" />
     <ClCompile Include="external\spirv_cross\spirv_cross.cpp" />
@@ -169,16 +165,6 @@
     <ClCompile Include="external\spirv_cross\spirv_msl.cpp" />
     <ClCompile Include="external\spirv_cross\spirv_parser.cpp" />
     <ClCompile Include="external\spirv_cross\spirv_reflect.cpp" />
-    <ClCompile Include="external\spirv_cross\tests-other\c_api_test.c" />
-    <ClCompile Include="external\spirv_cross\tests-other\debug-info.cpp" />
-    <ClCompile Include="external\spirv_cross\tests-other\debug-lines.cpp" />
-    <ClCompile Include="external\spirv_cross\tests-other\hlsl_resource_bindings.cpp" />
-    <ClCompile Include="external\spirv_cross\tests-other\hlsl_wave_mask.cpp" />
-    <ClCompile Include="external\spirv_cross\tests-other\msl_constexpr_test.cpp" />
-    <ClCompile Include="external\spirv_cross\tests-other\msl_resource_bindings.cpp" />
-    <ClCompile Include="external\spirv_cross\tests-other\msl_ycbcr_conversion_test.cpp" />
-    <ClCompile Include="external\spirv_cross\tests-other\small_vector.cpp" />
-    <ClCompile Include="external\spirv_cross\tests-other\typed_id_test.cpp" />
     <ClCompile Include="Signboard\Assets\configLoader\ConfigLoader.cpp" />
     <ClCompile Include="Signboard\Assets\configLoader\XMLLoader\XMLConfigLoader.cpp" />
     <ClCompile Include="Signboard\Assets\io\ResourceLoaders\file_loader.cpp" />
@@ -202,7 +188,9 @@
     <ClCompile Include="Signboard\Renderer\RenderBackend\rndr_method.cpp" />
     <ClCompile Include="Signboard\Renderer\RenderBackend\rndr_presentation.cpp" />
     <ClCompile Include="Signboard\Renderer\renderTarget\target_surface.cpp" />
+    <ClCompile Include="Signboard\Renderer\Vertex\vertexFields.cpp" />
     <ClCompile Include="Signboard\Resources\res_images.cpp" />
+    <ClCompile Include="Signboard\Resources\rsrc_buffers.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\commandPool.cpp" />
     <ClCompile Include="Signboard\RHI\core\device.cpp" />
     <ClCompile Include="Signboard\RHI\core\instance.cpp" />
@@ -241,7 +229,6 @@
     <ClCompile Include="Signboard\RHI\detail\vma\vma.cpp" />
     <ClCompile Include="Signboard\Assets\io\ResourceLoaders\ModelLoader.cpp" />
     <ClCompile Include="Signboard\Renderer\renderer.cpp" />
-    <ClCompile Include="Signboard\Renderer\Mesh\VertexLayout.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\swapchainHandler.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\swapchainPresenter.cpp" />
@@ -324,7 +311,9 @@
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_presentation.h" />
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_presentation_Access.h" />
     <ClInclude Include="Signboard\Renderer\renderTarget\target_surface.h" />
+    <ClInclude Include="Signboard\Renderer\Vertex\vertexFields.h" />
     <ClInclude Include="Signboard\Resources\res_images.h" />
+    <ClInclude Include="Signboard\Resources\rsrc_buffers.h" />
     <ClInclude Include="Signboard\RHI\detail\standardCommandPools.h" />
     <ClInclude Include="Signboard\RHI\detail\standardQueues.h" />
     <ClInclude Include="Signboard\RHI\primitive\commandPool_pAccess.h" />
@@ -397,8 +386,6 @@
     <ClInclude Include="Signboard\Assets\io\ResourceLoaders\ModelLoader.h" />
     <ClInclude Include="Signboard\Renderer\renderer.h" />
     <ClInclude Include="Signboard\Renderer\DescriptorSchema.h" />
-    <ClInclude Include="Signboard\Renderer\Mesh\VertexLayout.h" />
-    <ClInclude Include="Signboard\Renderer\Mesh\Vertex.h" />
     <ClInclude Include="Signboard\Signboard.h" />
     <ClInclude Include="Signboard\Assets\io\ResourceLoaders\TextureLoader.h" />
     <ClInclude Include="Signboard\Platform\primitive\display_window.h" />

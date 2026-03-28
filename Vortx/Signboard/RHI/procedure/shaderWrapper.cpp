@@ -17,6 +17,8 @@ namespace rhi {
 
 	pcdShaderWrapper& pcdShaderWrapper::addBinary(const char* data, size_t size) {
 		m_binary = { data, size };
+
+		return *this;
 	}
 
 	VkResult pcdShaderWrapper::warpShaderCode(pmvShader& tgtShader) const {
@@ -45,86 +47,6 @@ namespace rhi {
 		uint32_t location;
 		VkFormat format;
 	};
-
-	ValidationResult pcdShaderWrapper::validateVertexLayout(const pmvVertexLayout& layout) {
-		std::vector<uint32_t> spirv = toSpirvWords(m_binary.data, m_binary.size);
-		
-		std::vector<ShaderAttribute> shaderAttibutes = reflectVertexInputs(spirv);
-		std::vector<VkVertexInputAttributeDescription> vertexAttributes = rhi::access::vertexLayout_pAccess::getDescription(layout).attributes;
-
-		ValidationResult result;
-
-		for (const ShaderAttribute& shaderAttribute : shaderAttibutes) {
-			bool found = false;
-
-			for (const VkVertexInputAttributeDescription& vertexAttribute : vertexAttributes) {
-				if (vertexAttribute.location == shaderAttribute.location) {
-					found = true;
-
-					if (vertexAttribute.format != shaderAttribute.format) {
-						result.result = VK_INCOMPLETE;
-						result.errors.push_back({
-							ShaderValidationErrorType::FORMAT_MISMATCH,
-							vertexAttribute.location,
-							shaderAttribute.format,
-							vertexAttribute.format
-						});
-					}
-					break;
-				}
-			}
-			if (!found) {
-				result.result = VK_INCOMPLETE;
-				result.errors.push_back({
-					ShaderValidationErrorType::MISSING_ATTRIBUTE,
-					shaderAttribute.location,
-					shaderAttribute.format,
-					VK_FORMAT_UNDEFINED
-				});
-			}
-		}
-		for (const VkVertexInputAttributeDescription& vertexAttribute : vertexAttributes) {
-			bool used = false;
-
-			for (const ShaderAttribute& shaderAttribute : shaderAttibutes) {
-				if (shaderAttribute.location == vertexAttribute.location) {
-					used = true;
-					break;
-				}
-			}
-			if (!used) {
-				result.result = VK_INCOMPLETE;
-				result.errors.push_back({
-					ShaderValidationErrorType::EXTRA_ATTRIBUTE,
-					vertexAttribute.location,
-					VK_FORMAT_UNDEFINED,
-					vertexAttribute.format
-				});
-			}
-		}
-	}
-
-	static std::vector<uint32_t> toSpirvWords(const char* data, size_t size) {
-		std::vector<uint32_t> words(size / 4);
-		std::memcpy(words.data(), data, size);
-		return words;
-	}
-
-	static std::vector<ShaderAttribute> reflectVertexInputs(const std::vector<uint32_t>& spirv) {
-		spirv_cross::Compiler compiler{ spirv };
-		spirv_cross::ShaderResources resources = compiler.get_shader_resources();
-
-		std::vector<ShaderAttribute> result;
-
-		for (const spirv_cross::Resource& input : resources.stage_inputs) {
-			uint32_t location = compiler.get_decoration(input.id, spv::DecorationLocation);
-			const auto& type = compiler.get_type(input.type_id);
-
-			result.push_back({ location, mapTypeToFormat(type) });
-		}
-
-		return result;
-	}
 
 	static VkFormat mapTypeToFormat(const spirv_cross::SPIRType& type) {
 		using namespace spirv_cross;
@@ -158,5 +80,90 @@ namespace rhi {
 
 		throw std::runtime_error("LOGIC: unsupported_shader_input_type!");
 	}
+
+	static std::vector<ShaderAttribute> reflectVertexInputs(const std::vector<uint32_t>& spirv) {
+		spirv_cross::Compiler compiler{ spirv };
+		spirv_cross::ShaderResources resources = compiler.get_shader_resources();
+
+		std::vector<ShaderAttribute> result;
+
+		for (const spirv_cross::Resource& input : resources.stage_inputs) {
+			uint32_t location = compiler.get_decoration(input.id, spv::DecorationLocation);
+			const auto& type = compiler.get_type(input.type_id);
+
+			result.push_back({ location, mapTypeToFormat(type) });
+		}
+
+		return result;
+	}
+
+	static std::vector<uint32_t> toSpirvWords(const char* data, size_t size) {
+		std::vector<uint32_t> words(size / 4);
+		std::memcpy(words.data(), data, size);
+		return words;
+	}
+
+	ValidationResult pcdShaderWrapper::validateVertexLayout(const pmvVertexLayout& layout) const {
+		if (m_binary.size % 4 != 0)
+			return { VK_ERROR_INVALID_SHADER_NV, {} };
+		
+		std::vector<uint32_t> spirv = toSpirvWords(m_binary.data, m_binary.size);
+		
+		std::vector<ShaderAttribute> shaderAttributes = reflectVertexInputs(spirv);
+		std::vector<VkVertexInputAttributeDescription> vertexAttributes = rhi::access::vertexLayout_pAccess::getDescription(layout).attributes;
+
+		ValidationResult result{};
+
+		for (const ShaderAttribute& shaderAttribute : shaderAttributes) {
+			bool found = false;
+
+			for (const VkVertexInputAttributeDescription& vertexAttribute : vertexAttributes) {
+				if (vertexAttribute.location == shaderAttribute.location) {
+					found = true;
+
+					if (vertexAttribute.format != shaderAttribute.format) {
+						result.result = VK_INCOMPLETE;
+						result.errors.push_back({
+							ShaderValidationErrorType::FORMAT_MISMATCH,
+							vertexAttribute.location,
+							shaderAttribute.format,
+							vertexAttribute.format
+						});
+					}
+					break;
+				}
+			}
+			if (!found) {
+				result.result = VK_INCOMPLETE;
+				result.errors.push_back({
+					ShaderValidationErrorType::MISSING_ATTRIBUTE,
+					shaderAttribute.location,
+					shaderAttribute.format,
+					VK_FORMAT_UNDEFINED
+				});
+			}
+		}
+		for (const VkVertexInputAttributeDescription& vertexAttribute : vertexAttributes) {
+			bool used = false;
+
+			for (const ShaderAttribute& shaderAttribute : shaderAttributes) {
+				if (shaderAttribute.location == vertexAttribute.location) {
+					used = true;
+					break;
+				}
+			}
+			if (!used) {
+				result.result = VK_INCOMPLETE;
+				result.errors.push_back({
+					ShaderValidationErrorType::EXTRA_ATTRIBUTE,
+					vertexAttribute.location,
+					VK_FORMAT_UNDEFINED,
+					vertexAttribute.format
+				});
+			}
+		}
+
+		return result;
+	}	
 
 }

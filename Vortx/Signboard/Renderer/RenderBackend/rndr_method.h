@@ -6,6 +6,7 @@ class rndr_presentation;
 #include "Signboard/RHI/rhi.h"
 
 #include "Signboard/Renderer/Pass/passes.h"
+#include "Signboard/Renderer/Vertex/vertexFields.h"
 #include "Signboard/Renderer/Materials/materials.h"
 
 struct rndr_method_Access;
@@ -25,9 +26,10 @@ public:
 
 	struct createInfo {
 		passes::createInfo passInfo;
+		vertexFields::createInfo fieldInfo;
 		materials::createInfo materialInfo;
 	};
-	void create_renderTarget();
+	void create_renderTarget(const createInfo& info);
 	const storage::vault_readAccessor<render_target> get_readAccessor() const noexcept;
 
 	void validate_primaryTarget();
@@ -42,6 +44,7 @@ private:
 	const rhi::pmvSwapchain& r_swapchain;
 
 	passes m_passes;
+	vertexFields m_fields;
 	materials m_materials;
 
 	storage::storage_handle m_primaryTarget_handle;

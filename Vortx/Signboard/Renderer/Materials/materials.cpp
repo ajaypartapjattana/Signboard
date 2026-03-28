@@ -7,11 +7,13 @@
 #include <vector>
 #include <stdexcept>
 
-materials::materials(const rhi::creDevice& device, const rhi::pmvSwapchain& swapchain, const passes& passes)
+materials::materials(const rhi::creDevice& device, const rhi::pmvSwapchain& swapchain, storage::vault_readAccessor<rhi::pmvRenderPass> passAccess, storage::vault_readAccessor<rhi::pmvVertexLayout> fieldsAccess)
 	: 
 	r_device(device), 
 	r_swapchain(swapchain),
-	a_renderPass_RAccess(passes.get_rp_readAccessor()),
+
+	a_renderPassAccess(std::move(passAccess)),
+	a_vertexLayoutAccess(std::move(fieldsAccess)),
 
 	m_writeAccess(m_pipelines)
 {
@@ -19,18 +21,20 @@ materials::materials(const rhi::creDevice& device, const rhi::pmvSwapchain& swap
 	layout_builder.build(m_pipelineLayout);
 }
 
-storage::storage_handle materials::create_pipeline(storage::storage_handle passHandle, uint32_t subpass, const createInfo* info) {
+storage::storage_handle materials::createPipeline(storage::storage_handle passHandle, storage::storage_handle vertexLayoutHandle, uint32_t subpass, const createInfo& info) {
 	rhi::pmvShader l_vertShader;
-	createShader(l_vertShader, info->vertShader_path);
+	createShader(l_vertShader, info.vertShader_path);
 
 	rhi::pmvShader l_fragShader;
-	createShader(l_fragShader, info->fragShader_path);
+	createShader(l_fragShader, info.fragShader_path);
 
 	rhi::pcdPipelineBuilder prcdr{ r_device, r_swapchain, m_pipelineLayout };
+	prcdr.set_vertexLayout(a_vertexLayoutAccess.get(vertexLayoutHandle));
+
 	prcdr.set_vertShader(l_vertShader);
 	prcdr.set_fragShader(l_fragShader);
 
-	prcdr.set_targetPass(*a_renderPass_RAccess.get(passHandle));
+	prcdr.set_targetPass(a_renderPassAccess.get(passHandle));
 
 	auto builder = [&](rhi::pmvPipeline* p) {
 		prcdr.build_graphicsPipeline(subpass, *p);
@@ -40,8 +44,7 @@ storage::storage_handle materials::create_pipeline(storage::storage_handle passH
 }
 
 storage::vault_readAccessor<rhi::pmvPipeline> materials::get_readAccessor() const noexcept {
-	storage::vault_readAccessor<rhi::pmvPipeline> accessor{m_pipelines};
-	return accessor;
+	 return storage::vault_readAccessor<rhi::pmvPipeline>{m_pipelines};
 }
 
 VkResult materials::createShader(rhi::pmvShader& tw_shader, const char* path) {

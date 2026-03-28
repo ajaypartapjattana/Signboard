@@ -11,9 +11,9 @@ namespace rhi {
 
 	}
 
-	void pmvVertexLayout::addAttribute(VkFormat format) {
+	void pmvVertexLayout::addAttribute(uint32_t location, VkFormat format) {
 		VertexAttribute attribute{};
-		attribute.location = static_cast<uint32_t>(m_attributes.size());
+		attribute.location = location;
 		attribute.format = format;
 		attribute.offset = m_stride;
 
@@ -22,8 +22,17 @@ namespace rhi {
 		m_stride += formatSize(format);
 	}
 
-	uint32_t pmvVertexLayout::stride() const {
+	void pmvVertexLayout::addMatrix(uint32_t startLoaction, uint32_t columnCount, VkFormat columnFormat) {
+		for (uint32_t i = 0; i < columnCount; ++i)
+			addAttribute(startLoaction + i, columnFormat);
+	}
 
+	void pmvVertexLayout::resetLayout() noexcept {
+		m_attributes.clear();
+	}
+
+	uint32_t pmvVertexLayout::stride() const {
+		return m_stride;
 	}
 
 	uint32_t pmvVertexLayout::formatSize(VkFormat format) const {
@@ -37,6 +46,16 @@ namespace rhi {
 		case VK_FORMAT_R8G8_UINT: return 2;
 		case VK_FORMAT_R8G8B8_UINT: return 3;
 		case VK_FORMAT_R8G8B8A8_UINT: return 4;
+
+		case VK_FORMAT_R32_SINT: return 4;
+		case VK_FORMAT_R32G32_SINT: return 8;
+		case VK_FORMAT_R32G32B32_SINT: return 12;
+		case VK_FORMAT_R32G32B32A32_SINT: return 16;
+
+		case VK_FORMAT_R32_UINT: return 4;
+		case VK_FORMAT_R32G32_UINT: return 8;
+		case VK_FORMAT_R32G32B32_UINT: return 12;
+		case VK_FORMAT_R32G32B32A32_UINT: return 16;
 
 		default:
 			throw std::runtime_error("LOGIC: unsupported_format!");
