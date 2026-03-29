@@ -10,40 +10,43 @@ namespace rhi {
 	pcdBufferAllocator::pcdBufferAllocator(const rhi::creAllocator& allocator) noexcept
 		: 
 		m_allocator(rhi::access::allocator_pAccess::get(allocator)),
-		requestedMemory(VMA_MEMORY_USAGE_AUTO),
-		requestedUsage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
-		requestedSize(0)
-	{
 
+		m_bufferInfo(),
+		m_allocationInfo()
+	{
+		m_bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		m_bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;	
 	}
 
-	pcdBufferAllocator& pcdBufferAllocator::setMemoryPreference(VmaMemoryUsage usage) noexcept {
-		requestedMemory = usage;
+	pcdBufferAllocator& pcdBufferAllocator::setMemoryPreference(VmaMemoryUsage memoryType) noexcept {
+		m_allocationInfo.usage = memoryType;
+
+		return *this;
+	}
+
+	pcdBufferAllocator& pcdBufferAllocator::setMemoryFlags(VmaAllocationCreateFlags allocationFlags) {
+		m_allocationInfo.flags = allocationFlags;
+
+		return *this;
 	}
 
 	pcdBufferAllocator& pcdBufferAllocator::addUsage(VkBufferUsageFlags usage) noexcept {
-		requestedUsage |= usage;
+		m_bufferInfo.usage |= usage;
+
+		return *this;
 	}
 
 	pcdBufferAllocator& pcdBufferAllocator::setBufferSize(VkDeviceSize size) noexcept {
-		requestedSize = size;
+		m_bufferInfo.size = size;
+		
 		return *this;
 	}
 
 	VkResult pcdBufferAllocator::allocateBuffer(rhi::pmvBuffer& tgtBuffer) const noexcept {
-		if (requestedSize == 0)
+		if (m_bufferInfo.size == 0)
 			return VK_INCOMPLETE;
 
-		VkBufferCreateInfo bufferInfo{};
-		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferInfo.size = requestedSize;
-		bufferInfo.usage = requestedUsage;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VmaAllocationCreateInfo allocInfo{};
-		allocInfo.usage = requestedMemory;
-
-		VkResult result = vmaCreateBuffer(m_allocator, &bufferInfo, &allocInfo, &tgtBuffer.m_buffer, &tgtBuffer.m_allocation, nullptr);
+		VkResult result = vmaCreateBuffer(m_allocator, &m_bufferInfo, &m_allocationInfo, &tgtBuffer.m_buffer, &tgtBuffer.m_allocation, nullptr);
 		if (result != VK_SUCCESS)
 			return result;
 
@@ -51,5 +54,13 @@ namespace rhi {
 
 		return VK_SUCCESS;
 	}
+
+	void* pcdBufferAllocator::mapBuffer(rhi::pmvBuffer& buffer) const {
+		void* mapped = nullptr;
+		vmaMapMemory(m_allocator, buffer.m_allocation, &mapped);
+
+		return mapped;
+	}
+
 
 }

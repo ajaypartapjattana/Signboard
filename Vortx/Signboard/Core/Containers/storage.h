@@ -1,10 +1,10 @@
 #pragma once
 
-#include "storage_vault.h"
-#include "storage_vault_accessor.h"
+#include "storage/storage_vault.h"
+#include "storage/storage_vault_accessor.h"
 
-#include "storage_library.h"
-#include "storage_library_accessor.h"
+#include "storage/storage_library.h"
+#include "storage/storage_library_accessor.h"
 
 namespace storage {
 

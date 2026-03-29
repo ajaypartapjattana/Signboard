@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Signboard/RHI/rhi.h"
-#include "Signboard/Core/Containers/storage/storage.h"
+#include "Signboard/Core/Containers/storage.h"
 
 class passes;
 

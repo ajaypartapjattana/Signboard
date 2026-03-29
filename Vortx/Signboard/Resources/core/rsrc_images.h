@@ -1,13 +1,11 @@
 #pragma once
 
-#include "Signboard/Core/Containers/storage/storage.h"
+#include "Signboard/Core/Containers/storage.h"
 #include "Signboard/RHI/rhi.h"
-
-class rndr_context;
 
 class rsrc_images {
 public:
-	rsrc_images(const rndr_context& ctx);
+	rsrc_images(const rhi::creDevice& device, const rhi::creAllocator& allocator);
 
 	struct createInfo {
 		VkFormat format;

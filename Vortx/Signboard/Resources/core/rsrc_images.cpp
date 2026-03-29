@@ -1,13 +1,9 @@
-#include "res_images.h"
+#include "rsrc_images.h"
 
-#include <vector>
-
-#include "Signboard/Renderer/RenderBackend/rndr_context_Access.h"
-
-rsrc_images::rsrc_images(const rndr_context& ctx)
+rsrc_images::rsrc_images(const rhi::creDevice& device, const rhi::creAllocator& allocator)
 	:
-	r_device(rndr_context_Access::get_device(ctx)),
-	r_allocator(rndr_context_Access::get_allocator(ctx)),
+	r_device(device),
+	r_allocator(allocator),
 
 	m_writer(m_textureImages)
 {

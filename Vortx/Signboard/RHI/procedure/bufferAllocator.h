@@ -17,16 +17,17 @@ namespace rhi {
 
 		pcdBufferAllocator& addUsage(VkBufferUsageFlags usage) noexcept;
 		pcdBufferAllocator& setMemoryPreference(VmaMemoryUsage memory) noexcept;
+		pcdBufferAllocator& setMemoryFlags(VmaAllocationCreateFlags allocationFlags) noexcept;
 		pcdBufferAllocator& setBufferSize(VkDeviceSize size) noexcept;
 
 		VkResult allocateBuffer(rhi::pmvBuffer& targetBuffer) const noexcept;
+		void* mapBuffer(rhi::pmvBuffer& buffer) const;
 
 	private:
 		VmaAllocator m_allocator;
 
-		VkBufferUsageFlags requestedUsage;
-		VmaMemoryUsage requestedMemory;
-		VkDeviceSize requestedSize;
+		VkBufferCreateInfo m_bufferInfo;
+		VmaAllocationCreateInfo m_allocationInfo;
 
 	};
 

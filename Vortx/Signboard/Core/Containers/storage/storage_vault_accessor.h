@@ -32,13 +32,17 @@ namespace storage {
 			return *this;
 		}
 
-		const T* get(storage_handle h) const {
+		_NODISCARD const T* 
+		get(storage_handle h) const noexcept 
+		{
 			const auto& slot = m_vault.slots[h.index];
-			return slot.alive && slot.generation == h.generation ? slot.object_ptr() : nullptr;
+			return (slot.alive && slot.generation == h.generation)
+				? slot.object_ptr() 
+				: nullptr;
 		}
 
-		auto begin() const { return detail::storage_readIterator<vault<T>, T>(m_vault, 0); }
-		auto end() const { return detail::storage_readIterator<vault<T>, T>(m_vault, m_vault.slots.size()); }
+		inline auto begin() const { return detail::storage_readIterator<vault<T>, T>(m_vault, 0); }
+		inline auto end() const { return detail::storage_readIterator<vault<T>, T>(m_vault, m_vault.slots.size()); }
 
 	private:
 		const vault<T>& m_vault;
@@ -63,14 +67,7 @@ namespace storage {
 
 		}
 
-		vault_writeAccessor& operator=(vault_writeAccessor&& other) noexcept {
-			if (this == &other)
-				return *this;
-
-			m_vault = other.m_vault;
-
-			return *this;
-		}
+		vault_writeAccessor& operator=(vault_writeAccessor&& other) = delete;
 
 		void create_empty(uint32_t count) {
 			uint32_t start = static_cast<uint32_t>(m_vault.slots.size());
@@ -99,7 +96,7 @@ namespace storage {
 		}
 
 		template<typename F>
-		storage_handle construct(F&& builder) {
+		_NODISCARD storage_handle construct(F&& builder) noexcept(noexcept(builder(std::declval<T*>()))) {
 			uint32_t index;
 
 			if (!m_vault.freeList.empty()) {
@@ -116,14 +113,21 @@ namespace storage {
 			T* obj = slot.object_ptr();
 
 			new (obj) T();
-			builder(obj);
+
+			try {
+				builder(obj);
+				slot.alive = true;
+			} catch (...) {
+				obj->~T();
+				throw;
+			}
 			
 			slot.alive = true;
 			return{ index, slot.generation };
 		}
 
 		template <typename... Args>
-		storage_handle create(Args&&... args) {
+		_NODISCARD storage_handle create(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args&&...>) {
 			uint32_t index;
 
 			if (!m_vault.freeList.empty()) {
@@ -142,10 +146,10 @@ namespace storage {
 			return { index, slot.generation };
 		}
 
-		void destroy(storage_handle h) {
+		void destroy(storage_handle h) noexcept(std::is_nothrow_destructible_v<T>) {
 			auto& slot = m_vault.slots[h.index];
 
-			if (!slot.alive || slot.generation != h.generation)
+			if (!slot.alive || slot.generation != h.generation) 
 				return;
 
 			slot.object_ptr()->~T();
@@ -154,7 +158,7 @@ namespace storage {
 			m_vault.freeList.push_back(h.index);
 		}
 
-		T* get(storage_handle h) const {
+		_NODISCARD T* get(storage_handle h) const noexcept {
 			auto& slot = m_vault.slots[h.index];
 			return slot.alive && slot.generation == h.generation ? slot.object_ptr() : nullptr;
 		}

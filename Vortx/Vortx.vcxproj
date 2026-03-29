@@ -189,8 +189,10 @@
     <ClCompile Include="Signboard\Renderer\RenderBackend\rndr_presentation.cpp" />
     <ClCompile Include="Signboard\Renderer\renderTarget\target_surface.cpp" />
     <ClCompile Include="Signboard\Renderer\Vertex\vertexFields.cpp" />
-    <ClCompile Include="Signboard\Resources\res_images.cpp" />
-    <ClCompile Include="Signboard\Resources\rsrc_buffers.cpp" />
+    <ClCompile Include="Signboard\Resources\core\rsrc_images.cpp" />
+    <ClCompile Include="Signboard\Resources\core\rsrc_buffers.cpp" />
+    <ClCompile Include="Signboard\Resources\procedure\rsrc_uplaoder.cpp" />
+    <ClCompile Include="Signboard\Resources\resources.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\commandPool.cpp" />
     <ClCompile Include="Signboard\RHI\core\device.cpp" />
     <ClCompile Include="Signboard\RHI\core\instance.cpp" />
@@ -270,7 +272,7 @@
     <ClInclude Include="Signboard\Core\Containers\storage\detail\storage_detail_iterator.h" />
     <ClInclude Include="Signboard\Core\Containers\storage\storage_library.h" />
     <ClInclude Include="Signboard\Core\Containers\storage\storage_library_accessor.h" />
-    <ClInclude Include="Signboard\Core\Containers\storage\storage.h" />
+    <ClInclude Include="Signboard\Core\Containers\storage.h" />
     <ClInclude Include="Signboard\Core\Containers\storage\storage_vault.h" />
     <ClInclude Include="Signboard\Core\Containers\storage\storage_vault_accessor.h" />
     <ClInclude Include="Signboard\Core\Frame\Frame.h" />
@@ -312,8 +314,12 @@
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_presentation_Access.h" />
     <ClInclude Include="Signboard\Renderer\renderTarget\target_surface.h" />
     <ClInclude Include="Signboard\Renderer\Vertex\vertexFields.h" />
-    <ClInclude Include="Signboard\Resources\res_images.h" />
-    <ClInclude Include="Signboard\Resources\rsrc_buffers.h" />
+    <ClInclude Include="Signboard\Resources\core\rsrc_core.h" />
+    <ClInclude Include="Signboard\Resources\procedure\rsrc_procedure.h" />
+    <ClInclude Include="Signboard\Resources\procedure\rsrc_uploader.h" />
+    <ClInclude Include="Signboard\Resources\resources.h" />
+    <ClInclude Include="Signboard\Resources\core\rsrc_images.h" />
+    <ClInclude Include="Signboard\Resources\core\rsrc_buffers.h" />
     <ClInclude Include="Signboard\RHI\detail\standardCommandPools.h" />
     <ClInclude Include="Signboard\RHI\detail\standardQueues.h" />
     <ClInclude Include="Signboard\RHI\primitive\commandPool_pAccess.h" />
