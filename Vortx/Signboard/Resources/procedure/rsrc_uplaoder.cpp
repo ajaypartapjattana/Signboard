@@ -1,6 +1,6 @@
 #include "rsrc_uploader.h"
 
-rsrc_uploader::rsrc_uploader(rsrc_buffers& buffers)
+rsrc_uploader::rsrc_uploader(rsrc_buffers& buffers) noexcept
 	:
 	r_buffers(buffers)
 {

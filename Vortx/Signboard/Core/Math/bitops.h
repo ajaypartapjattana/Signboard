@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <intrin.h>
 
-namespace rhi::procedure::bitops {
+namespace bitops {
 
 	inline uint32_t ctz(uint32_t v) {
 		unsigned long idx;

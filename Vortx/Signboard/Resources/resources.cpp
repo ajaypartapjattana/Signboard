@@ -2,12 +2,14 @@
 
 #include "Signboard/Renderer/RenderBackend/rndr_context_Access.h"
 
-Resources::Resources(const rndr_context& context) noexcept 
+Resources::Resources(const rndr_context& context, const rndr_methods& methods) noexcept
 	:
 	m_buffers(rndr_context_Access::get_allocator(context)),
 	m_images(rndr_context_Access::get_device(context), rndr_context_Access::get_allocator(context)),
 
-	m_uploader(m_buffers)
+	m_uploader(m_buffers),
+
+	m_vertWriter(m_vertBuffers)
 {
 	createDefaultVertBuffer();
 }

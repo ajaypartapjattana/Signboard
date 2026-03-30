@@ -1,7 +1,7 @@
 #pragma once
 
-#include "storage/storage_vault.h"
-#include "storage/storage_vault_accessor.h"
+#include "storage/vault.h"
+#include "storage/vault_accessor.h"
 
 #include "storage/storage_library.h"
 #include "storage/storage_library_accessor.h"

@@ -4,12 +4,13 @@
 #include "procedure/rsrc_procedure.h"
 
 class rndr_context;
+class rndr_methods;
 
 class Resources {
 public:
-	Resources(const rndr_context& context) noexcept;
+	Resources(const rndr_context& context, const rndr_methods& methods) noexcept;
 
-	void createVertexBuffer(size_t size);
+	void createVertexBuffer( size_t size);
 
 	storage::vault_readAccessor<storage::storage_handle> read_vertBuffers() const noexcept;
 

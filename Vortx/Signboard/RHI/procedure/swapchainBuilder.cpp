@@ -5,7 +5,7 @@
 #include "Signboard/RHI/core/device_pAccess.h"
 #include "Signboard/RHI/core/surface_pAccess.h"
 
-#include "bitops.h"
+#include "Signboard/Core/Math/bitops.h"
 
 #include <stdexcept>
 #include <algorithm>
@@ -130,7 +130,7 @@ namespace rhi {
 		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
 		createInfo.preTransform = surface_caps.currentTransform;
-		createInfo.compositeAlpha = (surface_caps.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR) ? VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR : static_cast<VkCompositeAlphaFlagBitsKHR>( 1u << rhi::procedure::bitops::ctz(surface_caps.supportedCompositeAlpha));
+		createInfo.compositeAlpha = (surface_caps.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR) ? VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR : static_cast<VkCompositeAlphaFlagBitsKHR>( 1u << bitops::ctz(surface_caps.supportedCompositeAlpha));
 		createInfo.presentMode = final_presentMode;
 		createInfo.clipped = VK_TRUE;
 

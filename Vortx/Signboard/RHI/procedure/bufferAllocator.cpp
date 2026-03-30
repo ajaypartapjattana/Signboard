@@ -24,7 +24,7 @@ namespace rhi {
 		return *this;
 	}
 
-	pcdBufferAllocator& pcdBufferAllocator::setMemoryFlags(VmaAllocationCreateFlags allocationFlags) {
+	pcdBufferAllocator& pcdBufferAllocator::setMemoryFlags(VmaAllocationCreateFlags allocationFlags) noexcept {
 		m_allocationInfo.flags = allocationFlags;
 
 		return *this;
