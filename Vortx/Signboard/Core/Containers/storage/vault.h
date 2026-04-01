@@ -217,7 +217,7 @@ namespace ctnr {
 			m_wordIndex(wordIndex),
 			m_masks(masks)
 		{
-			_init();
+			
 		}
 		
 		storage_readIterator(const Storage& storage, uint32_t wordIndex, const std::tuple<const Masks*...>& masks)
@@ -226,7 +226,7 @@ namespace ctnr {
 			m_wordIndex(wordIndex),
 			m_staticMasks(masks)
 		{
-			_init();
+			
 		}
 
 		void _init() {
@@ -382,7 +382,9 @@ namespace ctnr {
 		}
 
 		inline auto begin() const {
-			return storage_readIterator<vault<T>, T>(m_vault, 0, m_masks.empty() ? nullptr : &m_masks);
+			auto it = storage_readIterator<vault<T>, T>(m_vault, 0, m_masks.empty() ? nullptr : &m_masks);
+			it._init();
+			return it;
 		}
 
 		inline auto end() const {
@@ -425,7 +427,9 @@ namespace ctnr {
 		}
 
 		inline auto begin() const {
-			return storage_readIterator<vault<T>, T, Masks...>(m_vault, 0, m_staticMasks);
+			auto it = storage_readIterator<vault<T>, T, Masks...>(m_vault, 0, m_staticMasks);
+			it._init();
+			return it;
 		}
 
 		inline auto end() const {
