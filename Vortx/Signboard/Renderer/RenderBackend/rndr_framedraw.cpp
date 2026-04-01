@@ -4,7 +4,7 @@
 
 rndr_framedraw::rndr_framedraw(const rndr_method& methods)
 	:
-	m_targets(methods.get_readAccessor()),
+	m_targets(methods.read_renderTargets()),
 
 	a_renderpassView(rndr_method_Access::get_renderPassView(methods)),
 	a_framebufferView(rndr_method_Access::get_framebufferView(methods)),
@@ -16,10 +16,10 @@ rndr_framedraw::rndr_framedraw(const rndr_method& methods)
 void rndr_framedraw::drawFrame(const uint32_t target_index, const rhi::pmvCommandBuffer& target_cmd) {
 	rhi::pcdCommandBufferRecorder prcdr{ target_cmd };
 
-	for (const render_target& target : m_targets) {
-		prcdr.begin_renderTarget(*a_renderpassView.get(target.pass), *a_framebufferView.get(target.framebuffers[target_index]));
+	for (const renderTarget& target : m_targets) {
+		prcdr.begin_renderTarget(*a_renderpassView.get(target.renderPassIndex), *a_framebufferView.get(target.framebufferIndices[target_index]));
 
-		for (const storage::storage_handle& handle : target.pipelines) {
+		for (const uint32_t& handle : target.pipelineIndices) {
 			prcdr.bind_pipeline(*a_pipelineView.get(handle), true);
 
 			prcdr.draw();

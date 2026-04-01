@@ -11,9 +11,7 @@ rsrc_buffers::rsrc_buffers(const rhi::creAllocator& allocator)
 
 }
 
-_NODISCARD storage::storage_handle 
-rsrc_buffers::createBuffer(const createInfo& info) noexcept 
-{
+_NODISCARD uint32_t rsrc_buffers::createBuffer(const createInfo& info) noexcept {
 	m_allocator.addUsage(info.usage);
 	m_allocator.setMemoryPreference(info.memory);
 	m_allocator.setBufferSize(info.size);
@@ -26,11 +24,11 @@ rsrc_buffers::createBuffer(const createInfo& info) noexcept
 	return m_writer.construct(builder);
 }
 
-void* rsrc_buffers::getbufferMapping(storage::storage_handle handle) const {
+void* rsrc_buffers::getbufferMapping(uint32_t handle) const {
 	rhi::pmvBuffer* _buffer = m_writer.get(handle);
 	return m_allocator.mapBuffer(*_buffer);
 }
 
-storage::vault_readAccessor<rhi::pmvBuffer> rsrc_buffers::get_bufferReadAccess() const noexcept {
-	return storage::vault_readAccessor<rhi::pmvBuffer>{m_buffers};
+ctnr::vltView_const<rhi::pmvBuffer> rsrc_buffers::get_bufferReadAccess() const noexcept {
+	return ctnr::vltView<rhi::pmvBuffer>{ m_buffers }.with_static();
 }

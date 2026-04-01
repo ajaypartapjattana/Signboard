@@ -11,8 +11,7 @@ public:
 	Resources(const rndr_context& context, const rndr_methods& methods) noexcept;
 
 	void createVertexBuffer( size_t size);
-
-	storage::vault_readAccessor<storage::storage_handle> read_vertBuffers() const noexcept;
+	ctnr::vltView_const<uint32_t> read_vertBuffers() const noexcept;
 
 private:
 	void createDefaultVertBuffer();
@@ -23,7 +22,7 @@ private:
 
 	rsrc_uploader m_uploader;
 
-	storage::vault<storage::storage_handle> m_vertBuffers;
-	storage::vault_writeAccessor<storage::storage_handle> m_vertWriter;
+	ctnr::vault<uint32_t> m_vertBuffers;
+	ctnr::vault_writeAccessor<uint32_t> m_vertWriter;
 
 };

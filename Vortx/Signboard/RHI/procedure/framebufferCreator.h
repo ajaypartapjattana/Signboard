@@ -27,7 +27,7 @@ namespace rhi {
 		pcdFramebufferCreator& set_swapchainExtent(const rhi::pmvSwapchain& swapchain) noexcept;
 
 		VkResult create_offScreenTarget_framebuffer(rhi::pmvFramebuffer& target_framebuffer);
-		VkResult create_swapchainTarget_framebuffer(const rhi::pmvSwapchain& swapchain, storage::vault_writeAccessor<rhi::pmvFramebuffer>& writer, std::vector<storage::storage_handle>& fb_handles) const;
+		VkResult create_swapchainTarget_framebuffer(const rhi::pmvSwapchain& swapchain, ctnr::vault_writeAccessor<rhi::pmvFramebuffer>& writer, std::vector<uint32_t>& fb_handles) const;
 
 	private:
 		VkDevice r_device;

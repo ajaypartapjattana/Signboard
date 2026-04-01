@@ -1,20 +1,20 @@
 #pragma once
 
-class rndr_context;
-class rndr_presentation;
-
 #include "Signboard/RHI/rhi.h"
 
 #include "Signboard/Renderer/Pass/passes.h"
 #include "Signboard/Renderer/Vertex/vertexFields.h"
 #include "Signboard/Renderer/Materials/materials.h"
 
+class rndr_context;
+class rndr_presentation;
+
 struct rndr_method_Access;
 
-struct render_target {
-	storage::storage_handle pass;
-	std::vector<storage::storage_handle> framebuffers;
-	std::vector<storage::storage_handle> pipelines;
+struct renderTarget {
+	uint32_t renderPassIndex;
+	std::vector<uint32_t> framebufferIndices;
+	std::vector<uint32_t> pipelineIndices;
 };
 
 class rndr_method {
@@ -30,7 +30,7 @@ public:
 		materials::createInfo materialInfo;
 	};
 	void create_renderTarget(const createInfo& info);
-	const storage::vault_readAccessor<render_target> get_readAccessor() const noexcept;
+	const ctnr::vltView<renderTarget> read_renderTargets() const noexcept;
 
 	void validate_primaryTarget();
 
@@ -47,8 +47,8 @@ private:
 	vertexFields m_fields;
 	materials m_materials;
 
-	storage::storage_handle m_primaryTarget_handle;
-	storage::vault<render_target> targets;
-	storage::vault_writeAccessor<render_target> m_writeAccess;
+	uint32_t m_primaryTarget_handle;
+	ctnr::vault<renderTarget> targets;
+	ctnr::vault_writeAccessor<renderTarget> m_writeAccess;
 
 };

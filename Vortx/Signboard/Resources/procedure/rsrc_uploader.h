@@ -13,7 +13,7 @@ public:
 private:
 	rsrc_buffers& r_buffers;
 
-	storage::storage_handle m_stagingHandle;
+	uint32_t m_stagingBufferIndex;
 	void* m_mappedStaging;
 
 	size_t currentOffset;

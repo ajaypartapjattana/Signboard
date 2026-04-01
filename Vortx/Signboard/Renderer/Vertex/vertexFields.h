@@ -14,12 +14,12 @@ public:
 		std::vector<VkFormat> orderedFormats;
 	};
 
-	storage::storage_handle createVertexLayout(const createInfo& info);
+	uint32_t createVertexLayout(const createInfo& info);
 
-	storage::vault_readAccessor<rhi::pmvVertexLayout> get_vertexLayoutReadAccess() const noexcept;
+	ctnr::vltView<rhi::pmvVertexLayout> read_vertexLayouts() const noexcept;
 
 private:
-	storage::vault<rhi::pmvVertexLayout> m_vertexLayouts;
-	storage::vault_writeAccessor<rhi::pmvVertexLayout> m_writer;
+	ctnr::vault<rhi::pmvVertexLayout> m_vertexLayouts;
+	ctnr::vault_writeAccessor<rhi::pmvVertexLayout> m_writer;
 
 };

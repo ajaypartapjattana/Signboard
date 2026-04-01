@@ -13,10 +13,10 @@ public:
 	void drawFrame(const uint32_t target_index, const rhi::pmvCommandBuffer& target_cmd);
 
 private:
-	const storage::vault_readAccessor<render_target> m_targets;
+	const ctnr::vltView<renderTarget> m_targets;
 
-	const storage::vault_readAccessor<rhi::pmvRenderPass> a_renderpassView;
-	const storage::vault_readAccessor<rhi::pmvFramebuffer> a_framebufferView;
-	const storage::vault_readAccessor<rhi::pmvPipeline> a_pipelineView;
+	const ctnr::vltView<rhi::pmvRenderPass> a_renderpassView;
+	const ctnr::vltView<rhi::pmvFramebuffer> a_framebufferView;
+	const ctnr::vltView<rhi::pmvPipeline> a_pipelineView;
 
 };

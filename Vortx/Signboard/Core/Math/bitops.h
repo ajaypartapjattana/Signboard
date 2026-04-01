@@ -1,14 +1,16 @@
 #pragma once
 
 #include <cstdint>
-#include <intrin.h>
 
 namespace bitops {
 
-	inline uint32_t ctz(uint32_t v) {
+	inline uint32_t ctz(uint64_t v) {
+#if defined(_MSC_VER)
 		unsigned long idx;
-		_BitScanForward(&idx, v);
-		return idx;
+		return _BitScanForward64(&idx, v) ? idx : 64;
+#else
+		return v ? __builtin_ctzll(v) : 64;
+#endif
 	}
 
 }

@@ -29,12 +29,12 @@ void Resources::createVertexBuffer(size_t size) {
 	
 	info.allocationFlags = 0;
 
-	storage::storage_handle handle = m_buffers.createBuffer(info);
+	uint32_t bufferIndex = m_buffers.createBuffer(info);
 
-	m_vertWriter.create(handle);
+	m_vertWriter.create(bufferIndex);
 }
 
-storage::vault_readAccessor<storage::storage_handle> Resources::read_vertBuffers() const noexcept {
-	return storage::vault_readAccessor<storage::storage_handle>{m_vertBuffers};
+ctnr::vltView_const<uint32_t> Resources::read_vertBuffers() const noexcept {
+	return ctnr::vltView<uint32_t>{ m_vertBuffers }.with_static();
 }
 

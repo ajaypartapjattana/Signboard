@@ -7,7 +7,7 @@ vertexFields::vertexFields() noexcept
 
 }
 
-storage::storage_handle vertexFields::createVertexLayout(const createInfo& info) {
+uint32_t vertexFields::createVertexLayout(const createInfo& info) {
 	rhi::pmvVertexLayout l_layout;
 	
 	uint32_t attributeCount = static_cast<uint32_t>(info.orderedFormats.size());
@@ -16,9 +16,8 @@ storage::storage_handle vertexFields::createVertexLayout(const createInfo& info)
 	}
 
 	return m_writer.create(l_layout);
-
 }
 
-storage::vault_readAccessor<rhi::pmvVertexLayout> vertexFields::get_vertexLayoutReadAccess() const noexcept {
-	return storage::vault_readAccessor<rhi::pmvVertexLayout>{m_vertexLayouts};
+ctnr::vltView<rhi::pmvVertexLayout> vertexFields::read_vertexLayouts() const noexcept {
+	return ctnr::vltView<rhi::pmvVertexLayout>{ m_vertexLayouts };
 }

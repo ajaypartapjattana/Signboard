@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <immintrin.h>
 #include <iterator>
 #include <new>
 #include <type_traits>
@@ -11,9 +12,10 @@
 
 namespace ctnr {
 
-	template <typename Storage, typename T> class storage_readIterator;
+	template <typename Storage, typename T, typename... Masks> class storage_readIterator;
 
-	template<typename T> class vault_readAccessor;
+	template<typename T> class vltView;
+	template<typename T, typename... Masks> class vltView_const;
 	template<typename T> class vault_writeAccessor;
 
 	template <typename T>
@@ -119,7 +121,7 @@ namespace ctnr {
 			return (aliveBits[_wdi] >> (index % 64)) & 1ull;
 		}
 
-		void _ensure_cap(uint32_t index) noexcept {
+		void _ensure_cap(uint32_t index) {
 			uint32_t _req = index / 64 + 1;
 			if (aliveBits.size() < _req)
 				aliveBits.resize(_req, 0);
@@ -136,14 +138,71 @@ namespace ctnr {
 				aliveBits[_wdi] &= ~(1ull << (index % 64));
 		}
 
-		friend class storage_readIterator<vault<T>, T>;
+		template <typename, typename, typename...>
+		friend class storage_readIterator;
 
-		friend class vault_writeAccessor<T>;
-		friend class vault_readAccessor<T>;
+		template <typename>	friend class vault_writeAccessor;
+		template <typename> friend class vltView;
+		template <typename, typename...> friend class vltView_const;
 
 	};
 
-	template <typename Storage, typename T>
+	class bitmask {
+	public:
+		bitmask() noexcept = default;
+
+		bool test(uint32_t index) const noexcept {
+			uint32_t _wd = index >> 6;
+			if (_wd >= _mask.size()) return false;
+			return (_mask[_wd] >> (index & 63)) & 1ull;
+		}
+
+		void set(uint32_t index) {
+			uint32_t _wd = index >> 6;
+			_ensure(_wd);
+			_mask[_wd] |= (1ull << (index & 63));
+		}
+
+		void clear(uint32_t index) noexcept {
+			uint32_t _wd = index >> 6;
+			if (_wd < _mask.size()) {
+				_mask[_wd] &= ~(1ull << (index & 63));
+			}
+		}
+
+		void reset() noexcept {
+			_mask.clear();
+		}
+
+		void resize(uint32_t bitCount) {
+			uint32_t _wdC = (bitCount + 63) >> 6;
+			_mask.resize(_wdC, 0);
+		}
+
+		_NODISCARD uint32_t word_count() const noexcept {
+			return static_cast<uint32_t>(_mask.size());
+		}
+
+		_NODISCARD const uint64_t* data() const noexcept {
+			return _mask.data();
+		}
+
+	private:
+		void _ensure(uint32_t _wdI) {
+			if (_wdI >= _mask.size())
+				_mask.resize(_wdI + 1, 0);
+		}
+
+	private:
+		std::vector<uint64_t> _mask;
+
+		template <typename, typename, typename...>
+		friend class storage_readIterator;
+
+	};
+
+	
+	template <typename Storage, typename T, typename... Masks>
 	class storage_readIterator {
 	public:
 		using iterator_category = std::forward_iterator_tag;
@@ -152,13 +211,27 @@ namespace ctnr {
 		using pointer = const T*;
 		using reference = const T&;
 
-		storage_readIterator(const Storage& storage, uint32_t wordIndex)
+		storage_readIterator(const Storage& storage, uint32_t wordIndex, const std::vector<const bitmask*>* masks = nullptr)
 			:
 			m_storage(&storage),
-			m_wordIndex(wordIndex)
+			m_wordIndex(wordIndex),
+			m_masks(masks)
 		{
+			_init();
+		}
+		
+		storage_readIterator(const Storage& storage, uint32_t wordIndex, const std::tuple<const Masks*...>& masks)
+			:
+			m_storage(&storage),
+			m_wordIndex(wordIndex),
+			m_staticMasks(masks)
+		{
+			_init();
+		}
+
+		void _init() {
 			if (m_wordIndex < m_storage->aliveBits.size()) {
-				m_currentWord = m_storage->aliveBits[m_wordIndex];
+				m_currentWord = _compute_wd(m_wordIndex);
 				m_baseIndex = m_wordIndex * 64;
 				_advance_to_next();
 			}
@@ -173,9 +246,7 @@ namespace ctnr {
 		}
 
 		storage_readIterator& operator++() {
-			m_currentWord &= m_currentWord - 1;
 			_advance_to_next();
-
 			return *this;
 		}
 
@@ -205,7 +276,7 @@ namespace ctnr {
 					return false;
 				}
 
-				m_currentWord = storage->aliveBits[m_wordIndex];
+				m_currentWord = _compute_wd(m_wordIndex);
 				m_baseIndex = m_wordIndex * 64;
 			}
 			return true;
@@ -216,36 +287,54 @@ namespace ctnr {
 			const uint32_t _slC = static_cast<uint32_t>(storage->slots.size());
 			const uint32_t _wdC = static_cast<uint32_t>(storage->aliveBits.size());
 
-			if (m_currentWord)
-				m_currentWord &= m_currentWord - 1;
-
 			if (!_next_non_empty_word(storage, _wdC))
 				return;
 
-			while (true) {
-				uint64_t word = m_currentWord;
-				uint32_t bit = bitops::ctz(word);
-				m_currentIndex = m_baseIndex + bit;
+			uint64_t word = m_currentWord;
+			uint32_t bit = bitops::ctz(word);
+			m_currentIndex = m_baseIndex + bit;
 
-				if (m_currentIndex + 1 < _slC) {
-					_mm_prefetch(
-						reinterpret_cast<const char*>(&storage->slots[m_currentIndex + 1]),
-						_MM_HINT_T0
-					);
-				}
+			constexpr uint32_t PREFETCH_DISTANCE = 4;
 
-				if (m_currentIndex < _slC)
-					return;
-
-				m_currentWord &= m_currentWord - 1;
-
-				if (!_next_non_empty_word(storage, _wdC))
-					return;
+			if (m_currentIndex + PREFETCH_DISTANCE < _slC) {
+				_mm_prefetch(reinterpret_cast<const char*>(&storage->slots[m_currentIndex + PREFETCH_DISTANCE]), _MM_HINT_T0);
 			}
+
+			m_currentWord &= m_currentWord - 1;
+		}
+
+		__forceinline uint64_t _compute_wd(uint32_t w) const {
+			if constexpr (sizeof...(Masks) > 0) {
+				return _compute_wd_static(w, std::index_sequence_for<Masks...>{});
+			} else if (m_masks) {
+				uint64_t _wd = m_storage->aliveBits[w];
+
+				for (const bitmask* m : *m_masks) {
+					if (w < m->_mask.size())
+						_wd &= m->_mask[w];
+					else
+						return 0ull;
+				}
+				return _wd;
+			} else {
+				return m_storage->aliveBits[w];
+			}
+		}
+
+		template <size_t... I>
+		__forceinline uint64_t _compute_wd_static(uint32_t w, std::index_sequence<I...>) const {
+			uint64_t _wd = m_storage->aliveBits[w];
+
+			((_wd &= (w < std::get<I>(m_staticMasks)->_mask.size() 
+				? std::get<I>(m_staticMasks)->_mask[w]	
+				: 0ull)), ...);
+			return _wd;
 		}
 
 	private:
 		const Storage* m_storage = nullptr;
+		const std::vector<const bitmask*>* m_masks = nullptr;
+		std::tuple<const Masks*...> m_staticMasks;
 
 		uint32_t m_wordIndex = 0;
 		uint64_t m_currentWord = 0;
@@ -256,26 +345,36 @@ namespace ctnr {
 	};
 
 	template <typename T>
-	class vault_readAccessor {
+	class vltView {
 	public:
-		explicit vault_readAccessor(const vault<T>& vault)
+		explicit vltView(const vault<T>& vault) noexcept
 			:
 			m_vault(vault)
 		{
 
 		}
 
-		vault_readAccessor(const vault_readAccessor&) = delete;
-		vault_readAccessor& operator=(const vault_readAccessor&) = delete;
+		vltView(const vltView&) = delete;
+		vltView& operator=(const vltView&) = delete;
 
-		vault_readAccessor(vault_readAccessor&& other) noexcept
+		vltView(vltView&& other) noexcept
 			:
 			m_vault(other.m_vault)
 		{
 
 		}
 
-		vault_readAccessor& operator=(vault_readAccessor&& other) = delete;
+		vltView& operator=(vltView&& other) = delete;
+
+		vltView& with(const bitmask& mask) {
+			m_masks.push_back(&mask);
+			return *this;
+		}
+
+		template <typename... Masks>
+		auto with_static(const Masks&... masks) const {
+			return vltView_const<T, Masks...>(m_vault, masks...);
+		}
 
 		_NODISCARD const T* get(uint32_t index) const noexcept {
 			if (!m_vault._is_alive(index)) return nullptr;
@@ -283,16 +382,59 @@ namespace ctnr {
 		}
 
 		inline auto begin() const {
-			return detail::storage_readIterator<vault<T>, T>(m_vault, 0);
+			return storage_readIterator<vault<T>, T>(m_vault, 0, m_masks.empty() ? nullptr : &m_masks);
 		}
 
 		inline auto end() const {
-			return detail::storage_readIterator<vault<T>, T>(m_vault, static_cast<uint32_t>(m_vault.aliveBits.size()));
+			return storage_readIterator<vault<T>, T>(m_vault, static_cast<uint32_t>(m_vault.aliveBits.size()), m_masks.empty() ? nullptr : &m_masks);
 		}
 
 	private:
 		const vault<T>& m_vault;
+		std::vector<const bitmask*> m_masks;
 
+	};
+
+	template <typename T, typename... Masks>
+	class vltView_const {
+	public:
+		explicit vltView_const(const vault<T>& vault, const Masks&... masks) noexcept
+			:
+			m_vault(vault),
+			m_staticMasks{ &masks... }
+		{
+
+		}
+
+		vltView_const(const vltView_const&) = delete;
+		vltView_const& operator=(const vltView_const&) = delete;
+
+		vltView_const(vltView_const&& other) noexcept
+			:
+			m_vault(other.m_vault),
+			m_staticMasks(other.m_staticMasks)
+		{
+
+		}
+
+		vltView_const& operator=(vltView_const&& other) = delete;
+
+		_NODISCARD const T* get(uint32_t index) const noexcept {
+			if (!m_vault._is_alive(index)) return nullptr;
+			return m_vault.slots[index].object_ptr();
+		}
+
+		inline auto begin() const {
+			return storage_readIterator<vault<T>, T, Masks...>(m_vault, 0, m_staticMasks);
+		}
+
+		inline auto end() const {
+			return storage_readIterator<vault<T>, T, Masks...>(m_vault, static_cast<uint32_t>(m_vault.aliveBits.size()), m_staticMasks);
+		}
+
+	private:
+		const vault<T>& m_vault;
+		std::tuple<const Masks*...> m_staticMasks;
 	};
 
 	template <typename T>

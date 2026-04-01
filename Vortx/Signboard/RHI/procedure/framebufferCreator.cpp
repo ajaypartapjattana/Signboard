@@ -63,7 +63,7 @@ namespace rhi {
 		return result;
 	}
 
-	VkResult pcdFramebufferCreator::create_swapchainTarget_framebuffer(const rhi::pmvSwapchain& swapchain, storage::vault_writeAccessor<rhi::pmvFramebuffer>& writer, std::vector<storage::storage_handle>& fb_handles) const {	
+	VkResult pcdFramebufferCreator::create_swapchainTarget_framebuffer(const rhi::pmvSwapchain& swapchain, ctnr::vault_writeAccessor<rhi::pmvFramebuffer>& writer, std::vector<uint32_t>& fb_handles) const {	
 		const std::vector<VkImageView>& a_swapchainViews = rhi::access::swapchain_pAccess::get_views(swapchain);
 		const uint32_t swapchainView_count = static_cast<uint32_t>(a_swapchainViews.size());
 

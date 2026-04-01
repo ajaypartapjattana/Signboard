@@ -10,7 +10,7 @@ rsrc_images::rsrc_images(const rhi::creDevice& device, const rhi::creAllocator& 
 
 }
 
-storage::storage_handle rsrc_images::createImage(const createInfo& info) {
+uint32_t rsrc_images::createImage(const createInfo& info) {
 	rhi::pcdImageAllocator prcdr{ r_device, r_allocator };
 	
 	prcdr.set_format(info.format);
@@ -26,6 +26,6 @@ storage::storage_handle rsrc_images::createImage(const createInfo& info) {
 
 }
 
-storage::vault_readAccessor<rhi::pmvImage> rsrc_images::get_imageReadAccess() const noexcept {
-	return storage::vault_readAccessor<rhi::pmvImage>{ m_textureImages };
+ctnr::vltView_const<rhi::pmvImage> rsrc_images::read_Images() const noexcept {
+	return ctnr::vltView<rhi::pmvImage>{ m_textureImages }.with_static();
 }

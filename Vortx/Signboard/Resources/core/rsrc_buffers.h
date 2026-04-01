@@ -14,15 +14,15 @@ public:
 		size_t size;
 	};
 
-	storage::storage_handle createBuffer(const createInfo& info) noexcept;
-	void* getbufferMapping(storage::storage_handle handle) const;
+	uint32_t createBuffer(const createInfo& info) noexcept;
+	void* getbufferMapping(uint32_t handle) const;
 
-	storage::vault_readAccessor<rhi::pmvBuffer> get_bufferReadAccess() const noexcept;
+	ctnr::vltView_const<rhi::pmvBuffer> get_bufferReadAccess() const noexcept;
 
 private:
 	rhi::pcdBufferAllocator m_allocator;
 
-	storage::vault<rhi::pmvBuffer> m_buffers;
-	storage::vault_writeAccessor<rhi::pmvBuffer> m_writer;
+	ctnr::vault<rhi::pmvBuffer> m_buffers;
+	ctnr::vault_writeAccessor<rhi::pmvBuffer> m_writer;
 
 };

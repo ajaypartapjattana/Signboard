@@ -12,8 +12,8 @@ rsrc_uploader::rsrc_uploader(rsrc_buffers& buffers) noexcept
 		VMA_ALLOCATION_CREATE_MAPPED_BIT;
 	_staginfo.size = STAGING_SIZE;
 
-	m_stagingHandle = r_buffers.createBuffer(_staginfo);
-	m_mappedStaging = r_buffers.getbufferMapping(m_stagingHandle);
+	m_stagingBufferIndex = r_buffers.createBuffer(_staginfo);
+	m_mappedStaging = r_buffers.getbufferMapping(m_stagingBufferIndex);
 }
 
 void* rsrc_uploader::allocate(size_t size, size_t alignment, size_t& outOffest) {

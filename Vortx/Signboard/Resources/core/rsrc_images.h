@@ -14,17 +14,15 @@ public:
 		VkImageAspectFlags aspect;
 	};
 
-	storage::storage_handle createImage(const createInfo& info);
+	uint32_t createImage(const createInfo& info);
 
-	storage::vault_readAccessor<rhi::pmvImage> get_imageReadAccess() const noexcept;
+	ctnr::vltView_const<rhi::pmvImage> read_Images() const noexcept;
 
 private:
 	const rhi::creDevice& r_device;
 	const rhi::creAllocator& r_allocator;
 
-	storage::vault<rhi::pmvImage> m_textureImages;
-	storage::vault_writeAccessor<rhi::pmvImage> m_writer;
-
-	storage::vault<rhi::pmvImage> m_attachmentImages;
+	ctnr::vault<rhi::pmvImage> m_textureImages;
+	ctnr::vault_writeAccessor<rhi::pmvImage> m_writer;
 
 };
