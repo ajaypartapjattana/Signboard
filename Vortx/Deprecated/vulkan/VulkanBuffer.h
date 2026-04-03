@@ -21,7 +21,7 @@ public:
 
 	void* map();
 	void unmap();
-	void upload(const void* data, uint64_t size, uint64_t offset = 0);
+	void recordUpload(const void* data, uint64_t size, uint64_t offset = 0);
 
 	void copyFrom(VulkanCommandBuffer& cmd, const VulkanBuffer& src, uint64_t size, uint64_t srcOffset = 0, uint64_t dstOffset = 0);
 
@@ -29,7 +29,7 @@ public:
 	uint64_t getSize() const { return size; }
 
 private:
-	void createBuffer(BufferUsageFlags usage);
+	void allocateMesh(BufferUsageFlags usage);
 	void allocateMemory(MemoryPropertyFlags memoryProperty);
 	void bindMemory();
 

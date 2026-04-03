@@ -2,13 +2,13 @@
 
 #include "Signboard/RHI/rhi.h"
 
-class rndr_context;
+class RHIContext;
 
 struct rndr_presentation_Access;
 
 class rndr_presentation {
 public:
-	rndr_presentation(const rndr_context& context, const uint32_t bufferedFrame_count = 2);
+	rndr_presentation(const RHIContext& context, const uint32_t bufferedFrame_count = 2);
 
 	rndr_presentation(const rndr_presentation&) = delete;
 	rndr_presentation& operator=(const rndr_presentation&) = delete;

@@ -6,7 +6,7 @@
 
 #include <iostream>
 
-namespace io::loader {
+namespace io {
 
     ModelLoader::ModelLoader()
         : running(true)
@@ -22,6 +22,58 @@ namespace io::loader {
             loaderThread.join();
     }
 
+    std::unique_ptr<Model> ModelLoader::createCube(float sideLength) {
+    auto model = std::make_unique<Model>("__generated_cube__");
+
+    const float h = sideLength * 0.5f;
+
+    using V = Vertex;
+
+    struct Face {
+        glm::vec3 normal;
+        glm::vec3 tangent;
+        glm::vec3 v0, v1, v2, v3;
+    };
+
+    std::array<Face, 6> faces = {
+        Face{ { 0,  0,  1}, { 1, 0, 0}, {-h,-h, h}, { h,-h, h}, { h, h, h}, {-h, h, h} },
+        Face{ { 0,  0, -1}, {-1, 0, 0}, { h,-h,-h}, {-h,-h,-h}, {-h, h,-h}, { h, h,-h} },
+        Face{ {-1,  0,  0}, { 0, 0, 1}, {-h,-h,-h}, {-h,-h, h}, {-h, h, h}, {-h, h,-h} },
+        Face{ { 1,  0,  0}, { 0, 0,-1}, { h,-h, h}, { h,-h,-h}, { h, h,-h}, { h, h, h} },
+        Face{ { 0,  1,  0}, { 1, 0, 0}, {-h, h, h}, { h, h, h}, { h, h,-h}, {-h, h,-h} },
+        Face{ { 0, -1,  0}, { 1, 0, 0}, {-h,-h,-h}, { h,-h,-h}, { h,-h, h}, {-h,-h, h} }
+    };
+
+    for (const auto& face : faces) {
+        uint32_t startIndex = static_cast<uint32_t>(model->vertices.size());
+
+        glm::vec2 uv[4] = {
+            {0,0}, {1,0}, {1,1}, {0,1}
+        };
+
+        glm::vec3 color = {1.0f, 1.0f, 1.0f};
+        glm::vec4 tangent4 = glm::vec4(face.tangent, 1.0f);
+
+        model->vertices.push_back({face.v0, face.normal, color, uv[0], tangent4});
+        model->vertices.push_back({face.v1, face.normal, color, uv[1], tangent4});
+        model->vertices.push_back({face.v2, face.normal, color, uv[2], tangent4});
+        model->vertices.push_back({face.v3, face.normal, color, uv[3], tangent4});
+
+        model->indices.insert(model->indices.end(), {
+            startIndex + 0, startIndex + 1, startIndex + 2,
+            startIndex + 2, startIndex + 3, startIndex + 0
+        });
+    }
+
+    model->attributes = {
+        static_cast<uint32_t>(model->vertices.size()),
+        static_cast<uint32_t>(model->indices.size()),
+        static_cast<uint32_t>(model->indices.size() / 3)
+    };
+
+    return model;
+}
+
     void ModelLoader::requestLoad(const std::string& obj_path) {
         outstandingLoads.fetch_add(1, std::memory_order_relaxed);
         loadRequests.push(obj_path);
@@ -33,7 +85,7 @@ namespace io::loader {
         return outstandingLoads.load(std::memory_order_acquire) > 0;
     }
 
-    std::vector<std::unique_ptr<ModelLoader::Model>> ModelLoader::collectLoadedModels() {
+    std::vector<std::unique_ptr<Model>> ModelLoader::collectLoadedModels() {
         std::vector<std::unique_ptr<Model>> modelsFound;
 
         auto maybeModel = loadedModels.try_pop();

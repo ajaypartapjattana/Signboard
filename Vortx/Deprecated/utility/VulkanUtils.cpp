@@ -1,5 +1,5 @@
 #include "VulkanUtils.h"
-void VulkanUtils::createBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
+void VulkanUtils::allocateMesh(VkPhysicalDevice physicalDevice, VkDevice device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = size;
@@ -111,7 +111,7 @@ void VulkanUtils::createImageResources(VkDevice device, VkPhysicalDevice physica
 
     vkBindImageMemory(device, image.image, image.memory, 0);
 
-    image.view = createImageView(device, image.image, image.format, image.aspectFlagBits);
+    image.scnView = createImageView(device, image.image, image.format, image.aspectFlagBits);
 }
 
 bool VulkanUtils::hasStencilComponent(VkFormat format) {

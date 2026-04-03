@@ -1,11 +1,14 @@
 #pragma once
 
 #include "Signboard/RHI/rhi.h"
+
 #include "rndr_method.h"
+#include "Signboard/Resources/resources.h"
+#include "Signboard/Scene/Scene.h"
 
 class rndr_framedraw {
 public:
-	rndr_framedraw(const rndr_method& methods);
+	rndr_framedraw(const rndr_method& methods, const resourceView& resourceRead);
 
 	rndr_framedraw(const rndr_framedraw&) = delete;
 	rndr_framedraw& operator=(const rndr_framedraw&) = delete;
@@ -14,9 +17,8 @@ public:
 
 private:
 	const ctnr::vltView<renderTarget> m_targets;
+	methodView m_methodRead;
 
-	const ctnr::vltView<rhi::pmvRenderPass> a_renderpassView;
-	const ctnr::vltView<rhi::pmvFramebuffer> a_framebufferView;
-	const ctnr::vltView<rhi::pmvPipeline> a_pipelineView;
+	const resourceView& m_resourceRead;
 
 };

@@ -1,9 +1,9 @@
 #include "rndr_method.h"
 
-#include "rndr_context_Access.h"
+#include "Signboard/Renderer/Context/render_context_Access.h"
 #include "rndr_presentation_Access.h"
 
-rndr_method::rndr_method(const rndr_context& context, const rndr_presentation& presentation) 
+rndr_method::rndr_method(const RHIContext& context, const rndr_presentation& presentation) 
 	:
 	r_device(rndr_context_Access::get_device(context)),
 	r_swapchain(rndr_presentation_Access::get_swapchain(presentation)),
@@ -21,7 +21,13 @@ void rndr_method::create_primaryTarget() {
 	passInfo.tu_swapchain = &r_swapchain;
 	
 	vertexFields::createInfo fieldInfo{};
-	fieldInfo.orderedFormats = { VK_FORMAT_R32G32_SFLOAT, VK_FORMAT_R32G32B32_SFLOAT };
+	fieldInfo.orderedFormats = {
+		VK_FORMAT_R32G32B32_SFLOAT,
+		VK_FORMAT_R32G32B32_SFLOAT,
+		VK_FORMAT_R32G32B32_SFLOAT,
+		VK_FORMAT_R32G32_SFLOAT,
+		VK_FORMAT_R32G32B32A32_SFLOAT
+	};
 
 	materials::createInfo matInfo{};
 	matInfo.vertShader_path = "shaders/base.vert.spv";

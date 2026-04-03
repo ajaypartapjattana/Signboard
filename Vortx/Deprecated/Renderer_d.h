@@ -20,7 +20,7 @@ class VulkanRenderPass;
 
 class Renderer {
 public:
-	explicit Renderer(VulkanDevice& device, ResourceView view);
+	explicit Renderer(VulkanDevice& device, ResourceView scnView);
 	~Renderer();
 
 	//rendering logic ---
@@ -31,7 +31,7 @@ private:
 	// --- EXTERNS ---
 
 	VulkanDevice& device;
-	RenderContext& renderContext;
+	RenderContext& RHIContext;
 	Scene& scene;
 
 	// --- FRAMESYNC ---

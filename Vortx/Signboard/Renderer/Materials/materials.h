@@ -15,7 +15,7 @@ public:
 	};
 
 	uint32_t createPipeline(uint32_t renderPassIndex, uint32_t vertexLayoutHandle, uint32_t subpass, const createInfo& createInfo);
-	ctnr::vltView<rhi::pmvPipeline> read_renderTargets() const noexcept;
+	ctnr::vltView<rhi::pmvPipeline> read_pipelines() const noexcept;
 
 private:
 	VkResult createShader(rhi::pmvShader& tw_shader, const char* path);

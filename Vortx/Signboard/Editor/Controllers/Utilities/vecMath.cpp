@@ -1,12 +1,12 @@
 #include "vecMath.h"
 
-glm::vec3 vecMath::getMouseWorldRay(const glm::vec2& mousePos, const glm::mat4& view, const glm::mat4& projection, int screenWidth, int screenHeight) {
+glm::vec3 vecMath::getMouseWorldRay(const glm::vec2& mousePos, const glm::mat4& scnView, const glm::mat4& projection, int screenWidth, int screenHeight) {
 	float x = (2.0f * mousePos.x) / screenWidth - 1.0f;
 	float y = (2.0f * mousePos.y) / screenHeight - 1.0f;
 	glm::vec4 rayClip(x, y, -1.0f, 1.0f);
 	glm::vec4 rayEye = glm::inverse(projection) * rayClip;
 	rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0f, 0.0f);
-	glm::vec3 rayWorld = glm::normalize(glm::vec3(glm::inverse(view) * rayEye));
+	glm::vec3 rayWorld = glm::normalize(glm::vec3(glm::inverse(scnView) * rayEye));
 	return rayWorld;
 }
 
@@ -23,8 +23,8 @@ glm::vec3 vecMath::getCursorPointingVec(const glm::vec3 objectPosition, const gl
 	return cursorPlaneIntersection - objectPosition;
 }
 
-glm::vec2 vecMath::getObjScreenCoord(const glm::vec3 objectPosition, glm::mat4 view, glm::mat4 projection, int screenWidth, int screenHeight) {
-	glm::vec4 clipSpace = projection * view * glm::vec4(objectPosition, 1.0f);
+glm::vec2 vecMath::getObjScreenCoord(const glm::vec3 objectPosition, glm::mat4 scnView, glm::mat4 projection, int screenWidth, int screenHeight) {
+	glm::vec4 clipSpace = projection * scnView * glm::vec4(objectPosition, 1.0f);
 	glm::vec3 normPos = glm::vec3(clipSpace) / clipSpace.w;
 	glm::vec2 screenPos;
 	screenPos.x = (normPos.x * 0.5f + 0.5f) * screenWidth;

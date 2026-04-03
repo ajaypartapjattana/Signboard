@@ -12,7 +12,7 @@ VulkanBuffer::VulkanBuffer(VulkanDevice& device, const BufferDesc& desc)
 	memoryProperties = desc.memoryFlags;
 	usage = desc.usageFlags;
 
-	createBuffer(usage);
+	allocateMesh(usage);
 	allocateMemory(memoryProperties);
 	bindMemory();
 }
@@ -73,7 +73,7 @@ void VulkanBuffer::unmap(){
 	}
 }
 
-void VulkanBuffer::upload(const void* data, uint64_t dataSize, uint64_t offset = 0){
+void VulkanBuffer::recordUpload(const void* data, uint64_t dataSize, uint64_t offset = 0){
 	if (!memoryProperties.has(MemoryProperty::HostVisible))
 		throw std::runtime_error("buffer memory is not visible to host!");
 
@@ -107,7 +107,7 @@ void VulkanBuffer::copyFrom(VulkanCommandBuffer& cmd, const VulkanBuffer& src, u
 }
 
 
-void VulkanBuffer::createBuffer(BufferUsageFlags usage) {
+void VulkanBuffer::allocateMesh(BufferUsageFlags usage) {
 	VkBufferCreateInfo bufferInfo{};
 	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 	bufferInfo.size = size;

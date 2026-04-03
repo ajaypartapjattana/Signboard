@@ -184,14 +184,14 @@
     <ClCompile Include="Signboard\Renderer\Pass\passes.cpp" />
     <ClCompile Include="Signboard\Renderer\RenderBackend\rndr_framedraw.cpp" />
     <ClCompile Include="Signboard\Renderer\RenderBackend\rndr_interface.cpp" />
-    <ClCompile Include="Signboard\Renderer\RenderBackend\rndr_context.cpp" />
+    <ClCompile Include="Signboard\Renderer\Context\render_context.cpp" />
     <ClCompile Include="Signboard\Renderer\RenderBackend\rndr_method.cpp" />
     <ClCompile Include="Signboard\Renderer\RenderBackend\rndr_presentation.cpp" />
     <ClCompile Include="Signboard\Renderer\renderTarget\target_surface.cpp" />
     <ClCompile Include="Signboard\Renderer\Vertex\vertexFields.cpp" />
     <ClCompile Include="Signboard\Resources\core\rsrc_images.cpp" />
     <ClCompile Include="Signboard\Resources\core\rsrc_buffers.cpp" />
-    <ClCompile Include="Signboard\Resources\procedure\rsrc_uplaoder.cpp" />
+    <ClCompile Include="Signboard\Renderer\RenderBackend\rndr_transfer.cpp" />
     <ClCompile Include="Signboard\Resources\resources.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\commandPool.cpp" />
     <ClCompile Include="Signboard\RHI\core\device.cpp" />
@@ -234,6 +234,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\swapchainHandler.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\swapchainPresenter.cpp" />
+    <ClCompile Include="Signboard\Scene\Scene.cpp" />
     <ClCompile Include="Signboard\Signboard.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -274,6 +275,8 @@
     <ClInclude Include="Signboard\Core\Frame\Frame_routine.h" />
     <ClInclude Include="Signboard\Core\Interfaces\appInterfaceTypes.h" />
     <ClInclude Include="Signboard\Core\Interfaces\KeyMappingConfigType.h" />
+    <ClInclude Include="Signboard\Core\Interfaces\uni_mesh\model.h" />
+    <ClInclude Include="Signboard\Core\Interfaces\uni_mesh\Vertex.h" />
     <ClInclude Include="Signboard\Core\Memory\casting.h" />
     <ClInclude Include="Signboard\Core\Time\Time.h" />
     <ClInclude Include="Signboard\Core\Interfaces\startupConfigType.h" />
@@ -299,8 +302,8 @@
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_Backend.h" />
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_framedraw.h" />
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_interface.h" />
-    <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_context.h" />
-    <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_context_Access.h" />
+    <ClInclude Include="Signboard\Renderer\Context\render_context.h" />
+    <ClInclude Include="Signboard\Renderer\Context\render_context_Access.h" />
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_interface_Access.h" />
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_method.h" />
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_method_Access.h" />
@@ -310,7 +313,7 @@
     <ClInclude Include="Signboard\Renderer\Vertex\vertexFields.h" />
     <ClInclude Include="Signboard\Resources\core\rsrc_core.h" />
     <ClInclude Include="Signboard\Resources\procedure\rsrc_procedure.h" />
-    <ClInclude Include="Signboard\Resources\procedure\rsrc_uploader.h" />
+    <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_transfer.h" />
     <ClInclude Include="Signboard\Resources\procedure\rsrc_vertBufferInitializer.h" />
     <ClInclude Include="Signboard\Resources\resources.h" />
     <ClInclude Include="Signboard\Resources\core\rsrc_images.h" />
@@ -387,6 +390,7 @@
     <ClInclude Include="Signboard\Assets\io\ResourceLoaders\ModelLoader.h" />
     <ClInclude Include="Signboard\Renderer\renderer.h" />
     <ClInclude Include="Signboard\Renderer\DescriptorSchema.h" />
+    <ClInclude Include="Signboard\Scene\Scene.h" />
     <ClInclude Include="Signboard\Signboard.h" />
     <ClInclude Include="Signboard\Assets\io\ResourceLoaders\TextureLoader.h" />
     <ClInclude Include="Signboard\Platform\primitive\display_window.h" />

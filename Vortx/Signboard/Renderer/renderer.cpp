@@ -1,12 +1,14 @@
 #include "renderer.h"
 
-Renderer::Renderer(const platform::primitive::displayWindow& render_target) 
+Renderer::Renderer(const RHIContext& context, const Resources& resources, const Scene& scene)
 	: 
-	m_context(render_target),
-	m_presentation(m_context, IMAGE_COUNT),
-	m_methods(m_context, m_presentation),
-	m_interface(m_context, m_presentation),
-	m_framedraw(m_methods)
+	r_resourceRead(resources.read_resources()),
+
+	m_presentation(context, IMAGE_COUNT),
+	m_methods(context, m_presentation),
+	m_interface(context, m_presentation),
+	m_transfer(context, r_resourceRead),
+	m_framedraw(m_methods, r_resourceRead)
 {
 
 }

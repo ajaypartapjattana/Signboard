@@ -1,8 +1,13 @@
 #include "Signboard.h"
 
 Signboard::Signboard()
-	: 
-	m_renderer(m_target.native_target()),
+	:
+	m_context(m_target.native_target()),
+	m_resources(m_context),
+	m_scene(m_resources),
+
+	m_renderer(m_context),
+
 	targetVisible(true),
 
 	m_dispatcher(bindings, toExecuteCommands, targetVisible)

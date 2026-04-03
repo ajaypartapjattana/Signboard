@@ -1,8 +1,8 @@
 #include "rndr_presentation.h"
 
-#include "rndr_context_Access.h"
+#include "Signboard/Renderer/Context/render_context_Access.h"
 
-rndr_presentation::rndr_presentation(const rndr_context& ctx, const uint32_t bufferedFrame_count )
+rndr_presentation::rndr_presentation(const RHIContext& ctx, const uint32_t bufferedFrame_count )
 	: 
 	r_device(rndr_context_Access::get_device(ctx)),
 	r_surface(rndr_context_Access::get_surface(ctx)),

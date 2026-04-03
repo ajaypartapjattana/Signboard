@@ -3,26 +3,39 @@
 #include "core/rsrc_core.h"
 #include "procedure/rsrc_procedure.h"
 
-class rndr_context;
-class rndr_methods;
+#include "Signboard/Core/Interfaces/uni_mesh/model.h"
+
+class RHIContext;
+
+struct Mesh {
+	uint32_t vertexBuffer;
+	uint32_t indexBuffer;
+
+	size_t vertexOffset;
+	size_t indexOffset;
+
+	uint32_t indexCount;
+};
+
+struct resourceView {
+	ctnr::vltView<rhi::pmvBuffer> buffersView;
+	ctnr::vltView<rhi::pmvImage> imagesView;
+
+	ctnr::vltView<Mesh> meshView;
+};
 
 class Resources {
 public:
-	Resources(const rndr_context& context, const rndr_methods& methods) noexcept;
+	Resources(const RHIContext& context) noexcept;
 
-	void createVertexBuffer( size_t size);
-	ctnr::vltView_const<uint32_t> read_vertBuffers() const noexcept;
+	uint32_t allocateMesh(const Model& model);
 
-private:
-	void createDefaultVertBuffer();
+	resourceView read_resources() const noexcept;
 
 private:
 	rsrc_buffers m_buffers;
 	rsrc_images m_images;
 
-	rsrc_uploader m_uploader;
-
-	ctnr::vault<uint32_t> m_vertBuffers;
-	ctnr::vault_writeAccessor<uint32_t> m_vertWriter;
+	ctnr::vault<Mesh> m_meshes;
 
 };

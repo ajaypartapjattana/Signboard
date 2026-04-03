@@ -1,14 +1,14 @@
 #pragma once
 
-#include "Signboard/Core/Threading/threadCommProtocol.h"
-#include "Signboard/Renderer/Mesh/Vertex.h"
-
 #include <string>
 #include <vector>
 #include <memory>
 #include <atomic>
 
-namespace io::loader {
+#include "Signboard/Core/Threading/threadCommProtocol.h"
+#include "Signboard/Core/Interfaces/uni_mesh/model.h"
+
+namespace io {
 
 	class ModelLoader {
 	public:
@@ -20,26 +20,9 @@ namespace io::loader {
 		~ModelLoader();
 
 		void requestLoad(const std::string& objPath);
-
 		bool hasPendingLoads() const;
 
-		struct Model {
-			const std::string obj_FilePath;
-
-			struct ModelAttributes {
-				size_t trisCount;
-				size_t vertCount;
-				size_t uniqueVertCount;
-			} attributes{ 0 ,0 ,0 };
-
-			std::vector<Vertex> vertices;
-			std::vector<uint32_t> indices;
-
-			Model(const std::string& path)
-				: obj_FilePath(path) {
-			}
-
-		};
+		std::unique_ptr<Model> createCube(float sideLength);
 
 		std::vector<std::unique_ptr<Model>> collectLoadedModels();
 

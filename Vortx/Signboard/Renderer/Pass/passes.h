@@ -3,7 +3,7 @@
 #include "Signboard/Core/Containers/storage.h"
 #include "Signboard/RHI/rhi.h"
 
-class rndr_context;
+class RHIContext;
 class rndr_presentation;
 
 struct passes_Access;

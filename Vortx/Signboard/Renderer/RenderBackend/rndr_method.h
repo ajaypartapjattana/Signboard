@@ -6,10 +6,16 @@
 #include "Signboard/Renderer/Vertex/vertexFields.h"
 #include "Signboard/Renderer/Materials/materials.h"
 
-class rndr_context;
+class RHIContext;
 class rndr_presentation;
 
 struct rndr_method_Access;
+
+struct methodView {
+	ctnr::vltView<rhi::pmvRenderPass> renderPassView;
+	ctnr::vltView<rhi::pmvFramebuffer> framebufferView;
+	ctnr::vltView<rhi::pmvPipeline> pipelineView;
+};
 
 struct renderTarget {
 	uint32_t renderPassIndex;
@@ -19,7 +25,7 @@ struct renderTarget {
 
 class rndr_method {
 public:
-	rndr_method(const rndr_context& context, const rndr_presentation& presentation);
+	rndr_method(const RHIContext& context, const rndr_presentation& presentation);
 
 	rndr_method(const rndr_method&) = delete;
 	rndr_method& operator=(const rndr_method&) = delete;

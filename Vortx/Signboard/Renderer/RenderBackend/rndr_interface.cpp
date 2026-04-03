@@ -1,12 +1,12 @@
 #include "rndr_interface.h"
 
-#include "rndr_context_Access.h"
+#include "Signboard/Renderer/Context/render_context_Access.h"
 #include "rndr_presentation_Access.h"
 
 #include <algorithm>
 #include <stdexcept>
 
-rndr_interface::rndr_interface(const rndr_context& context, const rndr_presentation& presentation)
+rndr_interface::rndr_interface(const RHIContext& context, const rndr_presentation& presentation)
 	: 
 	r_device(rndr_context_Access::get_device(context)),
 	r_swapchain(rndr_presentation_Access::get_swapchain(presentation)),

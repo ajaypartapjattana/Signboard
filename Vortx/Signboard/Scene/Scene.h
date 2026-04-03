@@ -1,43 +1,37 @@
 #pragma once
 
-#include "Signboard/RHI/vulkan/VulkanDescriptorLayout.h"
-#include "Signboard/RHI/vulkan/VulkanDescriptorSet.h"
+#include "Signboard/Core/Containers/storage.h"
+#include "Signboard/Assets/io/io.h"
 
-#include "Resources/SceneResources.h"
+class Resources;
 
-class VulkanDevice;
-class VulkanDescriptorPool;
+struct scnObj {
+	uint32_t mesh;
+};
 
-struct SceneView {
-
+struct scnView {
+	ctnr::vltView<scnObj> objView;
 };
 
 class Scene {
 public:
-	Scene(VulkanDevice&);
+	Scene(Resources& appResources);
 
-	SceneView getSceneView();
+	_NODISCARD scnView read_scene() const noexcept;	
+	
+	struct sceneObjectCraeteInfo {
+		const char* modelPath;
+	};
+	void createSceneObject(const sceneObjectCraeteInfo& createInfo);
 
 private:
-	VulkanDescriptorSetLayout createViewStateLayout();
-	VulkanDescriptorSetLayout createObjectStateLayout();
-	VulkanDescriptorSetLayout createMaterialStateLayout();
+	void createDefaultCube();
 
 private:
-	VulkanDevice& device;
-	VulkanDescriptorPool& descriptorPool;
+	Resources& r_resources;
 
-	VulkanDescriptorSetLayout viewStateLayout;
-	VulkanDescriptorSetLayout objectStateLayout;
-	VulkanDescriptorSetLayout materialStateLayout;
+	io::ModelLoader m_modelLoader;
 
-	VulkanDescriptorSet viewStateSet;
-	VulkanDescriptorSet objectStateSet;
-	VulkanDescriptorSet materialStateSet;
-
-	ViewStateSystem cameras;
-
-	ObjectSystem objects;
-	MaterialSystem materials;
+	ctnr::vault<scnObj> m_objects;
 
 };

@@ -159,8 +159,8 @@ namespace rhi {
 		target_swapchain.m_images.resize(count);
 		vkGetSwapchainImagesKHR(m_device, vk_swapchain, &count, target_swapchain.m_images.data());
 
-		for (const VkImageView view : target_swapchain.m_views)
-			vkDestroyImageView(m_device, view, nullptr);
+		for (const VkImageView scnView : target_swapchain.m_views)
+			vkDestroyImageView(m_device, scnView, nullptr);
 
 		target_swapchain.m_views.resize(count);
 		for (uint32_t i = 0; i < count; ++i) {

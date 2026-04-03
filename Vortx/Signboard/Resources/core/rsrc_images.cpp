@@ -26,6 +26,6 @@ uint32_t rsrc_images::createImage(const createInfo& info) {
 
 }
 
-ctnr::vltView_const<rhi::pmvImage> rsrc_images::read_Images() const noexcept {
-	return ctnr::vltView<rhi::pmvImage>{ m_textureImages }.with_static();
+ctnr::vltView<rhi::pmvImage> rsrc_images::read_Images() const noexcept {
+	return ctnr::vltView<rhi::pmvImage>{ m_textureImages };
 }

@@ -5,12 +5,12 @@
 
 struct rndr_context_Access;
 
-class rndr_context {
+class RHIContext {
 public:
-	rndr_context(const platform::primitive::displayWindow& window);
+	RHIContext(const platform::primitive::displayWindow& window);
 
-	rndr_context(const rndr_context&) = delete;
-	rndr_context& operator=(const rndr_context&) = delete;
+	RHIContext(const RHIContext&) = delete;
+	RHIContext& operator=(const RHIContext&) = delete;
 
 private:
 	rhi::creInstance::createInfo get_instanceCreateInfo() noexcept;

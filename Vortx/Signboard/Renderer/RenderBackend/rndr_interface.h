@@ -3,14 +3,14 @@
 #include "Signboard/Platform/platform.h"
 #include "Signboard/RHI/rhi.h"
 
-class rndr_context;
+class RHIContext;
 class rndr_presentation;
 
 struct rndr_interface_Access;
 
 class rndr_interface {
 public:
-	rndr_interface(const rndr_context& context, const rndr_presentation& presentation);
+	rndr_interface(const RHIContext& context, const rndr_presentation& presentation);
 
 	~rndr_interface() noexcept;
 

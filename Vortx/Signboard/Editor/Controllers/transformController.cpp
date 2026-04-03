@@ -101,7 +101,7 @@ bool TransformController::getAxisFromInput() {
 }
 
 void TransformController::applyTranslation(glm::vec3& position, const glm::vec2& mousePos) {
-	glm::mat4 view = camera->getViewMatrix();
+	glm::mat4 scnView = camera->getViewMatrix();
 	glm::mat4 projection = camera->getProjectionMatrix();
 	glm::vec3 cameraPos = camera->getPosition();
 
@@ -130,7 +130,7 @@ void TransformController::applyTranslation(glm::vec3& position, const glm::vec2&
 		break;
 	}
 
-	glm::vec3 rayDir = vecMath::getMouseWorldRay(mousePos, view, projection, screenWidth, screenHeight);
+	glm::vec3 rayDir = vecMath::getMouseWorldRay(mousePos, scnView, projection, screenWidth, screenHeight);
 
 	glm::vec3 objPlaneIntersection;
 	if (!vecMath::intersectRayPlane(cameraPos, rayDir, position, planeNormal, objPlaneIntersection)) return;
@@ -168,7 +168,7 @@ void TransformController::applyTranslation(glm::vec3& position, const glm::vec2&
 }
 
 void TransformController::applyRotation(glm::vec3& rotation, const glm::vec3 position, const glm::vec2& mousePos) {
-	glm::mat4 view = camera->getViewMatrix();
+	glm::mat4 scnView = camera->getViewMatrix();
 	glm::mat4 projection = camera->getProjectionMatrix();
 	glm::vec3 cameraPos = camera->getPosition();
 	glm::vec3 planeNormal;
@@ -193,7 +193,7 @@ void TransformController::applyRotation(glm::vec3& rotation, const glm::vec3 pos
 		break;
 	default: break;
 	}
-	glm::vec3 rayDir = vecMath::getMouseWorldRay(mousePos, view, projection, screenWidth, screenHeight);
+	glm::vec3 rayDir = vecMath::getMouseWorldRay(mousePos, scnView, projection, screenWidth, screenHeight);
 	glm::vec3 objPlaneIntersection;
 	glm::vec3 Norm_CursorPointingVec;
 
@@ -212,12 +212,12 @@ void TransformController::applyRotation(glm::vec3& rotation, const glm::vec3 pos
 }
 
 void TransformController::applyScale(glm::vec3& scale, const glm::vec3 position, const glm::vec2& mousePos) {
-	glm::mat4 view = camera->getViewMatrix();
+	glm::mat4 scnView = camera->getViewMatrix();
 	glm::mat4 projection = camera->getProjectionMatrix();
 	glm::vec3 cameraPos = camera->getPosition();
 	glm::vec3 scalingPlaneVec = camera->getForward();
 
-	glm::vec3 rayDir = vecMath::getMouseWorldRay(mousePos, view, projection, screenWidth, screenHeight);
+	glm::vec3 rayDir = vecMath::getMouseWorldRay(mousePos, scnView, projection, screenWidth, screenHeight);
 
 	glm::vec3 objPlaneIntersection;
 	if (!vecMath::intersectRayPlane(cameraPos, rayDir, position, scalingPlaneVec, objPlaneIntersection)) return;

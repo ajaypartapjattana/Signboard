@@ -52,8 +52,8 @@ namespace rhi {
 	}
 
 	pmvSwapchain::~pmvSwapchain() noexcept {
-		for (VkImageView view : m_views)
-			vkDestroyImageView(m_device, view, nullptr);
+		for (VkImageView scnView : m_views)
+			vkDestroyImageView(m_device, scnView, nullptr);
 
 		if (m_swapchain)
 			vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);

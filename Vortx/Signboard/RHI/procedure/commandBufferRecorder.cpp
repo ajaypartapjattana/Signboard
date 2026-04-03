@@ -5,6 +5,8 @@
 #include "Signboard/RHI/primitive/renderPass_pAccess.h"
 #include "Signboard/RHI/primitive/pipeline_pAccess.h"
 
+#include "Signboard/RHI/primitive/buffer_pAccess.h"
+
 namespace rhi {
 
 	pcdCommandBufferRecorder::pcdCommandBufferRecorder(const rhi::pmvCommandBuffer& buffer)
@@ -19,7 +21,7 @@ namespace rhi {
 		vkResetCommandBuffer(m_buffer, 0);
 	}
 
-	VkResult pcdCommandBufferRecorder::begin_recording() {
+	VkResult pcdCommandBufferRecorder::begin_recording() const {
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = 0;
@@ -71,6 +73,20 @@ namespace rhi {
 
 	}
 
+	void pcdCommandBufferRecorder::bind_vertexBuffer(const rhi::pmvBuffer& buffer) const noexcept {
+		VkBuffer a_vertBuffer = rhi::access::buffer_pAccess::get(buffer);
+
+		VkBuffer toBindBuffer[] = { a_vertBuffer };
+
+		vkCmdBindVertexBuffers(m_buffer, 0, 1, toBindBuffer, 0);
+	}
+
+	void pcdCommandBufferRecorder::bind_indexBuffer(const rhi::pmvBuffer& buffer) const noexcept {
+		VkBuffer a_indexBuffer = rhi::access::buffer_pAccess::get(buffer);
+
+		vkCmdBindIndexBuffer(m_buffer, a_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+	}
+
 	void pcdCommandBufferRecorder::draw() {
 		vkCmdDraw(m_buffer, 3, 1, 0, 0);
 	}
@@ -82,5 +98,15 @@ namespace rhi {
 	VkResult pcdCommandBufferRecorder::end_recording() const {
 		return vkEndCommandBuffer(m_buffer);
 	}
+
+	void pcdCommandBufferRecorder::uploadBuffer(const rhi::pmvBuffer& src, const rhi::pmvBuffer& dst, const std::vector<VkBufferCopy>& copyInfo) const {
+		VkBuffer _src = rhi::access::buffer_pAccess::get(src);
+		VkBuffer _dst = rhi::access::buffer_pAccess::get(dst);
+		
+		uint32_t regionCount = static_cast<uint32_t>(copyInfo.size());
+
+		vkCmdCopyBuffer(m_buffer, _src, _dst, regionCount, copyInfo.data());
+	}
+
 
 }

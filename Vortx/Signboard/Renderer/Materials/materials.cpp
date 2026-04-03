@@ -39,7 +39,7 @@ uint32_t materials::createPipeline(uint32_t renderPassIndex, uint32_t vertexLayo
 	return m_writeAccess.construct(builder);
 }
 
-ctnr::vltView<rhi::pmvPipeline> materials::read_renderTargets() const noexcept {
+ctnr::vltView<rhi::pmvPipeline> materials::read_pipelines() const noexcept {
 	return ctnr::vltView<rhi::pmvPipeline>{ m_pipelines };
 }
 

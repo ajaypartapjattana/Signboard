@@ -29,6 +29,6 @@ void* rsrc_buffers::getbufferMapping(uint32_t handle) const {
 	return m_allocator.mapBuffer(*_buffer);
 }
 
-ctnr::vltView_const<rhi::pmvBuffer> rsrc_buffers::get_bufferReadAccess() const noexcept {
-	return ctnr::vltView<rhi::pmvBuffer>{ m_buffers }.with_static();
+ctnr::vltView<rhi::pmvBuffer> rsrc_buffers::read_buffers() const noexcept {
+	return ctnr::vltView<rhi::pmvBuffer>{ m_buffers };
 }

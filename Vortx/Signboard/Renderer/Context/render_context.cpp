@@ -1,6 +1,6 @@
-#include "rndr_context.h"
+#include "render_context.h"
 
-rndr_context::rndr_context(const platform::primitive::displayWindow& window)
+RHIContext::RHIContext(const platform::primitive::displayWindow& window)
 	: m_instance(get_instanceCreateInfo()),
 	m_surface(window, m_instance),
 	m_device(get_deviceCreateInfo(), m_instance),
@@ -9,7 +9,7 @@ rndr_context::rndr_context(const platform::primitive::displayWindow& window)
 
 }
 
-rhi::creInstance::createInfo rndr_context::get_instanceCreateInfo() noexcept {
+rhi::creInstance::createInfo RHIContext::get_instanceCreateInfo() noexcept {
 	rhi::creInstance::createInfo info{};
 	
 	uint32_t ext_count = 0;
@@ -28,7 +28,7 @@ rhi::creInstance::createInfo rndr_context::get_instanceCreateInfo() noexcept {
 	return info;
 }
 
-rhi::creDevice::createInfo rndr_context::get_deviceCreateInfo() noexcept {
+rhi::creDevice::createInfo RHIContext::get_deviceCreateInfo() noexcept {
 	rhi::creDevice::createInfo info{};
 
 	info.present_surface = &m_surface;

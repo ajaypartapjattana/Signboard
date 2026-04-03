@@ -16,7 +16,7 @@ public:
 
 	uint32_t createImage(const createInfo& info);
 
-	ctnr::vltView_const<rhi::pmvImage> read_Images() const noexcept;
+	ctnr::vltView<rhi::pmvImage> read_Images() const noexcept;
 
 private:
 	const rhi::creDevice& r_device;

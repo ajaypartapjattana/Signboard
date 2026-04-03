@@ -17,10 +17,10 @@ public:
 	uint32_t createBuffer(const createInfo& info) noexcept;
 	void* getbufferMapping(uint32_t handle) const;
 
-	ctnr::vltView_const<rhi::pmvBuffer> get_bufferReadAccess() const noexcept;
+	ctnr::vltView<rhi::pmvBuffer> read_buffers() const noexcept;
 
 private:
-	rhi::pcdBufferAllocator m_allocator;
+	rhi::pcdBufferAllocator& m_allocator;
 
 	ctnr::vault<rhi::pmvBuffer> m_buffers;
 	ctnr::vault_writeAccessor<rhi::pmvBuffer> m_writer;

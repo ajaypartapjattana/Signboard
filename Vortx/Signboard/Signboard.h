@@ -3,6 +3,8 @@
 #include "Renderer/renderTarget/target_surface.h"
 #include "Input/AppCommandDisptach.h"
 #include "Renderer/Renderer.h"
+#include "Resources/resources.h"
+#include "Scene/Scene.h"
 
 constexpr uint32_t MAX_COMMAND_COUNT = 32;
 
@@ -24,9 +26,12 @@ private:
 	static bool routine_Config(Signboard&, glm::vec2);
 
 private:
-
 	target_surface m_target;
+
+	RHIContext m_context;
 	Renderer m_renderer;
+	Resources m_resources;
+	Scene m_scene;
 
 	InputMapping bindings = { {GLFW_KEY_W, InputTrigger::Pressed, CommandID::CONFIG} };
 	std::vector<FrameCommand> toExecuteCommands;

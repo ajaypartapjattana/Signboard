@@ -2,15 +2,15 @@
 
 #include "buffer.h"
 
-namespace rhi::primitive {
+namespace rhi::access {
 
-	struct buffer_vkAccess {
+	struct buffer_pAccess {
 
-		static VkBuffer get(const pmvBuffer& b) noexcept {
+		static VkBuffer get(const rhi::pmvBuffer& b) noexcept {
 			return b.m_buffer;
 		}
 
-		static VmaAllocation get_allocation(const pmvBuffer& b) noexcept {
+		static VmaAllocation get_allocation(const rhi::pmvBuffer& b) noexcept {
 			return b.m_allocation;
 		}
 

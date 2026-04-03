@@ -4,16 +4,14 @@
 
 struct rndr_method_Access {
 
-	static const ctnr::vltView<rhi::pmvRenderPass> get_renderPassView(const rndr_method& m) noexcept {
-		return m.m_passes.read_renderPasses();
-	}
+	static methodView read_methods(const rndr_method& m) noexcept {
 
-	static const ctnr::vltView<rhi::pmvFramebuffer> get_framebufferView(const rndr_method& m) noexcept {
-		return m.m_passes.read_framebuffers();
-	}
+		return {
+			m.m_passes.read_renderPasses(),
+			m.m_passes.read_framebuffers(),
+			m.m_materials.read_pipelines()
+		};
 
-	static const ctnr::vltView<rhi::pmvPipeline> get_pipelineView(const rndr_method& m) noexcept {
-		return m.m_materials.read_renderTargets();
 	}
 
 };

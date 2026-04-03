@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-Renderer::Renderer(VulkanDevice& device, ResourceView view)
+Renderer::Renderer(VulkanDevice& device, ResourceView scnView)
 	: device(device)
 {
 	createRenderPass();
@@ -295,7 +295,7 @@ VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTil
 void Renderer::createFramebuffers() {
 	swapChainFramebuffers.resize(swapChainImageViews.size());
 	for (size_t i = 0; i < swapChainImageViews.size(); i++) {
-		std::array<VkImageView, 3> attachments = { MSAAImage.view, swapChainImageViews[i], depthImage.view };
+		std::array<VkImageView, 3> attachments = { MSAAImage.scnView, swapChainImageViews[i], depthImage.scnView };
 		VkFramebufferCreateInfo framebufferInfo{};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		framebufferInfo.renderPass = renderPass;
@@ -386,7 +386,7 @@ void Renderer::allocateGlobalDescriptorSets(uint32_t frameCount) {
 	}
 
 	for (uint32_t i = 0; i < frameCount; i++) {
-		VulkanUtils::createBuffer(physicalDevice, device, sizeof(Global_UBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, frames[i].globalUBO, frames[i].globalUBOMemory);
+		VulkanUtils::allocateMesh(physicalDevice, device, sizeof(Global_UBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, frames[i].globalUBO, frames[i].globalUBOMemory);
 		vkMapMemory(device, frames[i].globalUBOMemory, 0, sizeof(Global_UBO), 0, &frames[i].mappedPtr);
 	}
 
