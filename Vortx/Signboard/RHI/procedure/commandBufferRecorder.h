@@ -23,7 +23,7 @@ namespace rhi {
 		void bind_pipeline(const rhi::pmvPipeline& pipeline, const bool dynamicStateEnabled) const noexcept;
 		void bind_vertexBuffer(const rhi::pmvBuffer& buffer) const noexcept;
 		void bind_indexBuffer(const rhi::pmvBuffer& buffer) const noexcept;
-		void draw();
+		void draw(uint32_t indexCount) const;
 		void end_renderTarget() const;
 
 		void uploadBuffer(const rhi::pmvBuffer& src, const rhi::pmvBuffer& dst, const std::vector<VkBufferCopy>& copyInfo) const;

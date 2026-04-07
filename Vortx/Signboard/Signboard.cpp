@@ -18,16 +18,15 @@ Signboard::Signboard()
 
 void Signboard::setupDefaults() {
 	Mesher l_mesher;
-	auto _cube = l_mesher.createPrimitive(MESH_PRIMITIVE::CUBE, 0.25f);
-	Model& r_cube = *_cube.get();
+	auto _defModel = l_mesher.createPrimitive(MESH_PRIMITIVE::DISK, 0.25f);
+	Model& r_defModel = *_defModel.get();
 
-	uint32_t allocatedMesh = m_resources.allocateMesh(r_cube);
-	m_renderer.queueUpload(r_cube, allocatedMesh);
+	uint32_t allocatedMesh = m_resources.allocateMesh(r_defModel);
+	m_renderer.queueUpload(r_defModel, allocatedMesh);
 }
 
 void Signboard::populateCommandTable() {
 	commandTable[(uint32_t)CommandID::CONFIG] = &Signboard::routine_Config;
-	//commandTable[(uint32_t)CommandID::UPLOAD] = &Signboard::routine_upload;
 }
 
 void Signboard::run() {

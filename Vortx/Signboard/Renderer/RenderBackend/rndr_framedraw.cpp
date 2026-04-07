@@ -7,7 +7,7 @@ rndr_framedraw::rndr_framedraw(const rndr_method& methods, const resourceView& r
 	m_targets(methods.read_renderTargets()),
 	m_methodRead(rndr_method_Access::read_methods(methods)),
 
-	m_resourceRead(std::move(resourceRead))
+	m_resourceRead(resourceRead)
 {
 
 }
@@ -31,7 +31,7 @@ void rndr_framedraw::drawFrame(const uint32_t target_index, const rhi::pmvComman
 				prcdr.bind_vertexBuffer(*m_resourceRead.buffersView.get(m.vertexBuffer));
 				prcdr.bind_indexBuffer(*m_resourceRead.buffersView.get(m.indexBuffer));
 
-				prcdr.draw();
+				prcdr.draw(m.indexCount);
 			}
 
 		}

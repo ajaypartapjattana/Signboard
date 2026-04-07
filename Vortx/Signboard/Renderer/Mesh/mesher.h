@@ -5,7 +5,7 @@
 #include "Signboard/Core/Interfaces/renderer/model/model.h"
 
 enum class MESH_PRIMITIVE {
-	CUBE, ICOSPHERE, CYLINDER
+	CUBE, DISK, ICOSPHERE, CYLINDER
 };
 
 class Mesher {

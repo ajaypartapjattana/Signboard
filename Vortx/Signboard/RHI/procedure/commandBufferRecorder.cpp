@@ -88,8 +88,8 @@ namespace rhi {
 		vkCmdBindIndexBuffer(m_buffer, a_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 	}
 
-	void pcdCommandBufferRecorder::draw() {
-		vkCmdDraw(m_buffer, 3, 1, 0, 0);
+	void pcdCommandBufferRecorder::draw(uint32_t indexCount) const {
+		vkCmdDrawIndexed(m_buffer, indexCount, 1, 0, 0, 0);
 	}
 
 	void pcdCommandBufferRecorder::end_renderTarget() const {
