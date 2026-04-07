@@ -28,7 +28,7 @@ namespace rhi {
 		VkResult build(rhi::pmvSwapchain& target_swapchain);
 
 	private:
-		VkDevice m_device;
+		VkDevice _dvc;
 		VkPhysicalDevice m_phys;
 		VkSurfaceKHR m_surface;
 		VkSwapchainKHR recycled_swapchain = VK_NULL_HANDLE;

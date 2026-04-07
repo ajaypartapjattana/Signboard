@@ -27,7 +27,7 @@ namespace rhi {
 		friend struct rhi::access::renderPass_pAccess;
 
 		VkRenderPass m_renderPass;
-		VkDevice m_device;
+		VkDevice _dvc;
 
 	};
 

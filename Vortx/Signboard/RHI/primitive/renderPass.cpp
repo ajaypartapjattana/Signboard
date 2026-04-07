@@ -5,7 +5,7 @@ namespace rhi {
 	pmvRenderPass::pmvRenderPass() noexcept
 		: 
 		m_renderPass(VK_NULL_HANDLE), 
-		m_device(VK_NULL_HANDLE)
+		_dvc(VK_NULL_HANDLE)
 	{
 
 	}
@@ -13,7 +13,7 @@ namespace rhi {
 	pmvRenderPass::pmvRenderPass(pmvRenderPass&& other) noexcept 
 		:
 		m_renderPass(other.m_renderPass),
-		m_device(other.m_device)
+		_dvc(other._dvc)
 	{
 		other.m_renderPass = VK_NULL_HANDLE;
 	}
@@ -23,10 +23,10 @@ namespace rhi {
 			return *this;
 
 		if (m_renderPass)
-			vkDestroyRenderPass(m_device, m_renderPass, nullptr);
+			vkDestroyRenderPass(_dvc, m_renderPass, nullptr);
 
 		m_renderPass = other.m_renderPass;
-		m_device = other.m_device;
+		_dvc = other._dvc;
 
 		other.m_renderPass = VK_NULL_HANDLE;
 
@@ -35,7 +35,7 @@ namespace rhi {
 
 	pmvRenderPass::~pmvRenderPass() noexcept {
 		if (m_renderPass)
-			vkDestroyRenderPass(m_device, m_renderPass, nullptr);
+			vkDestroyRenderPass(_dvc, m_renderPass, nullptr);
 	}
 
 }

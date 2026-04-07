@@ -5,7 +5,7 @@ namespace rhi {
 	pmvShader::pmvShader() noexcept
 		: 
 		m_shader(VK_NULL_HANDLE), 
-		m_device(VK_NULL_HANDLE)
+		_dvc(VK_NULL_HANDLE)
 	{
 	
 	}
@@ -13,7 +13,7 @@ namespace rhi {
 	pmvShader::pmvShader(pmvShader&& other) noexcept 
 		:
 		m_shader(other.m_shader),
-		m_device(other.m_device)
+		_dvc(other._dvc)
 	{
 		other.m_shader = VK_NULL_HANDLE;
 	}
@@ -23,10 +23,10 @@ namespace rhi {
 			return *this;
 
 		if (m_shader)
-			vkDestroyShaderModule(m_device, m_shader, nullptr);
+			vkDestroyShaderModule(_dvc, m_shader, nullptr);
 
 		m_shader = other.m_shader;
-		m_device = other.m_device;
+		_dvc = other._dvc;
 
 		other.m_shader = VK_NULL_HANDLE;
 
@@ -35,7 +35,7 @@ namespace rhi {
 
 	pmvShader::~pmvShader() noexcept {
 		if (m_shader)
-			vkDestroyShaderModule(m_device, m_shader, nullptr);
+			vkDestroyShaderModule(_dvc, m_shader, nullptr);
 	}
 
 }

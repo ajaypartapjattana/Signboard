@@ -20,7 +20,7 @@ public:
     ~ForwardPass();
 
     void build(RenderSystemView& systemView, const DrawList& list) override;
-    void record(VkCommandBuffer cmd, RenderSystemView& systems, const PassContext& pass, uint32_t currentFrame) override;
+    void record(VkCommandBuffer CMDGraphics, RenderSystemView& systems, const PassContext& pass, uint32_t currentFrame) override;
 
 private:
     VkDevice device;

@@ -28,7 +28,7 @@ namespace rhi {
 
 		VkDescriptorSetLayout m_setLayout;
 
-		VkDevice m_device;
+		VkDevice _dvc;
 
 	};
 

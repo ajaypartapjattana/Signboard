@@ -29,7 +29,7 @@ namespace rhi {
 		VkPipeline m_pipeline;
 		VkPipelineBindPoint m_type;
 
-		VkDevice m_device;
+		VkDevice _dvc;
 
 	};
 

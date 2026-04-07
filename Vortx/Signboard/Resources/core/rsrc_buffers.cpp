@@ -1,10 +1,8 @@
 #include "rsrc_buffers.h"
 
-#include "Signboard/Renderer/RenderBackend/rndr_context_Access.h"
-
 rsrc_buffers::rsrc_buffers(const rhi::creAllocator& allocator)
 	:
-	m_allocator(allocator),
+	_allctr(allocator),
 
 	m_writer(m_buffers)
 {
@@ -12,21 +10,16 @@ rsrc_buffers::rsrc_buffers(const rhi::creAllocator& allocator)
 }
 
 _NODISCARD uint32_t rsrc_buffers::createBuffer(const createInfo& info) noexcept {
-	m_allocator.addUsage(info.usage);
-	m_allocator.setMemoryPreference(info.memory);
-	m_allocator.setBufferSize(info.size);
-	m_allocator.setMemoryFlags(info.allocationFlags);
+	_allctr.addUsage(info.usage);
+	_allctr.setMemoryPreference(info.memory);
+	_allctr.setBufferSize(info.size);
+	_allctr.setMemoryFlags(info.allocationFlags);
 
 	auto builder = [&](rhi::pmvBuffer* b) {
-		m_allocator.allocateBuffer(*b);
+		_allctr.allocateBuffer(*b);
 	};
 
 	return m_writer.construct(builder);
-}
-
-void* rsrc_buffers::getbufferMapping(uint32_t handle) const {
-	rhi::pmvBuffer* _buffer = m_writer.get(handle);
-	return m_allocator.mapBuffer(*_buffer);
 }
 
 ctnr::vltView<rhi::pmvBuffer> rsrc_buffers::read_buffers() const noexcept {

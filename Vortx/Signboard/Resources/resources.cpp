@@ -1,6 +1,6 @@
 #include "resources.h"
 
-#include "Signboard/Renderer/RenderBackend/rndr_context_Access.h"
+#include "Signboard/Renderer/Context/render_context_Access.h"
 
 Resources::Resources(const RHIContext& context) noexcept
 	:
@@ -46,7 +46,7 @@ uint32_t Resources::allocateMesh(const Model& model) {
 	return l_writer.construct(builder);
 }
 
-Resources::resourceView Resources::read_resources() const noexcept {
+resourceView Resources::read_resources() const noexcept {
 	return {
 		m_buffers.read_buffers(),
 		m_images.read_Images(),

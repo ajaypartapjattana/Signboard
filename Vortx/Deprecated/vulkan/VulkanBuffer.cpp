@@ -18,11 +18,11 @@ VulkanBuffer::VulkanBuffer(VulkanDevice& device, const BufferDesc& desc)
 }
 
 VulkanBuffer::VulkanBuffer(VulkanBuffer&& other) noexcept
-	: device(other.device), buffer(other.buffer), memory(other.memory), mapped(other.mapped), size(other.size), memoryProperties(other.memoryProperties), usage(other.usage)
+	: device(other.device), buffer(other.buffer), memory(other.memory), m_mapped(other.m_mapped), size(other.size), memoryProperties(other.memoryProperties), usage(other.usage)
 {
 	other.buffer = VK_NULL_HANDLE;
 	other.memory = VK_NULL_HANDLE;
-	other.mapped = nullptr;
+	other.m_mapped = nullptr;
 }
 
 VulkanBuffer& VulkanBuffer::operator=(VulkanBuffer&& other) noexcept {
@@ -32,14 +32,14 @@ VulkanBuffer& VulkanBuffer::operator=(VulkanBuffer&& other) noexcept {
 	destroy();
 	buffer = other.buffer;
 	memory = other.memory;
-	mapped = other.mapped;
+	m_mapped = other.m_mapped;
 	size = other.size;
 	memoryProperties = other.memoryProperties;
 	usage = other.usage;
 
 	other.buffer = VK_NULL_HANDLE;
 	other.memory = VK_NULL_HANDLE;
-	other.mapped = nullptr;
+	other.m_mapped = nullptr;
 }
 
 VulkanBuffer::~VulkanBuffer() {
@@ -49,7 +49,7 @@ VulkanBuffer::~VulkanBuffer() {
 void VulkanBuffer::destroy() {
 	VkDevice vkDevice = device.getDevice();
 
-	if (mapped)
+	if (m_mapped)
 		unmap();
 
 	vkDestroyBuffer(vkDevice, buffer, nullptr);
@@ -58,22 +58,22 @@ void VulkanBuffer::destroy() {
 
 void* VulkanBuffer::map() {
 	if (memoryProperties.has(MemoryProperty::HostVisible)) {
-		if (!mapped) {
-			vkMapMemory(device.getDevice(), memory, 0, size, 0, &mapped);
+		if (!m_mapped) {
+			vkMapMemory(device.getDevice(), memory, 0, size, 0, &m_mapped);
 		}
-		return mapped;
+		return m_mapped;
 	}
 	throw std::runtime_error("buffer memory is not visible to host!");
 }
 
 void VulkanBuffer::unmap(){
-	if (mapped) {
+	if (m_mapped) {
 		vkUnmapMemory(device.getDevice(), memory);
-		mapped = nullptr;
+		m_mapped = nullptr;
 	}
 }
 
-void VulkanBuffer::recordUpload(const void* data, uint64_t dataSize, uint64_t offset = 0){
+void VulkanBuffer::recordUploads(const void* data, uint64_t dataSize, uint64_t offset = 0){
 	if (!memoryProperties.has(MemoryProperty::HostVisible))
 		throw std::runtime_error("buffer memory is not visible to host!");
 
@@ -94,7 +94,7 @@ void VulkanBuffer::recordUpload(const void* data, uint64_t dataSize, uint64_t of
 	}
 }
 
-void VulkanBuffer::copyFrom(VulkanCommandBuffer& cmd, const VulkanBuffer& src, uint64_t copySize, uint64_t srcOffset = 0, uint64_t dstOffset = 0){
+void VulkanBuffer::copyFrom(VulkanCommandBuffer& CMDGraphics, const VulkanBuffer& src, uint64_t copySize, uint64_t srcOffset = 0, uint64_t dstOffset = 0){
 	if (copySize > size)
 		throw std::runtime_error("data size exceeds buffer capability!");
 
@@ -103,7 +103,7 @@ void VulkanBuffer::copyFrom(VulkanCommandBuffer& cmd, const VulkanBuffer& src, u
 	region.dstOffset = dstOffset;
 	region.size = copySize;
 
-	vkCmdCopyBuffer(cmd.getHandle(), src.buffer, buffer, 1, &region);
+	vkCmdCopyBuffer(CMDGraphics.getHandle(), src.buffer, buffer, 1, &region);
 }
 
 

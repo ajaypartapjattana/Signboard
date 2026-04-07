@@ -20,7 +20,7 @@ namespace rhi {
 		pcdSwapchainPresenter(pcdSwapchainPresenter&&) noexcept;
 		pcdSwapchainPresenter& operator=(pcdSwapchainPresenter&&) noexcept;
 
-		pcdSwapchainPresenter& update_toWait_semaphores(const rhi::pmvSemaphore* pSemaphores, uint32_t count);
+		pcdSwapchainPresenter& add_wait(const rhi::pmvSemaphore* pSemaphores, uint32_t count);
 
 		VkResult present(uint32_t imageIndex);
 
@@ -28,7 +28,7 @@ namespace rhi {
 		VkQueue r_presentQueue;
 		VkSwapchainKHR r_swapchain;
 
-		std::vector<VkSemaphore> toWait_semaphores;
+		std::vector<VkSemaphore> waitSemaphores;
 
 		VkPresentInfoKHR info;
 

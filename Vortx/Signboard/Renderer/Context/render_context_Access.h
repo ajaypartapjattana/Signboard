@@ -13,11 +13,11 @@ struct rndr_context_Access {
 	}
 
 	static const rhi::creDevice& get_device(const RHIContext& rc) noexcept {
-		return rc.m_device;
+		return rc._dvc;
 	}
 
 	static const rhi::creAllocator& get_allocator(const RHIContext& rc) noexcept {
-		return rc.m_allocator;
+		return rc._allctr;
 	}
 
 };

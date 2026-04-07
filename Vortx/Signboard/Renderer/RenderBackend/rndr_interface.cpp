@@ -15,7 +15,8 @@ rndr_interface::rndr_interface(const RHIContext& context, const rndr_presentatio
 	m_swapchainHandler(r_device, r_swapchain),
 	m_presenter(r_device, r_swapchain),
 
-	m_graphics_submission(r_device)
+	m_graphics_submission(r_device),
+	m_tranfer_submission(r_device)
 {
 	summon_commandPools();
 	configure_bufferedFrames();
@@ -26,9 +27,10 @@ rndr_interface::~rndr_interface() noexcept {
 }
 
 rndr_interface::frame::frame(const rhi::creDevice& device)
-	: 
+	:
+	frameInFlight(device, true),
 	imageAvailable(device),
-	frameInFlight(device, true)
+	transferFinished(device)
 {
 
 }
@@ -61,14 +63,15 @@ void rndr_interface::configure_bufferedFrames() {
 	for (uint32_t i = 0; i < bufferedFrame_count; ++i)
 		imageRenderFinished.emplace_back(r_device);
 
-	allocate_renderCommandBuffers();
+	allocate_command_buffers();
 }
 
-void rndr_interface::allocate_renderCommandBuffers() {
+void rndr_interface::allocate_command_buffers() {
 	rhi::pcdCommandBufferAllocator prcdr{ r_device };
 
 	for (uint32_t i = 0; i < bufferedFrame_count; i++) {
-		prcdr.allocate(m_commandPools.graphicsPool, &frames[i].cmd, 1);
+		prcdr.allocate(m_commandPools.graphicsPool, &frames[i].CMDGraphics, 1);
+		prcdr.allocate(m_commandPools.transferPool, &frames[i].CMDTransfer, 1);
 	}
 }
 
@@ -94,24 +97,47 @@ uint32_t rndr_interface::acquire_toWriteImage(VkBool32* acquire_optimal) noexcep
 	return a_imageIndex;
 }
 
-rhi::pmvCommandBuffer& rndr_interface::get_activeFrame_cmd() {
-	return frames[activeFrameIndex].cmd;
+rhi::pmvCommandBuffer& rndr_interface::get_graphicsCMD() {
+	return frames[activeFrameIndex].CMDGraphics;
 }
 
-void rndr_interface::submit_activeFrame_cmd() {
-	VkPipelineStageFlags waitStage[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-	m_graphics_submission.update_toWait_semaphores(&frames[activeFrameIndex].imageAvailable, waitStage, 1);
-	m_graphics_submission.update_toSignal_semaphores(&imageRenderFinished[a_imageIndex], 1);
-	m_graphics_submission.set_toTrigger_fence(frames[activeFrameIndex].frameInFlight);
+rhi::pmvCommandBuffer& rndr_interface::get_transferCMD() {
+	return frames[activeFrameIndex].CMDTransfer;
+}
 
-	m_graphics_submission.update_toSubmit_cmd(&frames[activeFrameIndex].cmd, 1);
+void rndr_interface::submit_graphics(bool waitTransfer) {
+	const frame& currentFrame = frames[activeFrameIndex];
 
-	m_watchdog.reset_fence(frames[activeFrameIndex].frameInFlight);
-	m_graphics_submission.submit_graphics_cmd();
+	m_graphics_submission.reset();
+
+	m_graphics_submission.add_wait(currentFrame.imageAvailable, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+	if (waitTransfer)
+		m_graphics_submission.add_wait(currentFrame.transferFinished, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT);
+
+	m_graphics_submission.add_signal(imageRenderFinished[a_imageIndex]);
+	m_graphics_submission.set_toTrigger_fence(currentFrame.frameInFlight);
+
+	m_graphics_submission.add_cmd(currentFrame.CMDGraphics);
+
+	m_watchdog.reset_fence(currentFrame.frameInFlight);
+	m_graphics_submission.submit_graphics();
+}
+
+void rndr_interface::submit_tranfer_cmd() {
+	const frame& currentFrame = frames[activeFrameIndex];
+
+	m_tranfer_submission.reset();
+
+	m_tranfer_submission.add_signal(currentFrame.transferFinished);
+	m_tranfer_submission.add_cmd(currentFrame.CMDTransfer);
+
+	m_tranfer_submission.submit_transfer();
+
 }
 
 void rndr_interface::present_activeFrame() {
-	m_presenter.update_toWait_semaphores(&imageRenderFinished[a_imageIndex], 1);
+	m_presenter.add_wait(&imageRenderFinished[a_imageIndex], 1);
 	m_presenter.present(a_imageIndex);
 }
 

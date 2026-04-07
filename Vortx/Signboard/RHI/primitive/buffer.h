@@ -22,14 +22,20 @@ namespace rhi {
 
 		~pmvBuffer() noexcept;
 
+		void* native_mapped() const;
+		void flush(VkDeviceSize begin, VkDeviceSize end) const;
+
 	private:
 		friend class pcdBufferAllocator;
 		friend struct rhi::access::buffer_pAccess;
 
-		VkBuffer m_buffer = VK_NULL_HANDLE;
-		VmaAllocation m_allocation = VK_NULL_HANDLE;
+		VkBuffer m_buffer;
+		VmaAllocation allocation;
 
-		VmaAllocator m_allocator = VK_NULL_HANDLE;
+		bool _is_host_coherent;
+		void* _mpd;
+
+		VmaAllocator _allctr;
 
 	};
 

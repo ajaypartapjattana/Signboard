@@ -1,21 +1,10 @@
 #pragma once
 
 #include "core/rsrc_core.h"
-#include "procedure/rsrc_procedure.h"
 
-#include "Signboard/Core/Interfaces/uni_mesh/model.h"
+#include "Signboard/Core/Interfaces/renderer/rendererINF.h"
 
 class RHIContext;
-
-struct Mesh {
-	uint32_t vertexBuffer;
-	uint32_t indexBuffer;
-
-	size_t vertexOffset;
-	size_t indexOffset;
-
-	uint32_t indexCount;
-};
 
 struct resourceView {
 	ctnr::vltView<rhi::pmvBuffer> buffersView;

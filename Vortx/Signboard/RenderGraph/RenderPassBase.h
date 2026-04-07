@@ -51,5 +51,5 @@ public:
 
     virtual ~RenderPassBase() = default;
     virtual void build(RenderSystemView& systemView, const DrawList& list) = 0;
-    virtual void record(VkCommandBuffer cmd, RenderSystemView& systems, const PassContext& pass, uint32_t currentFrame) = 0;
+    virtual void record(VkCommandBuffer CMDGraphics, RenderSystemView& systems, const PassContext& pass, uint32_t currentFrame) = 0;
 };

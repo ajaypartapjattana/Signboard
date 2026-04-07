@@ -8,8 +8,8 @@ namespace rhi {
 
 	pcdImageAllocator::pcdImageAllocator(const rhi::creDevice& device, const rhi::creAllocator& allocator)
 		: 
-		m_device(rhi::access::device_pAccess::get(device)), 
-		m_allocator(rhi::access::allocator_pAccess::get(allocator))
+		_dvc(rhi::access::device_pAccess::get(device)), 
+		_allctr(rhi::access::allocator_pAccess::get(allocator))
 	{
 
 	}
@@ -64,7 +64,7 @@ namespace rhi {
 
 		VkImage vk_image = VK_NULL_HANDLE;
 		VmaAllocation vma_allocation = VK_NULL_HANDLE;
-		VkResult result = vmaCreateImage(m_allocator, &imageInfo, &allocInfo, &vk_image, &vma_allocation, nullptr);
+		VkResult result = vmaCreateImage(_allctr, &imageInfo, &allocInfo, &vk_image, &vma_allocation, nullptr);
 
 		if (result != VK_SUCCESS)
 			return result;
@@ -81,21 +81,21 @@ namespace rhi {
 		viewInfo.subresourceRange.baseArrayLayer = 0;
 		
 		VkImageView vk_view = VK_NULL_HANDLE;
-		result = vkCreateImageView(m_device, &viewInfo, nullptr, &vk_view);
+		result = vkCreateImageView(_dvc, &viewInfo, nullptr, &vk_view);
 
 		if (result != VK_SUCCESS) {
-			vmaDestroyImage(m_allocator, vk_image, vma_allocation);
+			vmaDestroyImage(_allctr, vk_image, vma_allocation);
 			return result;
 		}
 
 		target_image.m_image = vk_image;
-		target_image.m_allocation = vma_allocation;
+		target_image._alloc = vma_allocation;
 		target_image.m_view = vk_view;
 
 		target_image.m_extent = final_extent;
 
-		target_image.m_device = m_device;
-		target_image.m_allocator = m_allocator;
+		target_image._dvc = _dvc;
+		target_image._allctr = _allctr;
 
 		return result;
 	}

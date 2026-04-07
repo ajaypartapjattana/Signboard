@@ -7,7 +7,7 @@ namespace rhi {
 	pmvFence::pmvFence(const rhi::creDevice& device) noexcept
 		:
 		m_fence(VK_NULL_HANDLE),
-		m_device(rhi::access::device_pAccess::get(device))
+		_dvc(rhi::access::device_pAccess::get(device))
 	{
 		create(false);
 	}
@@ -15,7 +15,7 @@ namespace rhi {
 	pmvFence::pmvFence(const rhi::creDevice& device, const bool signaled) noexcept
 		:
 		m_fence(VK_NULL_HANDLE),
-		m_device(rhi::access::device_pAccess::get(device))
+		_dvc(rhi::access::device_pAccess::get(device))
 	{
 		create(true);
 	}
@@ -25,16 +25,16 @@ namespace rhi {
 		createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		createInfo.flags = signaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0;
 
-		vkCreateFence(m_device, &createInfo, nullptr, &m_fence);
+		vkCreateFence(_dvc, &createInfo, nullptr, &m_fence);
 	}
 
 	pmvFence::pmvFence(pmvFence&& other) noexcept
 		:
 		m_fence(other.m_fence),
-		m_device(other.m_device)
+		_dvc(other._dvc)
 	{
 		other.m_fence = VK_NULL_HANDLE;
-		other.m_device = VK_NULL_HANDLE;
+		other._dvc = VK_NULL_HANDLE;
 	}
 
 	pmvFence& pmvFence::operator=(pmvFence&& other) noexcept {
@@ -42,20 +42,20 @@ namespace rhi {
 			return *this;
 
 		if (m_fence)
-			vkDestroyFence(m_device, m_fence, nullptr);
+			vkDestroyFence(_dvc, m_fence, nullptr);
 
 		m_fence = other.m_fence;
-		m_device = other.m_device;
+		_dvc = other._dvc;
 
 		other.m_fence = VK_NULL_HANDLE;
-		other.m_device = VK_NULL_HANDLE;
+		other._dvc = VK_NULL_HANDLE;
 
 		return *this;
 	}
 
 	pmvFence::~pmvFence() noexcept {
 		if (m_fence)
-			vkDestroyFence(m_device, m_fence, nullptr);
+			vkDestroyFence(_dvc, m_fence, nullptr);
 	}
 
 }

@@ -77,8 +77,9 @@ namespace rhi {
 		VkBuffer a_vertBuffer = rhi::access::buffer_pAccess::get(buffer);
 
 		VkBuffer toBindBuffer[] = { a_vertBuffer };
+		VkDeviceSize offset[] = { 0 };
 
-		vkCmdBindVertexBuffers(m_buffer, 0, 1, toBindBuffer, 0);
+		vkCmdBindVertexBuffers(m_buffer, 0, 1, toBindBuffer, offset);
 	}
 
 	void pcdCommandBufferRecorder::bind_indexBuffer(const rhi::pmvBuffer& buffer) const noexcept {

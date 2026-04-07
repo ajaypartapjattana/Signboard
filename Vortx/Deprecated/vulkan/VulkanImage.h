@@ -29,7 +29,7 @@ public:
 	ImageFormat getFormat() const { return format; }
 	ImageLayout getLayout() const { return layout; }
 
-	void copyFromBuffer(VulkanCommandBuffer& cmd, const VulkanBuffer& src);
+	void copyFromBuffer(VulkanCommandBuffer& CMDGraphics, const VulkanBuffer& src);
 
 	void assignSampler(VulkanSampler* sampler);
 	void transitionLayout(VulkanCommandBuffer& commandBuffer, ImageLayout newLayout, PipelineStageFlags srcStage, PipelineStageFlags dstStage);

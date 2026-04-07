@@ -16,7 +16,7 @@ namespace rhi {
 		VkResult allocate(const rhi::pmvCommandPool& commandPool, rhi::pmvCommandBuffer* target_cb, uint32_t count) const noexcept;
 
 	private:
-		VkDevice m_device;
+		VkDevice _dvc;
 
 	};
 

@@ -2,7 +2,7 @@
 
 #include "rndr_method_Access.h"
 
-rndr_framedraw::rndr_framedraw(const rndr_method& methods, resourceView& resourceRead)
+rndr_framedraw::rndr_framedraw(const rndr_method& methods, const resourceView& resourceRead)
 	:
 	m_targets(methods.read_renderTargets()),
 	m_methodRead(rndr_method_Access::read_methods(methods)),

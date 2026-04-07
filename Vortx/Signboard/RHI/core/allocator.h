@@ -26,7 +26,9 @@ namespace rhi {
 	private:
 		friend struct rhi::access::allocator_pAccess;
 
-		VmaAllocator m_allocator;
+		VmaAllocator _allctr;
+		VkPhysicalDeviceMemoryProperties _memProps;
+
 		static const VmaVulkanFunctions m_vkfuncs;
 
 	};

@@ -7,7 +7,7 @@ namespace rhi {
 	pmvSemaphore::pmvSemaphore() noexcept 
 		:
 		m_semaphore(VK_NULL_HANDLE),
-		m_device(VK_NULL_HANDLE)
+		_dvc(VK_NULL_HANDLE)
 	{
 
 	}
@@ -15,18 +15,18 @@ namespace rhi {
 	pmvSemaphore::pmvSemaphore(const rhi::creDevice& device) noexcept
 		:
 		m_semaphore(VK_NULL_HANDLE),
-		m_device(rhi::access::device_pAccess::get(device))
+		_dvc(rhi::access::device_pAccess::get(device))
 	{
 		VkSemaphoreCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 		
-		vkCreateSemaphore(m_device, &createInfo, nullptr, &m_semaphore);
+		vkCreateSemaphore(_dvc, &createInfo, nullptr, &m_semaphore);
 	}
 
 	pmvSemaphore::pmvSemaphore(pmvSemaphore&& other) noexcept 
 		: 
 		m_semaphore(other.m_semaphore),
-		m_device(other.m_device)
+		_dvc(other._dvc)
 	{
 		other.m_semaphore = VK_NULL_HANDLE;
 	}
@@ -36,10 +36,10 @@ namespace rhi {
 			return *this;
 
 		if (m_semaphore)
-			vkDestroySemaphore(m_device, m_semaphore, nullptr);
+			vkDestroySemaphore(_dvc, m_semaphore, nullptr);
 
 		m_semaphore = other.m_semaphore;
-		m_device = other.m_device;
+		_dvc = other._dvc;
 
 		other.m_semaphore = VK_NULL_HANDLE;
 
@@ -48,7 +48,7 @@ namespace rhi {
 
 	pmvSemaphore::~pmvSemaphore() noexcept {
 		if (m_semaphore)
-			vkDestroySemaphore(m_device, m_semaphore, nullptr);
+			vkDestroySemaphore(_dvc, m_semaphore, nullptr);
 	}
 
 }

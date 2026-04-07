@@ -6,7 +6,7 @@ namespace rhi {
 		: 
 		m_commandPool(VK_NULL_HANDLE),
 		m_queueFamilyIndex(0),
-		m_device(VK_NULL_HANDLE)
+		_dvc(VK_NULL_HANDLE)
 	{
 
 	}
@@ -15,7 +15,7 @@ namespace rhi {
 		:
 		m_commandPool(other.m_commandPool),
 		m_queueFamilyIndex(other.m_queueFamilyIndex),
-		m_device(other.m_device)
+		_dvc(other._dvc)
 	{
 		other.m_commandPool = VK_NULL_HANDLE;
 	}
@@ -25,11 +25,11 @@ namespace rhi {
 			return *this;
 
 		if (m_commandPool)
-			vkDestroyCommandPool(m_device, m_commandPool, nullptr);
+			vkDestroyCommandPool(_dvc, m_commandPool, nullptr);
 
 		m_commandPool = other.m_commandPool;
 		m_queueFamilyIndex = other.m_queueFamilyIndex;
-		m_device = other.m_device;
+		_dvc = other._dvc;
 
 		other.m_commandPool = VK_NULL_HANDLE;
 
@@ -38,7 +38,7 @@ namespace rhi {
 
 	pmvCommandPool::~pmvCommandPool() noexcept {
 		if (m_commandPool)
-			vkDestroyCommandPool(m_device, m_commandPool, nullptr);
+			vkDestroyCommandPool(_dvc, m_commandPool, nullptr);
 	}
 
 	VkCommandPool pmvCommandPool::native_commandPool() const noexcept {

@@ -29,7 +29,7 @@ namespace rhi {
 		VkResult build_graphicsPass(rhi::pmvRenderPass& targetPass);
 
 	private:
-		VkDevice m_device;
+		VkDevice _dvc;
 
 		std::vector<VkAttachmentDescription> m_attachments;
 		std::vector<VkAttachmentReference> m_attachmentRef;

@@ -37,7 +37,7 @@ namespace rhi {
 		if (result != VK_SUCCESS)
 			return result;
 
-		tgtShader.m_device = m_Device;
+		tgtShader._dvc = m_Device;
 
 		return VK_SUCCESS;
 

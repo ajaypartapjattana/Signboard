@@ -18,13 +18,18 @@ Renderer::~Renderer() noexcept {
 }
 
 void Renderer::render() {
+	bool waitUploads = defferUploads();
+
 	if (!prepareFrame()) {
 		m_interface.advance_frame();
 		return;
 	}
 
-	renderFrame();
-	endFrame();
+	m_framedraw.drawFrame(acquiredImage, m_interface.get_graphicsCMD());
+	m_interface.submit_graphics(waitUploads);
+
+	m_interface.present_activeFrame();
+	m_interface.advance_frame();
 }
 
 bool Renderer::prepareFrame() {
@@ -38,14 +43,16 @@ bool Renderer::prepareFrame() {
 	return false;
 }
 
-void Renderer::renderFrame() {
-	m_framedraw.drawFrame(acquiredImage, m_interface.get_activeFrame_cmd());
-	m_interface.submit_activeFrame_cmd();
-}
+bool Renderer::defferUploads() {
+	VkResult result = m_transfer.recordUploads(m_interface.get_transferCMD());
 
-void Renderer::endFrame() {
-	m_interface.present_activeFrame();
-	m_interface.advance_frame();
+	if (result == VK_INCOMPLETE)
+		return false;
+
+	m_interface.submit_tranfer_cmd();
+	m_transfer.reset();
+
+	return true;
 }
 
 void Renderer::configurePresentation(uint32_t* imageCount) {
@@ -56,4 +63,11 @@ void Renderer::configurePresentation(uint32_t* imageCount) {
 	if (imageCount) {
 		m_interface.configure_bufferedFrames();
 	}
+}
+
+void Renderer::queueUpload(const Model& model, uint32_t allocatedMesh) {
+	const Mesh& _mesh = *r_resourceRead.meshView.get(allocatedMesh);
+
+	m_transfer.stageUpload(UploadSpan(model.vertices), { _mesh.vertexBuffer, 0 });
+	m_transfer.stageUpload(UploadSpan(model.indices), { _mesh.indexBuffer, 0 });
 }

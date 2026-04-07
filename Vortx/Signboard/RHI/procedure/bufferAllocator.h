@@ -21,10 +21,10 @@ namespace rhi {
 		pcdBufferAllocator& setBufferSize(VkDeviceSize size) noexcept;
 
 		VkResult allocateBuffer(rhi::pmvBuffer& targetBuffer) const noexcept;
-		void* mapBuffer(rhi::pmvBuffer& buffer) const;
 
 	private:
-		VmaAllocator m_allocator;
+		VmaAllocator _allctr;
+		const VkPhysicalDeviceMemoryProperties& _memProps;
 
 		VkBufferCreateInfo m_bufferInfo;
 		VmaAllocationCreateInfo m_allocationInfo;

@@ -9,7 +9,7 @@ namespace rhi{
 
 	pcdSamplerCreator::pcdSamplerCreator(const rhi::creDevice& device) noexcept
 		: 
-		m_device(rhi::access::device_pAccess::get(device)),
+		_dvc(rhi::access::device_pAccess::get(device)),
 		info()
 	{
 		info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -57,11 +57,11 @@ namespace rhi{
 		info.pNext = nullptr;
 
 		VkSampler vk_sampler = VK_NULL_HANDLE;
-		VkResult result = vkCreateSampler(m_device, &info, nullptr, &vk_sampler);
+		VkResult result = vkCreateSampler(_dvc, &info, nullptr, &vk_sampler);
 		if (result != VK_SUCCESS)
 			return result;
 
-		target_sampler.m_device = m_device;
+		target_sampler._dvc = _dvc;
 		target_sampler.m_sampler = vk_sampler;
 
 		return result;

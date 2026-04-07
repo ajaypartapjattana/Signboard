@@ -23,7 +23,7 @@ namespace rhi {
 		VkResult create(rhi::pmvSampler& target_sampler);
 
 	private:
-		VkDevice m_device;
+		VkDevice _dvc;
 		
 		VkSamplerCreateInfo info;
 

@@ -5,7 +5,7 @@ namespace rhi {
 	pmvDescriptorLayout::pmvDescriptorLayout() noexcept
 		: 
 		m_setLayout(VK_NULL_HANDLE), 
-		m_device(VK_NULL_HANDLE)
+		_dvc(VK_NULL_HANDLE)
 	{
 
 	}
@@ -13,7 +13,7 @@ namespace rhi {
 	pmvDescriptorLayout::pmvDescriptorLayout(pmvDescriptorLayout&& other) noexcept 
 		:
 		m_setLayout(other.m_setLayout),
-		m_device(other.m_device)
+		_dvc(other._dvc)
 	{
 		other.m_setLayout = VK_NULL_HANDLE;
 	}
@@ -23,10 +23,10 @@ namespace rhi {
 			return *this;
 
 		if (m_setLayout)
-			vkDestroyDescriptorSetLayout(m_device, m_setLayout, nullptr);
+			vkDestroyDescriptorSetLayout(_dvc, m_setLayout, nullptr);
 
 		m_setLayout = other.m_setLayout;
-		m_device = other.m_device;
+		_dvc = other._dvc;
 
 		other.m_setLayout = VK_NULL_HANDLE;
 
@@ -35,7 +35,7 @@ namespace rhi {
 
 	pmvDescriptorLayout::~pmvDescriptorLayout() noexcept {
 		if (m_setLayout)
-			vkDestroyDescriptorSetLayout(m_device, m_setLayout, nullptr);
+			vkDestroyDescriptorSetLayout(_dvc, m_setLayout, nullptr);
 	}
 
 }

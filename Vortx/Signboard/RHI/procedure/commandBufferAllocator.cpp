@@ -11,7 +11,7 @@ namespace rhi {
 
 	pcdCommandBufferAllocator::pcdCommandBufferAllocator(const rhi::creDevice& device) noexcept
 		: 
-		m_device(rhi::access::device_pAccess::get(device))
+		_dvc(rhi::access::device_pAccess::get(device))
 	{
 	
 	}
@@ -30,7 +30,7 @@ namespace rhi {
 		allocInfo.commandBufferCount = count;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		
-		VkResult result = vkAllocateCommandBuffers(m_device, &allocInfo, vk_buffers.data());
+		VkResult result = vkAllocateCommandBuffers(_dvc, &allocInfo, vk_buffers.data());
 		if (result != VK_SUCCESS)
 			return result;
 

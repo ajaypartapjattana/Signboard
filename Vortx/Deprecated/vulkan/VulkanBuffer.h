@@ -21,9 +21,9 @@ public:
 
 	void* map();
 	void unmap();
-	void recordUpload(const void* data, uint64_t size, uint64_t offset = 0);
+	void recordUploads(const void* data, uint64_t size, uint64_t offset = 0);
 
-	void copyFrom(VulkanCommandBuffer& cmd, const VulkanBuffer& src, uint64_t size, uint64_t srcOffset = 0, uint64_t dstOffset = 0);
+	void copyFrom(VulkanCommandBuffer& CMDGraphics, const VulkanBuffer& src, uint64_t size, uint64_t srcOffset = 0, uint64_t dstOffset = 0);
 
 	VkBuffer getHandle() const { return buffer; }
 	uint64_t getSize() const { return size; }
@@ -39,7 +39,7 @@ private:
 	VkBuffer buffer;
 	VkDeviceMemory memory;
 
-	void* mapped = nullptr;
+	void* _mpd = nullptr;
 	uint64_t size;
 
 	MemoryPropertyFlags memoryProperties;

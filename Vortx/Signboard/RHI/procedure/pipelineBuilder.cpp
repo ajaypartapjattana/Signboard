@@ -15,7 +15,7 @@ namespace rhi {
 
 	pcdPipelineBuilder::pcdPipelineBuilder(const rhi::creDevice& device, const rhi::pmvSwapchain& swapchain, const rhi::pmvPipelineLayout& pipelineLayout) noexcept
 		: 
-		m_device(rhi::access::device_pAccess::get(device)), 
+		_dvc(rhi::access::device_pAccess::get(device)), 
 		m_pipelineLayout(rhi::access::pipelineLayout_pAccess::get(pipelineLayout)),
 		
 		r_renderPass(nullptr),
@@ -153,11 +153,11 @@ namespace rhi {
 		pipeInfo.basePipelineIndex = -1;
 
 		VkPipeline vk_pipeline = VK_NULL_HANDLE;
-		VkResult result =  vkCreateGraphicsPipelines(m_device, nullptr, 1, &pipeInfo, nullptr, &vk_pipeline);
+		VkResult result =  vkCreateGraphicsPipelines(_dvc, nullptr, 1, &pipeInfo, nullptr, &vk_pipeline);
 
 		tw_pipeline.m_pipeline = vk_pipeline;
 		tw_pipeline.m_type = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		tw_pipeline.m_device = m_device;
+		tw_pipeline._dvc = _dvc;
 
 		return result;
 	}

@@ -14,7 +14,7 @@ namespace rhi {
 
 	pcdSwapchainBuilder::pcdSwapchainBuilder(const rhi::creDevice& device, const rhi::creSurface& surface) 
 		: 
-		m_device(rhi::access::device_pAccess::get(device)), 
+		_dvc(rhi::access::device_pAccess::get(device)), 
 		m_phys(rhi::access::device_pAccess::get_physicalDevice(device)), 
 		m_surface(rhi::access::surface_pAccess::get(surface))
 	{
@@ -141,26 +141,26 @@ namespace rhi {
 		createInfo.pQueueFamilyIndices = nullptr;
 
 		VkSwapchainKHR vk_swapchain = VK_NULL_HANDLE;
-		VkResult result = vkCreateSwapchainKHR(m_device, &createInfo, nullptr, &vk_swapchain);
+		VkResult result = vkCreateSwapchainKHR(_dvc, &createInfo, nullptr, &vk_swapchain);
 		if (result != VK_SUCCESS)
 			return result;
 
 		if (target_swapchain.m_swapchain)
-			vkDestroySwapchainKHR(m_device, target_swapchain.m_swapchain, nullptr);
+			vkDestroySwapchainKHR(_dvc, target_swapchain.m_swapchain, nullptr);
 
 		target_swapchain.m_swapchain = vk_swapchain;
 		target_swapchain.m_format = final_format.format;
 		target_swapchain.m_extent = final_extent;
-		target_swapchain.m_device = m_device;
+		target_swapchain._dvc = _dvc;
 
 		uint32_t count = 0;
-		vkGetSwapchainImagesKHR(m_device, vk_swapchain, &count, nullptr);
+		vkGetSwapchainImagesKHR(_dvc, vk_swapchain, &count, nullptr);
 
 		target_swapchain.m_images.resize(count);
-		vkGetSwapchainImagesKHR(m_device, vk_swapchain, &count, target_swapchain.m_images.data());
+		vkGetSwapchainImagesKHR(_dvc, vk_swapchain, &count, target_swapchain.m_images.data());
 
 		for (const VkImageView scnView : target_swapchain.m_views)
-			vkDestroyImageView(m_device, scnView, nullptr);
+			vkDestroyImageView(_dvc, scnView, nullptr);
 
 		target_swapchain.m_views.resize(count);
 		for (uint32_t i = 0; i < count; ++i) {
@@ -181,7 +181,7 @@ namespace rhi {
 			viewInfo.subresourceRange.baseArrayLayer = 0;
 			viewInfo.subresourceRange.layerCount = 1;
 
-			result = vkCreateImageView(m_device, &viewInfo, nullptr, &target_swapchain.m_views[i]);
+			result = vkCreateImageView(_dvc, &viewInfo, nullptr, &target_swapchain.m_views[i]);
 			if (result != VK_SUCCESS)
 				return result;
 		}

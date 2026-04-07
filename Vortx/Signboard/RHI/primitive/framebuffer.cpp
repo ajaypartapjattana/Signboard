@@ -6,7 +6,7 @@ namespace rhi {
 		: 
 		m_framebuffer(VK_NULL_HANDLE),
 		m_extent(),
-		m_device(VK_NULL_HANDLE)
+		_dvc(VK_NULL_HANDLE)
 	{
 
 	}
@@ -15,7 +15,7 @@ namespace rhi {
 		: 
 		m_framebuffer(other.m_framebuffer),
 		m_extent(other.m_extent),
-		m_device(other.m_device)
+		_dvc(other._dvc)
 	{
 		other.m_framebuffer = VK_NULL_HANDLE;
 	}
@@ -25,11 +25,11 @@ namespace rhi {
 			return *this;
 
 		if (m_framebuffer)
-			vkDestroyFramebuffer(m_device, m_framebuffer, nullptr);
+			vkDestroyFramebuffer(_dvc, m_framebuffer, nullptr);
 
 		m_framebuffer = other.m_framebuffer;
 		m_extent = other.m_extent;
-		m_device = other.m_device;
+		_dvc = other._dvc;
 
 		other.m_framebuffer = VK_NULL_HANDLE;
 
@@ -38,7 +38,7 @@ namespace rhi {
 
 	pmvFramebuffer::~pmvFramebuffer() noexcept {
 		if (m_framebuffer)
-			vkDestroyFramebuffer(m_device, m_framebuffer, nullptr);
+			vkDestroyFramebuffer(_dvc, m_framebuffer, nullptr);
 	}
 
 }

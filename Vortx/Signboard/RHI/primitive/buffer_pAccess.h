@@ -11,7 +11,7 @@ namespace rhi::access {
 		}
 
 		static VmaAllocation get_allocation(const rhi::pmvBuffer& b) noexcept {
-			return b.m_allocation;
+			return b.allocation;
 		}
 
 	};

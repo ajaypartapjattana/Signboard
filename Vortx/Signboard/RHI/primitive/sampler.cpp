@@ -5,14 +5,14 @@ namespace rhi {
 	pmvSampler::pmvSampler() noexcept 
 		:
 		m_sampler(VK_NULL_HANDLE),
-		m_device(VK_NULL_HANDLE)
+		_dvc(VK_NULL_HANDLE)
 	{
 
 	}
 
 	pmvSampler::pmvSampler(pmvSampler&& other) noexcept 
 		:m_sampler(other.m_sampler),
-		m_device(other.m_device)
+		_dvc(other._dvc)
 	{
 		other.m_sampler = VK_NULL_HANDLE;
 	}
@@ -22,10 +22,10 @@ namespace rhi {
 			return *this;
 
 		if (m_sampler)
-			vkDestroySampler(m_device, m_sampler, nullptr);
+			vkDestroySampler(_dvc, m_sampler, nullptr);
 
 		m_sampler = other.m_sampler;
-		m_device = other.m_device;
+		_dvc = other._dvc;
 
 		other.m_sampler = VK_NULL_HANDLE;
 
@@ -34,7 +34,7 @@ namespace rhi {
 
 	pmvSampler::~pmvSampler() noexcept {
 		if (m_sampler)
-			vkDestroySampler(m_device, m_sampler, nullptr);
+			vkDestroySampler(_dvc, m_sampler, nullptr);
 	}
 
 }

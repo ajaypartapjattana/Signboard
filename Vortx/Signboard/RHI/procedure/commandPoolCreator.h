@@ -13,7 +13,7 @@ namespace rhi {
 		VkResult create(standardCommandPools& commandPools);
 
 	private:
-		const rhi::creDevice& m_device;
+		const rhi::creDevice& _dvc;
 
 	};
 

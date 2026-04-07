@@ -43,7 +43,7 @@ namespace rhi {
 		friend class pcdQueueSubmission;
 		friend struct rhi::access::device_pAccess;
 
-		VkDevice m_device;
+		VkDevice _dvc;
 		VkPhysicalDevice m_physical;
 
 		standardQueues m_queues;

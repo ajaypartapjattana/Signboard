@@ -17,17 +17,20 @@ public:
 	void validate_swapchainDependancy();
 	void configure_bufferedFrames();
 
-	rhi::pmvCommandBuffer& get_activeFrame_cmd();
+	rhi::pmvCommandBuffer& get_graphicsCMD();
+	rhi::pmvCommandBuffer& get_transferCMD();
 
 	uint32_t acquire_toWriteImage(VkBool32* aquire_optimal) noexcept;
-	void submit_activeFrame_cmd();
+	void submit_graphics(bool waitTransfer);
+	void submit_tranfer_cmd();
+
 	void present_activeFrame();
 
 	void advance_frame() noexcept;
 
 private:
 	VkResult summon_commandPools();
-	void allocate_renderCommandBuffers();
+	void allocate_command_buffers();
 
 private:
 	friend struct rndr_interface_Access;
@@ -41,6 +44,7 @@ private:
 
 	rhi::standardCommandPools m_commandPools;
 	rhi::pcdQueueSubmission m_graphics_submission;
+	rhi::pcdQueueSubmission m_tranfer_submission;
 
 	uint32_t bufferedFrame_count;
 
@@ -50,7 +54,11 @@ private:
 		rhi::pmvFence frameInFlight;
 		
 		rhi::pmvSemaphore imageAvailable;
-		rhi::pmvCommandBuffer cmd;
+
+		rhi::pmvSemaphore transferFinished;
+
+		rhi::pmvCommandBuffer CMDGraphics;
+		rhi::pmvCommandBuffer CMDTransfer;
 
 		frame(const rhi::creDevice& device);
 	};

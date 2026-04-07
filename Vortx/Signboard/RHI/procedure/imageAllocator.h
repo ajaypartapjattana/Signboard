@@ -26,8 +26,8 @@ namespace rhi {
 		VkResult allocate(rhi::pmvImage& targetImage) const;
 
 	private:
-		VkDevice m_device;
-		VmaAllocator m_allocator;
+		VkDevice _dvc;
+		VmaAllocator _allctr;
 
 		VkImageUsageFlags final_usage{};
 		VkFormat final_format{};

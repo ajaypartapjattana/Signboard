@@ -15,7 +15,7 @@ struct scnView {
 
 class Scene {
 public:
-	Scene(Resources& appResources);
+	Scene();
 
 	_NODISCARD scnView read_scene() const noexcept;	
 	
@@ -25,13 +25,6 @@ public:
 	void createSceneObject(const sceneObjectCraeteInfo& createInfo);
 
 private:
-	void createDefaultCube();
-
-private:
-	Resources& r_resources;
-
-	io::ModelLoader m_modelLoader;
-
 	ctnr::vault<scnObj> m_objects;
 
 };

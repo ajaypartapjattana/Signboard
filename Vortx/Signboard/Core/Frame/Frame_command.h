@@ -5,7 +5,8 @@
 
 enum class CommandID : uint32_t {
 	CONFIG,
-	ESCAPE
+	ESCAPE,
+	UPLOAD
 };
 
 struct FrameCommand {

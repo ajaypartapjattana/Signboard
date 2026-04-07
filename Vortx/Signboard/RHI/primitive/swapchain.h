@@ -38,7 +38,7 @@ namespace rhi {
 		VkFormat m_format;
 		VkExtent2D m_extent;
 		
-		VkDevice m_device;
+		VkDevice _dvc;
 
 	};
 

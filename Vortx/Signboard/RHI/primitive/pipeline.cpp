@@ -6,7 +6,7 @@ namespace rhi {
 		: 
 		m_pipeline(VK_NULL_HANDLE), 
 		m_type(VK_PIPELINE_BIND_POINT_GRAPHICS),
-		m_device(VK_NULL_HANDLE)
+		_dvc(VK_NULL_HANDLE)
 	{
 
 	}
@@ -15,7 +15,7 @@ namespace rhi {
 		:
 		m_pipeline(other.m_pipeline),
 		m_type(other.m_type),
-		m_device(other.m_device)
+		_dvc(other._dvc)
 	{
 		other.m_pipeline = VK_NULL_HANDLE;
 	}
@@ -25,11 +25,11 @@ namespace rhi {
 			return *this;
 
 		if (m_pipeline)
-			vkDestroyPipeline(m_device, m_pipeline, nullptr);
+			vkDestroyPipeline(_dvc, m_pipeline, nullptr);
 
 		m_pipeline = other.m_pipeline;
 		m_type = other.m_type;
-		m_device = other.m_device;
+		_dvc = other._dvc;
 
 		other.m_pipeline = VK_NULL_HANDLE;
 
@@ -38,7 +38,7 @@ namespace rhi {
 
 	pmvPipeline::~pmvPipeline() noexcept {
 		if (m_pipeline)
-			vkDestroyPipeline(m_device, m_pipeline, nullptr);
+			vkDestroyPipeline(_dvc, m_pipeline, nullptr);
 	}
 
 }

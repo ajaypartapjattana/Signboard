@@ -40,7 +40,7 @@ private:
 
 	struct Frame {
 		uint32_t frameIndex;
-		VulkanCommandBuffer cmd;
+		VulkanCommandBuffer CMDGraphics;
 		VulkanImage swapchainImage;
 		ImageExtent2D extent;
 	};

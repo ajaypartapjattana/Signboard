@@ -22,7 +22,7 @@ namespace rhi {
 		VkResult build(rhi::pmvPipelineLayout& target_layout);
 
 	private:
-		VkDevice m_device;
+		VkDevice _dvc;
 
 		std::vector<VkDescriptorSetLayout> m_setLayouts;
 		std::vector<VkPushConstantRange> m_pushConstantRanges;

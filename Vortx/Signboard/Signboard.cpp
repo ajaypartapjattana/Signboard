@@ -4,19 +4,30 @@ Signboard::Signboard()
 	:
 	m_context(m_target.native_target()),
 	m_resources(m_context),
-	m_scene(m_resources),
+	m_scene(),
 
-	m_renderer(m_context),
+	m_renderer(m_context, m_resources, m_scene),
 
 	targetVisible(true),
 
 	m_dispatcher(bindings, toExecuteCommands, targetVisible)
 {
 	populateCommandTable();
+	setupDefaults();
+}
+
+void Signboard::setupDefaults() {
+	Mesher l_mesher;
+	auto _cube = l_mesher.createPrimitive(MESH_PRIMITIVE::CUBE, 0.25f);
+	Model& r_cube = *_cube.get();
+
+	uint32_t allocatedMesh = m_resources.allocateMesh(r_cube);
+	m_renderer.queueUpload(r_cube, allocatedMesh);
 }
 
 void Signboard::populateCommandTable() {
 	commandTable[(uint32_t)CommandID::CONFIG] = &Signboard::routine_Config;
+	//commandTable[(uint32_t)CommandID::UPLOAD] = &Signboard::routine_upload;
 }
 
 void Signboard::run() {
@@ -39,9 +50,9 @@ void Signboard::run() {
 }
 
 bool Signboard::executeCommands() {
-	for (FrameCommand& cmd : toExecuteCommands) {
-		auto fn = commandTable[(uint32_t)cmd.id];
-		if (fn && fn(*this, cmd.data)) {
+	for (FrameCommand& CMDGraphics : toExecuteCommands) {
+		auto fn = commandTable[(uint32_t)CMDGraphics.id];
+		if (fn && fn(*this, CMDGraphics.data)) {
 			toExecuteCommands.clear();
 			return false;
 		}
@@ -55,4 +66,15 @@ bool Signboard::routine_Config(Signboard& board, glm::vec2 data) {
 	board.m_renderer.configurePresentation(nullptr);
 	return true;
 }
+
+bool Signboard::routine_upload(Signboard& board, glm::vec2 data) {
+	std::unique_ptr<Model> a_model = board.m_mesher.createPrimitive(MESH_PRIMITIVE::CUBE, 0.5);
+	Model& _mdl = *a_model.get();
+
+	uint32_t mesh = board.m_resources.allocateMesh(_mdl);
+	board.m_renderer.queueUpload(_mdl, mesh);
+
+	return false;
+}
+
 	

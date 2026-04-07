@@ -8,14 +8,14 @@ namespace rhi {
 
 	pcdCommandPoolCreator::pcdCommandPoolCreator(const rhi::creDevice& device) noexcept
 		: 
-		m_device(device)
+		_dvc(device)
 	{
 
 	}
 
 	VkResult pcdCommandPoolCreator::create(standardCommandPools& pools) {
-		VkDevice a_device = rhi::access::device_pAccess::get(m_device);
-		const auto& families = rhi::access::device_pAccess::get_queueFamilies(m_device);
+		VkDevice a_device = rhi::access::device_pAccess::get(_dvc);
+		const auto& families = rhi::access::device_pAccess::get_queueFamilies(_dvc);
 
 		std::array<uint32_t, 4> l_families = { families.graphics, families.compute, families.transfer, families.present };
 		std::array<VkCommandPool, 4> l_pools{};
@@ -36,19 +36,19 @@ namespace rhi {
 
 		pools.graphicsPool.m_commandPool = l_pools[0];
 		pools.graphicsPool.m_queueFamilyIndex = families.graphics;
-		pools.graphicsPool.m_device = a_device;
+		pools.graphicsPool._dvc = a_device;
 
 		pools.computePool.m_commandPool = l_pools[1];
 		pools.computePool.m_queueFamilyIndex = families.compute;
-		pools.computePool.m_device = a_device;
+		pools.computePool._dvc = a_device;
 
 		pools.transferPool.m_commandPool = l_pools[2];
 		pools.transferPool.m_queueFamilyIndex = families.transfer;
-		pools.transferPool.m_device = a_device;
+		pools.transferPool._dvc = a_device;
 
 		pools.presentPool.m_commandPool = l_pools[3];
 		pools.presentPool.m_queueFamilyIndex = families.present;
-		pools.presentPool.m_device = a_device;
+		pools.presentPool._dvc = a_device;
 
 		return VK_SUCCESS;
 	}

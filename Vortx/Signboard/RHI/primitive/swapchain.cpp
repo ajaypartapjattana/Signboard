@@ -9,7 +9,7 @@ namespace rhi {
 		m_format(VK_FORMAT_UNDEFINED),
 		m_extent(),
 
-		m_device(VK_NULL_HANDLE)
+		_dvc(VK_NULL_HANDLE)
 	{
 
 	}
@@ -23,7 +23,7 @@ namespace rhi {
 		m_extent(other.m_extent),
 		m_format(other.m_format),
 
-		m_device(other.m_device)
+		_dvc(other._dvc)
 	{
 		other.m_swapchain = VK_NULL_HANDLE;
 		other.m_views.clear();
@@ -34,7 +34,7 @@ namespace rhi {
 			return *this;
 
 		if (m_swapchain)
-			vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
+			vkDestroySwapchainKHR(_dvc, m_swapchain, nullptr);
 
 		m_swapchain = other.m_swapchain;
 		m_images = other.m_images;
@@ -43,7 +43,7 @@ namespace rhi {
 		m_extent = other.m_extent;
 		m_format = other.m_format;
 		
-		m_device = other.m_device;
+		_dvc = other._dvc;
 
 		other.m_swapchain = VK_NULL_HANDLE;
 		other.m_views.clear();
@@ -53,10 +53,10 @@ namespace rhi {
 
 	pmvSwapchain::~pmvSwapchain() noexcept {
 		for (VkImageView scnView : m_views)
-			vkDestroyImageView(m_device, scnView, nullptr);
+			vkDestroyImageView(_dvc, scnView, nullptr);
 
 		if (m_swapchain)
-			vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
+			vkDestroySwapchainKHR(_dvc, m_swapchain, nullptr);
 	}
 
 	VkFormat pmvSwapchain::native_format() const noexcept {

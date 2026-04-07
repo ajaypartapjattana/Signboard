@@ -6,13 +6,13 @@ namespace rhi {
 		:
 		m_image(VK_NULL_HANDLE),
 		m_view(VK_NULL_HANDLE),
-		m_allocation(VK_NULL_HANDLE),
+		_alloc(VK_NULL_HANDLE),
 
 		m_extent(),
 		m_format(VK_FORMAT_UNDEFINED),
 
-		m_device(VK_NULL_HANDLE),
-		m_allocator(VK_NULL_HANDLE)
+		_dvc(VK_NULL_HANDLE),
+		_allctr(VK_NULL_HANDLE)
 	{
 
 	}
@@ -21,13 +21,13 @@ namespace rhi {
 		:
 		m_image(other.m_image),
 		m_view(other.m_view),
-		m_allocation(other.m_allocation),
+		_alloc(other._alloc),
 
 		m_extent(other.m_extent),
 		m_format(other.m_format),
 
-		m_device(other.m_device),
-		m_allocator(other.m_allocator)
+		_dvc(other._dvc),
+		_allctr(other._allctr)
 	{
 		other.m_image = VK_NULL_HANDLE;
 		other.m_view = VK_NULL_HANDLE;
@@ -38,17 +38,17 @@ namespace rhi {
 			return *this;
 
 		if (m_view)
-			vkDestroyImageView(m_device, m_view, nullptr);
+			vkDestroyImageView(_dvc, m_view, nullptr);
 
 		if (m_image)
-			vmaDestroyImage(m_allocator, m_image, m_allocation);
+			vmaDestroyImage(_allctr, m_image, _alloc);
 
 		m_image = other.m_image;
 		m_view = other.m_view;
-		m_allocation = other.m_allocation;
+		_alloc = other._alloc;
 		
-		m_device = other.m_device;
-		m_allocator = other.m_allocator;
+		_dvc = other._dvc;
+		_allctr = other._allctr;
 
 		other.m_image = VK_NULL_HANDLE;
 		other.m_view = VK_NULL_HANDLE;
@@ -58,10 +58,10 @@ namespace rhi {
 
 	pmvImage::~pmvImage() noexcept {
 		if (m_view)
-			vkDestroyImageView(m_device, m_view, nullptr);
+			vkDestroyImageView(_dvc, m_view, nullptr);
 		
-		if (m_image && m_allocation)
-			vmaDestroyImage(m_allocator, m_image, m_allocation);
+		if (m_image && _alloc)
+			vmaDestroyImage(_allctr, m_image, _alloc);
 	}
 
 }

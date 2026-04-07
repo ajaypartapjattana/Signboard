@@ -57,7 +57,7 @@ namespace rhi {
 			return result;
 
 		target_framebuffer.m_extent = { m_bufferExtent.width, m_bufferExtent.height };
-		target_framebuffer.m_device = r_device;
+		target_framebuffer._dvc = r_device;
 
 		m_attachments.clear();
 		return result;
@@ -105,7 +105,7 @@ namespace rhi {
 
 			a_framebuffer.m_framebuffer = l_framebuffers[i];
 			a_framebuffer.m_extent = a_swapchainExtent;
-			a_framebuffer.m_device = r_device;
+			a_framebuffer._dvc = r_device;
 		}
 
 		for (uint32_t i = newCount; i < oldCount; ++i) {
@@ -121,7 +121,7 @@ namespace rhi {
 
 				a_framebuffer.m_framebuffer = vk_framebuffer;
 				a_framebuffer.m_extent = a_swapchainExtent;
-				a_framebuffer.m_device = device;
+				a_framebuffer._dvc = device;
 			};
 
 			fb_handles.push_back(writer.construct(builder));

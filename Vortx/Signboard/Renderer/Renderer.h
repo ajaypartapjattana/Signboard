@@ -4,8 +4,13 @@
 #include <vector>
 #include <memory>
 
+#include "Signboard/Core/Interfaces/renderer/rendererINF.h"
+
+#include "Mesh/mesher.h"
+
 #include "Context/render_context.h"
 #include "RenderBackend/rndr_Backend.h"
+#include "Mesh/mesher.h"
 
 constexpr uint32_t IMAGE_COUNT = 2;
 
@@ -18,10 +23,11 @@ public:
 	void render();
 	void configurePresentation(uint32_t* imageCount);
 
+	void queueUpload(const Model& model, uint32_t allocatedMesh);
+
 private:
+	bool defferUploads();
 	bool prepareFrame();
-	void renderFrame();
-	void endFrame();
 
 private:
 	resourceView r_resourceRead;

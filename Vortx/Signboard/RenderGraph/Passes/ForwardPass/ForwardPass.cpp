@@ -70,7 +70,7 @@ void ForwardPass::build(RenderSystemView& systems, const DrawList& list) {
     }
 }
 
-void ForwardPass::record(VkCommandBuffer cmd, RenderSystemView& systems, const PassContext& pass, uint32_t currentFrame) {
+void ForwardPass::record(VkCommandBuffer CMDGraphics, RenderSystemView& systems, const PassContext& pass, uint32_t currentFrame) {
     VkRenderPassBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     beginInfo.renderPass = pass.renderPass;
@@ -86,7 +86,7 @@ void ForwardPass::record(VkCommandBuffer cmd, RenderSystemView& systems, const P
     beginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
     beginInfo.pClearValues = clearValues.data();
 
-    vkCmdBeginRenderPass(cmd, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(CMDGraphics, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     VkViewport viewport{};
     viewport.x = 0.0f;
@@ -95,33 +95,33 @@ void ForwardPass::record(VkCommandBuffer cmd, RenderSystemView& systems, const P
     viewport.height = static_cast<float>(pass.extent.height);
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
-    vkCmdSetViewport(cmd, 0, 1, &viewport);
+    vkCmdSetViewport(CMDGraphics, 0, 1, &viewport);
 
     VkRect2D scissor{};
     scissor.offset = { 0,0 };
     scissor.extent = pass.extent;
-    vkCmdSetScissor(cmd, 0, 1, &scissor);
+    vkCmdSetScissor(CMDGraphics, 0, 1, &scissor);
 
     for (auto& batch : batches) {
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, batch.pipeline->pipeline);
+        vkCmdBindPipeline(CMDGraphics, VK_PIPELINE_BIND_POINT_GRAPHICS, batch.pipeline->pipeline);
 
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, batch.pipeline->layout, 0, 1, &pass.globalSet, 0, nullptr);
+        vkCmdBindDescriptorSets(CMDGraphics, VK_PIPELINE_BIND_POINT_GRAPHICS, batch.pipeline->layout, 0, 1, &pass.globalSet, 0, nullptr);
 
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, batch.pipeline->layout, 2, 1, &batch.material->descriptors[passID], 0, nullptr);
+        vkCmdBindDescriptorSets(CMDGraphics, VK_PIPELINE_BIND_POINT_GRAPHICS, batch.pipeline->layout, 2, 1, &batch.material->descriptors[passID], 0, nullptr);
 
         Mesh* lastMesh = nullptr;
         for (auto& draw : batch.draws) {
             if (draw.mesh != lastMesh) {
-                draw.mesh->bind(cmd);
+                draw.mesh->bind(CMDGraphics);
                 lastMesh = draw.mesh;
             }
             const RenderObject* obj = systems.objects.get(draw.objectID);
             auto& allocation = obj->objectDescriptors.at(passID)[currentFrame];
-            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, batch.pipeline->layout, 1, 1, &allocation.descriptorSet, 0, nullptr);
-            draw.mesh->draw(cmd);
+            vkCmdBindDescriptorSets(CMDGraphics, VK_PIPELINE_BIND_POINT_GRAPHICS, batch.pipeline->layout, 1, 1, &allocation.descriptorSet, 0, nullptr);
+            draw.mesh->draw(CMDGraphics);
         }
     }
-    vkCmdEndRenderPass(cmd);
+    vkCmdEndRenderPass(CMDGraphics);
 }
 
 void ForwardPass::createDescriptorSetLayout(VkDevice device) {

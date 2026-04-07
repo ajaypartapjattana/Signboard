@@ -27,14 +27,14 @@ namespace rhi {
 		friend struct rhi::access::image_pAccess;
 
 		VkImage m_image;
-		VmaAllocation m_allocation;
+		VmaAllocation _alloc;
 		VkImageView m_view;
 
 		VkExtent3D m_extent;
 		VkFormat m_format;
 
-		VkDevice m_device;
-		VmaAllocator m_allocator;
+		VkDevice _dvc;
+		VmaAllocator _allctr;
 
 	};
 

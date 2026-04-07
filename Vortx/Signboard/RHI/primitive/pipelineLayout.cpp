@@ -5,7 +5,7 @@ namespace rhi {
 	pmvPipelineLayout::pmvPipelineLayout() noexcept
 		: 
 		m_layout(VK_NULL_HANDLE), 
-		m_device(VK_NULL_HANDLE)
+		_dvc(VK_NULL_HANDLE)
 	{
 		
 	}
@@ -13,7 +13,7 @@ namespace rhi {
 	pmvPipelineLayout::pmvPipelineLayout(pmvPipelineLayout&& other) noexcept 
 		:
 		m_layout(other.m_layout),
-		m_device(other.m_device)
+		_dvc(other._dvc)
 	{
 		other.m_layout = VK_NULL_HANDLE;
 	}
@@ -23,10 +23,10 @@ namespace rhi {
 			return *this;
 
 		if (m_layout)
-			vkDestroyPipelineLayout(m_device, m_layout, nullptr);
+			vkDestroyPipelineLayout(_dvc, m_layout, nullptr);
 
 		m_layout = other.m_layout;
-		m_device = other.m_device;
+		_dvc = other._dvc;
 
 		other.m_layout = VK_NULL_HANDLE;
 
@@ -35,7 +35,7 @@ namespace rhi {
 
 	pmvPipelineLayout::~pmvPipelineLayout() noexcept {
 		if (m_layout)
-			vkDestroyPipelineLayout(m_device, m_layout, nullptr);
+			vkDestroyPipelineLayout(_dvc, m_layout, nullptr);
 	}
 
 }

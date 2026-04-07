@@ -9,7 +9,7 @@
 namespace rhi{
 
 	pcdPipelineLayoutBuilder::pcdPipelineLayoutBuilder(const rhi::creDevice& device)
-		: m_device(rhi::access::device_pAccess::get(device))
+		: _dvc(rhi::access::device_pAccess::get(device))
 	{
 
 	}
@@ -38,10 +38,10 @@ namespace rhi{
 		layoutInfo.pPushConstantRanges = m_pushConstantRanges.data();
 
 		VkPipelineLayout vk_layout = VK_NULL_HANDLE;
-		VkResult result =  vkCreatePipelineLayout(m_device, &layoutInfo, nullptr, &vk_layout);
+		VkResult result =  vkCreatePipelineLayout(_dvc, &layoutInfo, nullptr, &vk_layout);
 
 		tw_pipelineLayout.m_layout = vk_layout;
-		tw_pipelineLayout.m_device = m_device;
+		tw_pipelineLayout._dvc = _dvc;
 
 		return result;
 	}

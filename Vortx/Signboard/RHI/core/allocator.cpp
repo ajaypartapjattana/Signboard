@@ -36,7 +36,7 @@ namespace rhi {
 
 	creAllocator::creAllocator(const creInstance& instance, const creDevice& device)
 		: 
-		m_allocator(VK_NULL_HANDLE)
+		_allctr(VK_NULL_HANDLE)
 	{
 		VkInstance a_instance = rhi::access::instance_pAccess::get(instance);
 		VkDevice a_device = rhi::access::device_pAccess::get(device);
@@ -50,36 +50,40 @@ namespace rhi {
 		info.flags |= VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
 		info.vulkanApiVersion = VK_API_VERSION_1_3;
 
-		VkResult result = vmaCreateAllocator(&info, &m_allocator);
+		VkResult result = vmaCreateAllocator(&info, &_allctr);
 		if (result != VK_SUCCESS)
 			throw std::runtime_error("FAILURE: allocator_creation!");
+
+		vkGetPhysicalDeviceMemoryProperties(a_phys, &_memProps);
 
 	}
 
 	creAllocator::creAllocator(creAllocator&& other) noexcept 
 		:
-		m_allocator(other.m_allocator)
+		_allctr(other._allctr),
+		_memProps(other._memProps)
 	{
-		other.m_allocator = VK_NULL_HANDLE;
+		other._allctr = VK_NULL_HANDLE;
 	}
 
 	creAllocator& creAllocator::operator=(creAllocator&& other) noexcept {
 		if (this == &other)
 			return *this;
 
-		if (m_allocator)
-			vmaDestroyAllocator(m_allocator);
+		if (_allctr)
+			vmaDestroyAllocator(_allctr);
 
-		m_allocator = other.m_allocator;
+		_allctr = other._allctr;
+		_memProps = other._memProps;
 
-		other.m_allocator = VK_NULL_HANDLE;
+		other._allctr = VK_NULL_HANDLE;
 
 		return *this;
 	}
 
 	creAllocator::~creAllocator() noexcept {
-		if (m_allocator)
-			vmaDestroyAllocator(m_allocator);
+		if (_allctr)
+			vmaDestroyAllocator(_allctr);
 	}
 
 }

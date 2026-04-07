@@ -27,7 +27,7 @@ namespace rhi {
 		friend struct rhi::access::shader_pAccess;
 
 		VkShaderModule m_shader;
-		VkDevice m_device;
+		VkDevice _dvc;
 
 	};
 

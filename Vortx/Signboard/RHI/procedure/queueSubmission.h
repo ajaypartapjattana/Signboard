@@ -19,26 +19,28 @@ namespace rhi {
 
 		void reset() noexcept;
 
-		pcdQueueSubmission& update_toWait_semaphores(const rhi::pmvSemaphore* pSemaphores, const VkPipelineStageFlags* pWaitStages, uint32_t count) noexcept;
-		pcdQueueSubmission& update_toSignal_semaphores(const rhi::pmvSemaphore* pSemaphores, uint32_t count) noexcept;
-		pcdQueueSubmission& set_toTrigger_fence(const rhi::pmvFence& toTrigger_fence) noexcept;
-		pcdQueueSubmission& update_toSubmit_cmd(const rhi::pmvCommandBuffer* cmdBuffers, uint32_t cmd_count) noexcept;
+		pcdQueueSubmission& add_wait(const rhi::pmvSemaphore& sem, VkPipelineStageFlags stage) noexcept;
+		pcdQueueSubmission& add_signal(const rhi::pmvSemaphore& sem) noexcept;
+		pcdQueueSubmission& set_toTrigger_fence(const rhi::pmvFence& fence) noexcept;
+		pcdQueueSubmission& add_cmd(const rhi::pmvCommandBuffer& cmd) noexcept;
 
-		VkResult submit_graphics_cmd();
-		VkResult submit_compute_cmd();
-		VkResult submit_transfer_cmd();
-		VkResult submit_present_cmd();
+		VkResult submit_graphics();
+		VkResult submit_compute();
+		VkResult submit_transfer();
+		VkResult submit_present();
+
+	private:
+		void _prepare_submit() noexcept;
 
 	private:
 		const standardQueues& r_queues;
 
-		std::vector<VkSemaphore> toWait_semaphores;
-		std::vector<VkPipelineStageFlags> toWait_stages;
-		std::vector<VkSemaphore> toSignal_semaphores;
+		std::vector<VkSemaphore> waitSemaphores;
+		std::vector<VkPipelineStageFlags> waitStages;
+		std::vector<VkSemaphore> signalSemaphores;
+		std::vector<VkCommandBuffer> cmdBuffers;
 
 		VkFence toTrigger_fence;
-
-		std::vector<VkCommandBuffer> toSubmit_cmd;
 
 		VkSubmitInfo info{};
 	};

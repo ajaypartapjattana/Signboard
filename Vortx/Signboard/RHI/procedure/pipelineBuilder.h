@@ -30,7 +30,7 @@ namespace rhi {
 		VkResult build_graphicsPipeline(const uint32_t target_subpass, rhi::pmvPipeline& pipeline);
 
 	private:
-		VkDevice m_device;
+		VkDevice _dvc;
 		
 		VkPipelineLayout m_pipelineLayout;
 

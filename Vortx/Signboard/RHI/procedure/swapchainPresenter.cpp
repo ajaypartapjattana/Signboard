@@ -24,7 +24,7 @@ namespace rhi {
 		r_swapchain(other.r_swapchain),
 		r_presentQueue(other.r_presentQueue),
 
-		toWait_semaphores(std::move(other.toWait_semaphores)),
+		waitSemaphores(std::move(other.waitSemaphores)),
 		info(other.info)
 	{
 		info.pSwapchains = &r_swapchain;
@@ -37,7 +37,7 @@ namespace rhi {
 		r_swapchain = other.r_swapchain;
 		r_presentQueue = other.r_presentQueue;
 
-		toWait_semaphores = std::move(other.toWait_semaphores);
+		waitSemaphores = std::move(other.waitSemaphores);
 		info = other.info;
 
 		info.pSwapchains = &r_swapchain;
@@ -45,13 +45,13 @@ namespace rhi {
 		return *this;
 	}
 
-	pcdSwapchainPresenter& pcdSwapchainPresenter::update_toWait_semaphores(const rhi::pmvSemaphore* pSemaphores, uint32_t count) {
-		toWait_semaphores.resize(count);
+	pcdSwapchainPresenter& pcdSwapchainPresenter::add_wait(const rhi::pmvSemaphore* pSemaphores, uint32_t count) {
+		waitSemaphores.resize(count);
 		for (uint32_t i = 0; i < count; ++i) {
-			toWait_semaphores[i] = rhi::access::semaphore_pAccess::get(pSemaphores[i]);
+			waitSemaphores[i] = rhi::access::semaphore_pAccess::get(pSemaphores[i]);
 		}
 
-		info.pWaitSemaphores = toWait_semaphores.data();
+		info.pWaitSemaphores = waitSemaphores.data();
 		info.waitSemaphoreCount = count;
 
 		return *this;

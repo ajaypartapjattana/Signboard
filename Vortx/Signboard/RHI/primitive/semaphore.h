@@ -27,7 +27,7 @@ namespace rhi {
 		friend struct rhi::access::semaphore_pAccess;
 
 		VkSemaphore m_semaphore;
-		VkDevice m_device;
+		VkDevice _dvc;
 
 	};
 

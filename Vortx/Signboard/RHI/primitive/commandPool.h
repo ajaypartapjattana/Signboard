@@ -31,7 +31,7 @@ namespace rhi {
 		VkCommandPool m_commandPool = VK_NULL_HANDLE;
 		uint32_t m_queueFamilyIndex = 0;
 
-		VkDevice m_device = VK_NULL_HANDLE;
+		VkDevice _dvc = VK_NULL_HANDLE;
 	};
 
 }

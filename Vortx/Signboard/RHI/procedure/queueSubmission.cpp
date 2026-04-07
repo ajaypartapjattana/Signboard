@@ -5,6 +5,10 @@
 #include "Signboard/RHI/primitive/semaphore_pAccess.h"
 #include "Signboard/RHI/primitive/fence_pAccess.h"
 
+static constexpr uint32_t MAX_WAIT = 4;
+static constexpr uint32_t MAX_SIGNAL = 4;
+static constexpr uint32_t MAX_CMD = 4;
+
 namespace rhi {
 
 	pcdQueueSubmission::pcdQueueSubmission(const rhi::creDevice& device) noexcept
@@ -12,38 +16,32 @@ namespace rhi {
 		r_queues(rhi::access::device_pAccess::get_queues(device)),
 		toTrigger_fence(VK_NULL_HANDLE)
 	{
+		waitSemaphores.reserve(4);
+		waitStages.reserve(4);
+		signalSemaphores.reserve(4);
+		cmdBuffers.reserve(4);
+
+		info = {};
 		info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	}
 
 	void pcdQueueSubmission::reset() noexcept {
-		toWait_semaphores.clear();
-		toWait_stages.clear();
-		toSignal_semaphores.clear();
+		waitSemaphores.clear();
+		waitStages.clear();
+		signalSemaphores.clear();
+		cmdBuffers.clear();
+		toTrigger_fence = VK_NULL_HANDLE;
 	}
 
-	pcdQueueSubmission& pcdQueueSubmission::update_toWait_semaphores(const rhi::pmvSemaphore* pSemaphores, const VkPipelineStageFlags* pWaitStages, uint32_t count) noexcept {
-		toWait_semaphores.resize(count);
-		toWait_stages.resize(count);
-		for (uint32_t i = 0; i < count; i++) {
-			toWait_semaphores[i] = rhi::access::semaphore_pAccess::get(pSemaphores[i]);
-			toWait_stages[i] = pWaitStages[i];
-		}
-
-		info.waitSemaphoreCount = static_cast<uint32_t>(toWait_semaphores.size());
-		info.pWaitSemaphores = toWait_semaphores.data();
-		info.pWaitDstStageMask = toWait_stages.data();
+	pcdQueueSubmission& pcdQueueSubmission::add_wait(const rhi::pmvSemaphore& sem, VkPipelineStageFlags stage) noexcept {
+		waitSemaphores.push_back(rhi::access::semaphore_pAccess::get(sem));
+		waitStages.push_back(stage);
 
 		return *this;
 	}
 
-	pcdQueueSubmission& pcdQueueSubmission::update_toSignal_semaphores(const rhi::pmvSemaphore* pSemaphores, uint32_t count) noexcept {
-		toSignal_semaphores.resize(count);
-		for (uint32_t i = 0; i < count; ++i) {
-			toSignal_semaphores[i] = rhi::access::semaphore_pAccess::get(pSemaphores[i]);
-		}
-
-		info.signalSemaphoreCount = static_cast<uint32_t>(toSignal_semaphores.size());
-		info.pSignalSemaphores = toSignal_semaphores.data();
+	pcdQueueSubmission& pcdQueueSubmission::add_signal(const rhi::pmvSemaphore& sem) noexcept {
+		signalSemaphores.push_back(rhi::access::semaphore_pAccess::get(sem));
 		
 		return *this;
 	}
@@ -53,31 +51,40 @@ namespace rhi {
 		return *this;
 	}
 
-	pcdQueueSubmission& pcdQueueSubmission::update_toSubmit_cmd(const rhi::pmvCommandBuffer* cmdBuffers, uint32_t cmd_count) noexcept {
-		toSubmit_cmd.resize(cmd_count);
-		for (uint32_t i = 0; i < cmd_count; ++i) {
-			toSubmit_cmd[i] = cmdBuffers[i].m_commandBuffer;
-		}
-
-		info.commandBufferCount = cmd_count;
-		info.pCommandBuffers = toSubmit_cmd.data();
+	pcdQueueSubmission& pcdQueueSubmission::add_cmd(const rhi::pmvCommandBuffer& cmd) noexcept {
+		cmdBuffers.push_back(rhi::access::commandBuffer_pAccess::get(cmd));
 
 		return *this;
 	}
 
-	VkResult pcdQueueSubmission::submit_graphics_cmd() {
+	void pcdQueueSubmission::_prepare_submit() noexcept {
+		info.pWaitSemaphores = waitSemaphores.data();
+		info.pWaitDstStageMask = waitStages.data();
+		info.pSignalSemaphores = signalSemaphores.data();
+		info.pCommandBuffers = cmdBuffers.data();
+
+		info.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size());
+		info.signalSemaphoreCount = static_cast<uint32_t>(signalSemaphores.size());
+		info.commandBufferCount = static_cast<uint32_t>(cmdBuffers.size());
+	}
+
+	VkResult pcdQueueSubmission::submit_graphics() {
+		_prepare_submit();
 		return vkQueueSubmit(r_queues.graphics , 1, &info, toTrigger_fence);
 	}
 
-	VkResult pcdQueueSubmission::submit_compute_cmd() {
+	VkResult pcdQueueSubmission::submit_compute() {
+		_prepare_submit();
 		return vkQueueSubmit(r_queues.compute, 1, &info, toTrigger_fence);
 	}
 
-	VkResult pcdQueueSubmission::submit_transfer_cmd() {
+	VkResult pcdQueueSubmission::submit_transfer() {
+		_prepare_submit();
 		return vkQueueSubmit(r_queues.transfer, 1, &info, toTrigger_fence);
 	}
 
-	VkResult pcdQueueSubmission::submit_present_cmd() {
+	VkResult pcdQueueSubmission::submit_present() {
+		_prepare_submit();
 		return vkQueueSubmit(r_queues.present, 1, &info, toTrigger_fence);
 	}
 

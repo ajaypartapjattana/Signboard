@@ -3,8 +3,8 @@
 RHIContext::RHIContext(const platform::primitive::displayWindow& window)
 	: m_instance(get_instanceCreateInfo()),
 	m_surface(window, m_instance),
-	m_device(get_deviceCreateInfo(), m_instance),
-	m_allocator(m_instance, m_device)
+	_dvc(get_deviceCreateInfo(), m_instance),
+	_allctr(m_instance, _dvc)
 {
 
 }

@@ -30,7 +30,7 @@ namespace rhi {
 		friend struct rhi::access::fence_pAccess;
 
 		VkFence m_fence;
-		VkDevice m_device;
+		VkDevice _dvc;
 
 	};
 

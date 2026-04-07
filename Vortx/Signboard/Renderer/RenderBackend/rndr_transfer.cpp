@@ -8,6 +8,8 @@ rndr_transfer::rndr_transfer(const RHIContext& context, resourceView& resourceRe
 
 	m_resourceRead(std::move(resourceRead))
 {
+	regions.reserve(10);
+
 	rhi::pcdBufferAllocator prcdr{ rndr_context_Access::get_allocator(context) };
 
 	prcdr.addUsage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
@@ -16,7 +18,31 @@ rndr_transfer::rndr_transfer(const RHIContext& context, resourceView& resourceRe
 	prcdr.setBufferSize(STAGING_SIZE);
 
 	prcdr.allocateBuffer(m_staging);
-	m_mappedStaging = prcdr.mapBuffer(m_staging);
+	m_mappedStaging = m_staging.native_mapped();
+}
+
+VkResult rndr_transfer::stageUpload(const UploadSpan& src, const UploadTarget& dst) {
+	if (!src.valid())
+		return VK_ERROR_INVALID_EXTERNAL_HANDLE;
+	
+	size_t srcOffset;
+	void* _mpd = allocate(src.size, src.alignment, srcOffset);
+
+	if (!_mpd) {
+		return VK_INCOMPLETE;
+	}
+
+	memcpy(_mpd, src.data, src.size);
+
+	flushStart = std::min(flushStart, srcOffset);
+	flushEnd = std::max(flushEnd, srcOffset + src.size);
+
+	regions.push_back({
+		dst.buffer,
+		VkBufferCopy{ srcOffset, dst.offset, static_cast<VkDeviceSize>(src.size) }
+	});
+
+	return VK_SUCCESS;
 }
 
 void* rndr_transfer::allocate(size_t size, size_t alignment, size_t& outOffest) {
@@ -32,19 +58,30 @@ void* rndr_transfer::allocate(size_t size, size_t alignment, size_t& outOffest) 
 	return static_cast<char*>(m_mappedStaging) + outOffest;
 }
 
-VkResult rndr_transfer::recordUpload(const rhi::pmvBuffer& tgt, const rhi::pmvCommandBuffer& cmd) const {
-	rhi::pcdCommandBufferRecorder prcdr{ cmd };
+VkResult rndr_transfer::recordUploads(const rhi::pmvCommandBuffer& CMDGraphics) const {
+	if (regions.empty())
+		return VK_INCOMPLETE;
 
-	VkBufferCopy copy{};
-	copy.dstOffset = 0;
-	copy.size = currentOffset;
-	copy.srcOffset = 0;
+	m_staging.flush(flushStart, flushEnd);
 
-	std::vector<VkBufferCopy> copies = { copy };
+	rhi::pcdCommandBufferRecorder prcdr{ CMDGraphics };
 
-	prcdr.uploadBuffer(m_staging, tgt, copies);
+	std::unordered_map<uint32_t, std::vector<VkBufferCopy>> batches;
+
+	for (const CopyRegion& r : regions) {
+		batches[r.targetBuffer].push_back(r.copyInfo);
+	}
+
+	for (auto& [buffers, copies] : batches) {
+		prcdr.uploadBuffer(m_staging, *m_resourceRead.buffersView.get(buffers), copies);
+	}
+
+	prcdr.end_recording();
+
+	return VK_SUCCESS;
 }
 
 void rndr_transfer::reset() noexcept {
 	currentOffset = 0;
+	regions.clear();
 }

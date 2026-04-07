@@ -22,8 +22,8 @@ private:
 	rhi::creInstance m_instance;
 	rhi::creSurface m_surface;
 
-	rhi::creDevice m_device;
+	rhi::creDevice _dvc;
 
-	rhi::creAllocator m_allocator;
+	rhi::creAllocator _allctr;
 
 };

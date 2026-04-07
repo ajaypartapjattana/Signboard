@@ -100,9 +100,9 @@ void VulkanImage::destroy() {
 	}
 }
 
-void VulkanImage::copyFromBuffer(VulkanCommandBuffer& cmd, const VulkanBuffer& src) {
+void VulkanImage::copyFromBuffer(VulkanCommandBuffer& CMDGraphics, const VulkanBuffer& src) {
 	if (layout != ImageLayout::TransferDst)
-		transitionLayout(cmd, ImageLayout::TransferDst, PipelineStage::TopOfPipe, PipelineStage::Transfer);
+		transitionLayout(CMDGraphics, ImageLayout::TransferDst, PipelineStage::TopOfPipe, PipelineStage::Transfer);
 
 	VkBufferImageCopy region{};
 	region.bufferOffset = 0;
@@ -115,7 +115,7 @@ void VulkanImage::copyFromBuffer(VulkanCommandBuffer& cmd, const VulkanBuffer& s
 	region.imageOffset = { 0,0,0 };
 	region.imageExtent = { extent.width, extent.height, 1 };
 
-	vkCmdCopyBufferToImage(cmd.getHandle(), src.getHandle(), image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+	vkCmdCopyBufferToImage(CMDGraphics.getHandle(), src.getHandle(), image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
 void VulkanImage::assignSampler(VulkanSampler* s) {
@@ -126,7 +126,7 @@ VkSampler VulkanImage::getSampler() const {
 	return sampler ? sampler->getHandle() : VK_NULL_HANDLE;
 }
 
-void VulkanImage::transitionLayout(VulkanCommandBuffer& cmd, ImageLayout newLayout, PipelineStageFlags srcStage, PipelineStageFlags dstStage) {
+void VulkanImage::transitionLayout(VulkanCommandBuffer& CMDGraphics, ImageLayout newLayout, PipelineStageFlags srcStage, PipelineStageFlags dstStage) {
 	VkImageLayout oldVkLayout = toVkImageLayout(layout);
 	VkImageLayout newVkLayout = toVkImageLayout(newLayout);
 
@@ -150,7 +150,7 @@ void VulkanImage::transitionLayout(VulkanCommandBuffer& cmd, ImageLayout newLayo
 	barrier.dstAccessMask = 0;
 	getAccessFlags(layout, newLayout, barrier.srcAccessMask, barrier.dstAccessMask);
 
-	vkCmdPipelineBarrier(cmd.getHandle(), toVkPipelineStage(srcStage), toVkPipelineStage(dstStage), 0, 0, nullptr, 0, nullptr, 1, &barrier);
+	vkCmdPipelineBarrier(CMDGraphics.getHandle(), toVkPipelineStage(srcStage), toVkPipelineStage(dstStage), 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
 	layout = newLayout;
 }

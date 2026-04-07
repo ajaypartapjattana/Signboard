@@ -6,7 +6,7 @@
 #include <atomic>
 
 #include "Signboard/Core/Threading/threadCommProtocol.h"
-#include "Signboard/Core/Interfaces/uni_mesh/model.h"
+#include "Signboard/Core/Interfaces/renderer/model/model.h"
 
 namespace io {
 
@@ -21,8 +21,6 @@ namespace io {
 
 		void requestLoad(const std::string& objPath);
 		bool hasPendingLoads() const;
-
-		std::unique_ptr<Model> createCube(float sideLength);
 
 		std::vector<std::unique_ptr<Model>> collectLoadedModels();
 

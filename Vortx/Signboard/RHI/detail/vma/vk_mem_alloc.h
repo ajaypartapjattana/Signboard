@@ -6613,7 +6613,7 @@ public:
         VkDeviceSize size,
         uint32_t memoryTypeIndex,
         VmaSuballocationType suballocationType,
-        bool mapped);
+        bool _mpd);
     // pMappedData not null means allocation is created with MAPPED flag.
     void InitDedicatedAllocation(
         VmaAllocator allocator,
@@ -11174,7 +11174,7 @@ void VmaAllocation_T::InitBlockAllocation(
     VkDeviceSize size,
     uint32_t memoryTypeIndex,
     VmaSuballocationType suballocationType,
-    bool mapped)
+    bool _mpd)
 {
     VMA_ASSERT(m_Type == ALLOCATION_TYPE_NONE);
     VMA_ASSERT(block != VMA_NULL);
@@ -11182,7 +11182,7 @@ void VmaAllocation_T::InitBlockAllocation(
     m_Alignment = alignment;
     m_Size = size;
     m_MemoryTypeIndex = memoryTypeIndex;
-    if(mapped)
+    if(_mpd)
     {
         VMA_ASSERT(IsMappingAllowed() && "Mapping is not allowed on this allocation! Please use one of the new VMA_ALLOCATION_CREATE_HOST_ACCESS_* flags when creating it.");
         m_Flags |= (uint8_t)FLAG_PERSISTENT_MAP;
@@ -12003,14 +12003,14 @@ VkResult VmaBlockVector::CommitAllocationRequest(
     VmaSuballocationType suballocType,
     VmaAllocation* pAllocation)
 {
-    const bool mapped = (allocFlags & VMA_ALLOCATION_CREATE_MAPPED_BIT) != 0;
+    const bool _mpd = (allocFlags & VMA_ALLOCATION_CREATE_MAPPED_BIT) != 0;
     const bool isUserDataString = (allocFlags & VMA_ALLOCATION_CREATE_USER_DATA_COPY_STRING_BIT) != 0;
     const bool isMappingAllowed = (allocFlags &
         (VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT)) != 0;
 
     pBlock->PostAlloc(m_hAllocator);
     // Allocate from pCurrBlock.
-    if (mapped)
+    if (_mpd)
     {
         VkResult res = pBlock->Map(m_hAllocator, 1, VMA_NULL);
         if (res != VK_SUCCESS)
@@ -12028,7 +12028,7 @@ VkResult VmaBlockVector::CommitAllocationRequest(
         allocRequest.size, // Not size, as actual allocation size may be larger than requested!
         m_MemoryTypeIndex,
         suballocType,
-        mapped);
+        _mpd);
     VMA_HEAVY_ASSERT(pBlock->Validate());
     if (isUserDataString)
         (*pAllocation)->SetName(m_hAllocator, (const char*)pUserData);

@@ -15,7 +15,7 @@ namespace rhi::access {
 		}
 
 		static VmaAllocation get_allocation(const rhi::pmvImage& i) noexcept {
-			return i.m_allocation;
+			return i._alloc;
 		}
 
 		static VkExtent3D get_extent(const rhi::pmvImage& i) noexcept {

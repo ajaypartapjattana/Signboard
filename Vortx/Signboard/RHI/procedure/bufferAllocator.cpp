@@ -9,7 +9,8 @@ namespace rhi {
 
 	pcdBufferAllocator::pcdBufferAllocator(const rhi::creAllocator& allocator) noexcept
 		: 
-		m_allocator(rhi::access::allocator_pAccess::get(allocator)),
+		_allctr(rhi::access::allocator_pAccess::get(allocator)),
+		_memProps(rhi::access::allocator_pAccess::get_memProps(allocator)),
 
 		m_bufferInfo(),
 		m_allocationInfo()
@@ -42,25 +43,23 @@ namespace rhi {
 		return *this;
 	}
 
-	VkResult pcdBufferAllocator::allocateBuffer(rhi::pmvBuffer& tgtBuffer) const noexcept {
+	VkResult pcdBufferAllocator::allocateBuffer(rhi::pmvBuffer& tgt) const noexcept {
 		if (m_bufferInfo.size == 0)
 			return VK_INCOMPLETE;
 
-		VkResult result = vmaCreateBuffer(m_allocator, &m_bufferInfo, &m_allocationInfo, &tgtBuffer.m_buffer, &tgtBuffer.m_allocation, nullptr);
+		VmaAllocationInfo allocInfo{};
+
+		VkResult result = vmaCreateBuffer(_allctr, &m_bufferInfo, &m_allocationInfo, &tgt.m_buffer, &tgt.allocation, &allocInfo);
+
 		if (result != VK_SUCCESS)
 			return result;
 
-		tgtBuffer.m_allocator = m_allocator;
+		tgt._allctr = _allctr;
+
+		tgt._is_host_coherent = (_memProps.memoryTypes[allocInfo.memoryType].propertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0;
+		tgt._mpd = allocInfo.pMappedData;
 
 		return VK_SUCCESS;
 	}
-
-	void* pcdBufferAllocator::mapBuffer(rhi::pmvBuffer& buffer) const {
-		void* mapped = nullptr;
-		vmaMapMemory(m_allocator, buffer.m_allocation, &mapped);
-
-		return mapped;
-	}
-
 
 }

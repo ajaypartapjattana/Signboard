@@ -11,7 +11,7 @@ namespace rhi::access {
 		}
 
 		static VkDevice get_device(const rhi::pmvCommandPool& cp) noexcept {
-			return cp.m_device;
+			return cp._dvc;
 		}
 
 	};

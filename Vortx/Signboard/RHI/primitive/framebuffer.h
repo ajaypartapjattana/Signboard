@@ -29,7 +29,7 @@ namespace rhi {
 		VkFramebuffer m_framebuffer = VK_NULL_HANDLE;
 		VkExtent2D m_extent;
 
-		VkDevice m_device = VK_NULL_HANDLE;
+		VkDevice _dvc = VK_NULL_HANDLE;
 
 	};
 

@@ -10,7 +10,7 @@ namespace rhi {
 
 	pcdRenderPassBuilder::pcdRenderPassBuilder(const rhi::creDevice& device)
 		: 
-		m_device(rhi::access::device_pAccess::get(device))
+		_dvc(rhi::access::device_pAccess::get(device))
 	{
 
 	}
@@ -71,10 +71,10 @@ namespace rhi {
 		renderPassInfo.pDependencies = &dependancy;
 
 		VkRenderPass vk_renderPass = VK_NULL_HANDLE;
-		VkResult result = vkCreateRenderPass(m_device, &renderPassInfo, nullptr, &vk_renderPass);
+		VkResult result = vkCreateRenderPass(_dvc, &renderPassInfo, nullptr, &vk_renderPass);
 
 		tw_renderPass.m_renderPass = vk_renderPass;
-		tw_renderPass.m_device = m_device;
+		tw_renderPass._dvc = _dvc;
 
 		return result;
 	}

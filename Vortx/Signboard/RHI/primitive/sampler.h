@@ -27,7 +27,7 @@ namespace rhi {
 		friend struct rhi::access::sampler_pAccess;
 
 		VkSampler m_sampler;
-		VkDevice m_device;
+		VkDevice _dvc;
 
 	};
 

@@ -11,7 +11,7 @@ public:
 	Pass& addPass(const RenderPassDesc&);
 
 	void compile();
-	void execute(VulkanCommandBuffer& cmd);
+	void execute(VulkanCommandBuffer& CMDGraphics);
 	void reset();
 
 };
