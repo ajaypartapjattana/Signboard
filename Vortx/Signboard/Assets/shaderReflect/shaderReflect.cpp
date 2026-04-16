@@ -1,21 +1,36 @@
 #include "shaderReflect.h"
+#include <algorithm>
 
 ShaderReflect::ShaderReflect(const std::vector<uint32_t>& bin) 
 	:
-	m_bin(bin)
+	m_compiler(createCompiler(bin))
 {
 
+}
+
+std::unique_ptr<spirv_cross::Compiler> ShaderReflect::createCompiler(const std::vector<uint32_t>& bin) const noexcept {
+	if (bin.empty())
+		return nullptr;
+
+	try {
+		return std::make_unique<spirv_cross::Compiler>(bin);
+	}
+	catch (...) {
+		return nullptr;
+	}
 }
 
 std::vector<VertexAttribute> ShaderReflect::reflectVertexLayout() const {
 	std::vector<VertexAttribute> result;
 
-	std::unique_ptr<spirv_cross::Compiler> _compile = std::make_unique<spirv_cross::Compiler>(m_bin);
-	spirv_cross::ShaderResources _res = _compile->get_shader_resources();
+	if (!m_compiler)
+		return result;
+
+	spirv_cross::ShaderResources _res = m_compiler->get_shader_resources();
 
 	for (const spirv_cross::Resource& input : _res.stage_inputs) {
-		uint32_t location = _compile->get_decoration(input.id, spv::DecorationLocation);
-		const auto& type = _compile->get_type(input.type_id);
+		uint32_t location = m_compiler->get_decoration(input.id, spv::DecorationLocation);
+		const auto& type = m_compiler->get_type(input.type_id);
 
 		result.push_back({ location, mapTypeToFormat(type) });
 	}
@@ -30,13 +45,14 @@ std::vector<VertexAttribute> ShaderReflect::reflectVertexLayout() const {
 std::vector<DescriptorBinding> ShaderReflect::reflectDescriptorBindings(VkShaderStageFlags stage) const {
 	std::vector<DescriptorBinding> result;
 
-	std::unique_ptr<spirv_cross::Compiler> _compile = std::make_unique<spirv_cross::Compiler>(m_bin);
+	if (!m_compiler)
+		return result;
 
 	auto process = [&](const spirv_cross::SmallVector<spirv_cross::Resource>& resources, VkDescriptorType type) {
 		for (const spirv_cross::Resource& res : resources) {
-			uint32_t set = _compile->get_decoration(res.id, spv::DecorationDescriptorSet);
-			uint32_t binding = _compile->get_decoration(res.id, spv::DecorationBinding);
-			const spirv_cross::SPIRType& spirType = _compile->get_type(res.type_id);
+			uint32_t set = m_compiler->get_decoration(res.id, spv::DecorationDescriptorSet);
+			uint32_t binding = m_compiler->get_decoration(res.id, spv::DecorationBinding);
+			const spirv_cross::SPIRType& spirType = m_compiler->get_type(res.type_id);
 			uint32_t count = 1;
 
 			if (!spirType.array.empty()) {
@@ -50,7 +66,7 @@ std::vector<DescriptorBinding> ShaderReflect::reflectDescriptorBindings(VkShader
 		}
 	};
 
-	spirv_cross::ShaderResources _res = _compile->get_shader_resources();
+	spirv_cross::ShaderResources _res = m_compiler->get_shader_resources();
 
 	process(_res.uniform_buffers, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	process(_res.storage_buffers, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
@@ -65,12 +81,14 @@ std::vector<DescriptorBinding> ShaderReflect::reflectDescriptorBindings(VkShader
 std::vector<PushConstantRangeInfo> ShaderReflect::reflectPushConstants(VkShaderStageFlags stage) const {
 	std::vector<PushConstantRangeInfo> result;
 	
-	std::unique_ptr<spirv_cross::Compiler> _compile = std::make_unique<spirv_cross::Compiler>(m_bin);
-	spirv_cross::ShaderResources _res = _compile->get_shader_resources();
+	if (!m_compiler)
+		return result;
+
+	spirv_cross::ShaderResources _res = m_compiler->get_shader_resources();
 
 	for (const spirv_cross::Resource& pc : _res.push_constant_buffers) {
-		const spirv_cross::SPIRType& type = _compile->get_type(pc.base_type_id);
-		uint32_t size = static_cast<uint32_t>(_compile->get_declared_struct_size(type));
+		const spirv_cross::SPIRType& type = m_compiler->get_type(pc.base_type_id);
+		uint32_t size = static_cast<uint32_t>(m_compiler->get_declared_struct_size(type));
 		
 		result.push_back({ size, 0, stage });
 	}

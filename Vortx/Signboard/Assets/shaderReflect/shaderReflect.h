@@ -1,8 +1,9 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
-#include <spirv_cross/spirv_cross.hpp>
+#include <external/SPIRV_cross/spirv_cross.hpp>
 #include <memory>
+#include <vector>
 
 struct VertexAttribute {
 	uint32_t location;
@@ -39,8 +40,9 @@ public:
 
 private:
 	static VkFormat mapTypeToFormat(const spirv_cross::SPIRType& type);
+	std::unique_ptr<spirv_cross::Compiler> createCompiler(const std::vector<uint32_t>& bin) const noexcept;
 
 private:
-	const std::vector<uint32_t>& m_bin;
+	std::unique_ptr<spirv_cross::Compiler> m_compiler;
 
 };
