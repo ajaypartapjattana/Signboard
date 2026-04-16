@@ -3,8 +3,6 @@
 static void create_CUBE(std::unique_ptr<Model>& model, float size) {
     const float h = size * 0.5f;
 
-    using V = Vertex;
-
     struct Face {
         glm::vec3 normal;
         glm::vec3 tangent;
@@ -52,8 +50,12 @@ static void create_CUBE(std::unique_ptr<Model>& model, float size) {
 }
 
 static void create_DISK(std::unique_ptr<Model>& model, float radius, uint32_t resolution) {
-    using V = Vertex;
+    uint32_t _expVertCt = resolution + 1;
+    uint32_t _expIndCt = resolution * 3;
 
+    model->vertices.reserve(_expVertCt);
+    model->indices.reserve(_expIndCt);
+    
     const float PI = 3.14159265359f;
 
     glm::vec3 normal = { 0.0f, 0.0f, 1.0f };
@@ -77,22 +79,14 @@ static void create_DISK(std::unique_ptr<Model>& model, float radius, uint32_t re
             (y / radius) * 0.5f + 0.5f
         };
 
-        model->vertices.push_back({
-            {x, y, 0.0f},
-            normal,
-            color,
-            uv,
-            tangent
-            });
+        model->vertices.push_back({ {x, y, 0.0f}, normal, color, uv, tangent });
     }
 
     for (uint32_t i = 0; i < resolution; ++i) {
         uint32_t current = startRing + i;
         uint32_t next = startRing + (i + 1) % resolution;
 
-        model->indices.insert(model->indices.end(), {
-            centerIndex, current, next
-            });
+        model->indices.insert(model->indices.end(), { centerIndex, current, next });
     }
 
     model->attributes = {
@@ -102,16 +96,16 @@ static void create_DISK(std::unique_ptr<Model>& model, float radius, uint32_t re
     };
 }
 
-std::unique_ptr<Model> Mesher::createPrimitive(const MESH_PRIMITIVE primitive, const float size) {
+std::unique_ptr<Model> Mesher::createPrimitive(const MESH_PRIMITIVE primitive, const PrimitiveInfo& info) {
     std::unique_ptr<Model> _model = std::make_unique<Model>("__GENERATED__");
 
     switch (primitive) {
     case MESH_PRIMITIVE::CUBE:
-        create_CUBE(_model, size);
+        create_CUBE(_model, info.size);
         break;
 
-    case MESH_PRIMITIVE::DISK:
-        create_DISK(_model, size, 128);
+    case MESH_PRIMITIVE::NGON:
+        create_DISK(_model, info.size, info.res);
         break;
 
     default:

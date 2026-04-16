@@ -30,18 +30,14 @@ public:
 	rndr_method(const rndr_method&) = delete;
 	rndr_method& operator=(const rndr_method&) = delete;
 
-	struct createInfo {
-		passes::createInfo passInfo;
-		vertexFields::createInfo fieldInfo;
-		materials::createInfo materialInfo;
-	};
-	void create_renderTarget(const createInfo& info);
+	void create_renderTarget(const passes::createInfo& passInfo, const vertexFields::createInfo& fieldsInfo, const materials::pipelineCreateInfo& pipeInfo);
+
 	const ctnr::vltView<renderTarget> read_renderTargets() const noexcept;
 
 	void validate_primaryTarget();
 
 private:
-	void create_primaryTarget();
+	VkResult create_primaryTarget();
 
 private:
 	friend struct rndr_method_Access;

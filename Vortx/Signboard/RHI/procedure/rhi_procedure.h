@@ -15,6 +15,8 @@
 #include "swapchainHandler.h"
 #include "swapchainPresenter.h"
 
+#include "descriptorLayoutCreate.h"
+
 #include "renderPassBuilder.h"
 #include "pipelineLayoutBuilder.h"
 #include "shaderWrapper.h"
@@ -38,8 +40,10 @@ namespace rhi {
 	class pcdSwapchainHandler;
 	class pcdSwapchainPresenter;
 
+	class pcdDescriptorLayoutCreate;
+
 	class pcdRenderPassBuilder;
-	class pcdPipelineLayoutBuilder;
+	class pcdPipelineLayoutCreate;
 	class pcdShaderWrapper;
 	class pcdPipelineBuilder;
 	class pcdFramebufferCreator;

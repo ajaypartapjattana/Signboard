@@ -45,7 +45,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
-    <EnableASAN>true</EnableASAN>
+    <EnableASAN>false</EnableASAN>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -112,15 +112,9 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_ITERATOR_DEBUG_LEVEL=2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir);C:\Ext_Libraries\json-develop;C:\Users\ajayp\source\repos\imgui;C:\Ext_Libraries\tinyobjloader;C:\Ext_Libraries\glm-master;C:\Ext_Libraries\glfw-3.4.bin.WIN64\include;C:\VulkanSDK\1.4.321.1\Include;C:\Ext_Libraries\stb_Image;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <Optimization>Disabled</Optimization>
-      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
-      <WholeProgramOptimization>false</WholeProgramOptimization>
-      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -169,6 +163,7 @@
     <ClCompile Include="Signboard\Assets\configLoader\XMLLoader\XMLConfigLoader.cpp" />
     <ClCompile Include="Signboard\Assets\io\ResourceLoaders\file_loader.cpp" />
     <ClCompile Include="Signboard\Assets\io\ResourceLoaders\TextureLoader.cpp" />
+    <ClCompile Include="Signboard\Assets\shaderReflect\shaderReflect.cpp" />
     <ClCompile Include="Signboard\Assets\Utility\convStr.cpp" />
     <ClCompile Include="Signboard\Core\Time\Time.cpp" />
     <ClCompile Include="Signboard\Input\AppCommandDispatch.cpp" />
@@ -219,6 +214,7 @@
     <ClCompile Include="Signboard\RHI\procedure\commandBufferRecorder.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\commandBufferAllocator.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\commandPoolCreator.cpp" />
+    <ClCompile Include="Signboard\RHI\procedure\descriptorLayoutCreate.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\watchdog.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\framebufferCreator.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\imageAllocator.cpp" />
@@ -269,6 +265,7 @@
     <ClInclude Include="Signboard\Assets\io\io.h" />
     <ClInclude Include="Signboard\Assets\io\ResourceLoaders\file_loader.h" />
     <ClInclude Include="Signboard\Assets\io\ResourceLoaders\loader.h" />
+    <ClInclude Include="Signboard\Assets\shaderReflect\shaderReflect.h" />
     <ClInclude Include="Signboard\Core\Containers\storage.h" />
     <ClInclude Include="Signboard\Core\Containers\storage\vault.h" />
     <ClInclude Include="Signboard\Core\Frame\Frame.h" />
@@ -276,6 +273,7 @@
     <ClInclude Include="Signboard\Core\Frame\Frame_routine.h" />
     <ClInclude Include="Signboard\Core\Interfaces\appInterfaceTypes.h" />
     <ClInclude Include="Signboard\Core\Interfaces\KeyMappingConfigType.h" />
+    <ClInclude Include="Signboard\Core\Interfaces\renderer\UBOs\cameraSet.h" />
     <ClInclude Include="Signboard\Core\Interfaces\renderer\rendererINF.h" />
     <ClInclude Include="Signboard\Core\Interfaces\renderer\upload\uploadINF.h" />
     <ClInclude Include="Signboard\Core\Interfaces\renderer\model\model.h" />
@@ -371,6 +369,7 @@
     <ClInclude Include="Signboard\RHI\procedure\commandBufferRecorder.h" />
     <ClInclude Include="Signboard\RHI\procedure\commandBufferAllocator.h" />
     <ClInclude Include="Signboard\RHI\procedure\commandPoolCreator.h" />
+    <ClInclude Include="Signboard\RHI\procedure\descriptorLayoutCreate.h" />
     <ClInclude Include="Signboard\RHI\procedure\watchdog.h" />
     <ClInclude Include="Signboard\RHI\procedure\framebufferCreator.h" />
     <ClInclude Include="Signboard\RHI\procedure\imageAllocator.h" />

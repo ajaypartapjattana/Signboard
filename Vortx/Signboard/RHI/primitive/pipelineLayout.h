@@ -8,7 +8,7 @@ namespace rhi::access {
 
 namespace rhi {
 
-	class pcdPipelineLayoutBuilder;
+	class pcdPipelineLayoutCreate;
 
 	class pmvPipelineLayout {
 	public:
@@ -23,7 +23,7 @@ namespace rhi {
 		~pmvPipelineLayout() noexcept;
 
 	private:
-		friend class pcdPipelineLayoutBuilder;
+		friend class pcdPipelineLayoutCreate;
 		friend struct rhi::access::pipelineLayout_pAccess;
 
 		VkPipelineLayout m_layout;

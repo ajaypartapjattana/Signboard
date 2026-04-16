@@ -12,12 +12,12 @@ namespace rhi {
 	class pmvDescriptorLayout;
 	class pmvPushConstantRange;
 
-	class pcdPipelineLayoutBuilder {
+	class pcdPipelineLayoutCreate {
 	public:
-		pcdPipelineLayoutBuilder(const rhi::creDevice& device);
+		pcdPipelineLayoutCreate(const rhi::creDevice& device);
 
-		pcdPipelineLayoutBuilder& add_setLayout(const rhi::pmvDescriptorLayout& descriptorLayout);
-		pcdPipelineLayoutBuilder& add_pushConstantRange(const rhi::pmvPushConstantRange& pushConstantRange);
+		pcdPipelineLayoutCreate& add_setLayout(const rhi::pmvDescriptorLayout& descriptorLayout);
+		pcdPipelineLayoutCreate& add_pushConstantRange(const rhi::pmvPushConstantRange& pushConstantRange);
 
 		VkResult build(rhi::pmvPipelineLayout& target_layout);
 

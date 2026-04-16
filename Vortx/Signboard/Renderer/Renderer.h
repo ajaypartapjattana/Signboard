@@ -10,7 +10,6 @@
 
 #include "Context/render_context.h"
 #include "RenderBackend/rndr_Backend.h"
-#include "Mesh/mesher.h"
 
 constexpr uint32_t IMAGE_COUNT = 2;
 

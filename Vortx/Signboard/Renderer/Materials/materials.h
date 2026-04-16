@@ -9,16 +9,19 @@ class materials {
 public:
 	materials(const rhi::creDevice& device, const rhi::pmvSwapchain& swapchain, ctnr::vltView<rhi::pmvRenderPass> passAccess, ctnr::vltView<rhi::pmvVertexLayout> fieldsAccess);
 
-	struct createInfo {
-		const char* vertShader_path;
-		const char* fragShader_path;
+	struct shaderBinary {
+		VkShaderStageFlagBits stage;
+		std::vector<uint32_t> data;
 	};
 
-	uint32_t createPipeline(uint32_t renderPassIndex, uint32_t vertexLayoutHandle, uint32_t subpass, const createInfo& createInfo);
-	ctnr::vltView<rhi::pmvPipeline> read_pipelines() const noexcept;
+	struct pipelineCreateInfo {
+		uint32_t vertexLayoutIndex;
+		std::vector<shaderBinary> shaders;
+	};
+	uint32_t createPipelineLayout(const std::vector<shaderBinary>& shaders);
+	uint32_t createPipeline(uint32_t renderPassIndex, uint32_t subpass, uint32_t pipelineLayoutIndex, const pipelineCreateInfo& createInfo);
 
-private:
-	VkResult createShader(rhi::pmvShader& tw_shader, const char* path);
+	ctnr::vltView<rhi::pmvPipeline> read_pipelines() const noexcept;
 
 private:
 	const rhi::creDevice& r_device;
@@ -27,9 +30,9 @@ private:
 	const ctnr::vltView<rhi::pmvRenderPass> a_renderPassView;
 	const ctnr::vltView<rhi::pmvVertexLayout> a_vertexLayoutView;
 
-	rhi::pmvPipelineLayout m_pipelineLayout;
+	ctnr::vault<rhi::pmvDescriptorLayout> m_descriptorLayouts;
 
+	ctnr::vault<rhi::pmvPipelineLayout> m_pipelineLayouts;
 	ctnr::vault<rhi::pmvPipeline> m_pipelines;
-	ctnr::vault_writeAccessor<rhi::pmvPipeline> m_writeAccess;
 
 };

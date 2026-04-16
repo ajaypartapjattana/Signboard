@@ -1,6 +1,7 @@
 #include "Signboard/Signboard.h"
 
 #include <iostream>
+#include <external/spirv_cross/spirv_cross.hpp>
 
 int main() {
     try {

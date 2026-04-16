@@ -5,14 +5,20 @@
 #include "Signboard/Core/Interfaces/renderer/model/model.h"
 
 enum class MESH_PRIMITIVE {
-	CUBE, DISK, ICOSPHERE, CYLINDER
+	CUBE, NGON, ICOSPHERE, CYLINDER
 };
 
 class Mesher {
 public:
 	Mesher() = default;
 
-	std::unique_ptr<Model> createPrimitive(const MESH_PRIMITIVE primitive, const float size);
+	struct PrimitiveInfo {
+		float size;
+		uint32_t res;
+		bool floatingMesh;
+	};
+
+	std::unique_ptr<Model> createPrimitive(const MESH_PRIMITIVE primitive, const PrimitiveInfo& info);
 
 private:
 

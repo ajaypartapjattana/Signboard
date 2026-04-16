@@ -1,7 +1,7 @@
 #include "materials.h"
 
-#include "Signboard/Assets/io/io.h"
-
+#include "Signboard/Assets/shaderReflect/shaderReflect.h"
+#include <map>
 
 materials::materials(const rhi::creDevice& device, const rhi::pmvSwapchain& swapchain, ctnr::vltView<rhi::pmvRenderPass> passAccess, ctnr::vltView<rhi::pmvVertexLayout> fieldsAccess)
 	: 
@@ -9,26 +9,99 @@ materials::materials(const rhi::creDevice& device, const rhi::pmvSwapchain& swap
 	r_swapchain(swapchain),
 
 	a_renderPassView(std::move(passAccess)),
-	a_vertexLayoutView(std::move(fieldsAccess)),
-
-	m_writeAccess(m_pipelines)
+	a_vertexLayoutView(std::move(fieldsAccess))
 {
-	rhi::pcdPipelineLayoutBuilder layout_builder{ r_device };
-	layout_builder.build(m_pipelineLayout);
+	
 }
 
-uint32_t materials::createPipeline(uint32_t renderPassIndex, uint32_t vertexLayoutHandle, uint32_t subpass, const createInfo& info) {
-	rhi::pmvShader l_vertShader;
-	createShader(l_vertShader, info.vertShader_path);
+uint32_t materials::createPipelineLayout(const std::vector<shaderBinary>& shaders) {
+	std::vector<DescriptorBinding> allBindings;
 
-	rhi::pmvShader l_fragShader;
-	createShader(l_fragShader, info.fragShader_path);
+	for (const shaderBinary& bin : shaders) {
+		ShaderReflect reflect{ bin.data };
 
-	rhi::pcdPipelineBuilder prcdr{ r_device, r_swapchain, m_pipelineLayout };
-	prcdr.set_vertexLayout(a_vertexLayoutView.get(vertexLayoutHandle));
+		std::vector<DescriptorBinding> bindings = reflect.reflectDescriptorBindings((VkShaderStageFlags)bin.stage);
 
-	prcdr.set_vertShader(l_vertShader);
-	prcdr.set_fragShader(l_fragShader);
+		for (DescriptorBinding& b : bindings) {
+			bool found = false;
+
+			for (DescriptorBinding& existing : allBindings) {
+				if (existing.set != b.set || existing.binding != b.binding) 
+					continue;
+				
+				existing.stage |= b.stage;
+				found = true;
+				break;
+			}
+
+			if (!found)
+				allBindings.push_back(b);
+		}
+	}
+
+	std::map<uint32_t, std::vector<DescriptorBinding>> sets;
+	for (DescriptorBinding& b : allBindings) {
+		sets[b.set].push_back(b);
+	}
+	
+	ctnr::vault_writeAccessor<rhi::pmvDescriptorLayout> _DLwrt{ m_descriptorLayouts };
+	std::vector<uint32_t> descHandles;
+	for (auto& [setIndex, bindings] : sets) {
+		rhi::pcdDescriptorLayoutCreate DLCreate{ r_device };
+
+		std::vector<rhi::pcdDescriptorLayoutCreate::binding> DLBindings;
+
+		uint32_t _bSz = static_cast<uint32_t>(bindings.size());
+		DLBindings.reserve(_bSz);
+		for (DescriptorBinding& b : bindings) {
+			DLBindings.push_back({ b.binding, b.type, b.count, b.stage });
+		}
+
+		DLCreate.push_bindings(DLBindings);
+
+		auto builder = [&](rhi::pmvDescriptorLayout* dl) {
+			DLCreate.create(*dl);
+		};
+
+		descHandles.push_back(_DLwrt.construct(builder));
+	}
+
+	rhi::pcdPipelineLayoutCreate PLCreate{ r_device };
+
+	for (uint32_t h : descHandles) {
+		const rhi::pmvDescriptorLayout& _dl = *_DLwrt.get(h);
+		PLCreate.add_setLayout(_dl);
+	}
+
+	auto builder = [&](rhi::pmvPipelineLayout* pl) {
+		PLCreate.build(*pl);
+	};
+
+	ctnr::vault_writeAccessor<rhi::pmvPipelineLayout> _wrt{ m_pipelineLayouts };
+	return _wrt.construct(builder);
+}
+
+uint32_t materials::createPipeline(uint32_t renderPassIndex, uint32_t subpass, uint32_t pipelineLayoutIndex, const pipelineCreateInfo& info) {
+	ctnr::vault_writeAccessor<rhi::pmvPipelineLayout> _PLView{ m_pipelineLayouts };
+	const rhi::pmvPipelineLayout& pipeLayout = *_PLView.get(pipelineLayoutIndex);
+	
+	rhi::pcdPipelineBuilder prcdr{ r_device, r_swapchain, pipeLayout };
+	prcdr.set_vertexLayout(a_vertexLayoutView.get(info.vertexLayoutIndex));
+
+	uint32_t _shaderSz = static_cast<uint32_t>(info.shaders.size());
+	std::vector<rhi::pmvShader> _pipeShaders(_shaderSz);
+
+	rhi::pcdShaderWrapper wrapper{ r_device };
+	
+	for (uint32_t i = 0; i < _shaderSz; ++i) {
+		const shaderBinary& bin = info.shaders[i];
+		rhi::pmvShader& tgt = _pipeShaders[i];
+
+		wrapper.setBinary(bin.data);
+		wrapper.wrapShaderCode(tgt);
+
+		prcdr.push_shader(bin.stage, tgt);
+	}
 
 	prcdr.set_targetPass(a_renderPassView.get(renderPassIndex));
 
@@ -36,23 +109,10 @@ uint32_t materials::createPipeline(uint32_t renderPassIndex, uint32_t vertexLayo
 		prcdr.build_graphicsPipeline(subpass, *p);
 	};
 	
-	return m_writeAccess.construct(builder);
+	ctnr::vault_writeAccessor<rhi::pmvPipeline> _wrt{ m_pipelines };
+	return _wrt.construct(builder);
 }
 
 ctnr::vltView<rhi::pmvPipeline> materials::read_pipelines() const noexcept {
 	return ctnr::vltView<rhi::pmvPipeline>{ m_pipelines };
-}
-
-VkResult materials::createShader(rhi::pmvShader& tw_shader, const char* path) {
-	char* spv_data = nullptr;
-	size_t spv_size= 0;
-
-	io::loader::file_loader loader{ &spv_data, &spv_size };
-	if (!loader.load_binary(path))
-		return VK_INCOMPLETE;
-
-	rhi::pcdShaderWrapper wrapper{ r_device };
-	wrapper.addBinary(spv_data, spv_size);
-
-	return wrapper.warpShaderCode(tw_shader);
 }

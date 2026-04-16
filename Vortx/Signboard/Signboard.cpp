@@ -18,7 +18,11 @@ Signboard::Signboard()
 
 void Signboard::setupDefaults() {
 	Mesher l_mesher;
-	auto _defModel = l_mesher.createPrimitive(MESH_PRIMITIVE::DISK, 0.25f);
+	Mesher::PrimitiveInfo _info{};
+	_info.size = 0.5f;
+	_info.res = 16;
+
+	auto _defModel = l_mesher.createPrimitive(MESH_PRIMITIVE::NGON, _info);
 	Model& r_defModel = *_defModel.get();
 
 	uint32_t allocatedMesh = m_resources.allocateMesh(r_defModel);
@@ -67,7 +71,11 @@ bool Signboard::routine_Config(Signboard& board, glm::vec2 data) {
 }
 
 bool Signboard::routine_upload(Signboard& board, glm::vec2 data) {
-	std::unique_ptr<Model> a_model = board.m_mesher.createPrimitive(MESH_PRIMITIVE::CUBE, 0.5);
+	Mesher::PrimitiveInfo _info{};
+	_info.size = 0.4f;
+	_info.res = 8;
+
+	std::unique_ptr<Model> a_model = board.m_mesher.createPrimitive(MESH_PRIMITIVE::CUBE, _info);
 	Model& _mdl = *a_model.get();
 
 	uint32_t mesh = board.m_resources.allocateMesh(_mdl);

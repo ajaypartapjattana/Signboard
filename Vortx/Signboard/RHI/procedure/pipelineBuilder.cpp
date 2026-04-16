@@ -38,16 +38,9 @@ namespace rhi {
 		return *this;
 	}
 
-	pcdPipelineBuilder& pcdPipelineBuilder::set_vertShader(const rhi::pmvShader& s) noexcept {
+	pcdPipelineBuilder& pcdPipelineBuilder::push_shader(VkShaderStageFlagBits stage, const rhi::pmvShader& s) noexcept {
 		m_modules.push_back(rhi::access::shader_pAccess::get(s));
-		m_moduleRef.push_back(VK_SHADER_STAGE_VERTEX_BIT);
-
-		return *this;
-	}
-
-	pcdPipelineBuilder& pcdPipelineBuilder::set_fragShader(const rhi::pmvShader& s) noexcept {
-		m_modules.push_back(rhi::access::shader_pAccess::get(s));
-		m_moduleRef.push_back(VK_SHADER_STAGE_FRAGMENT_BIT);
+		m_moduleRef.push_back(stage);
 
 		return *this;
 	}

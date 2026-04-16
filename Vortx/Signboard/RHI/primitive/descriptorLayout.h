@@ -8,7 +8,7 @@ namespace rhi::access {
 
 namespace rhi {
 
-	class pcdDescriptorLayoutCreator;
+	class pcdDescriptorLayoutCreate;
 
 	class pmvDescriptorLayout {
 	public:
@@ -23,12 +23,12 @@ namespace rhi {
 		~pmvDescriptorLayout() noexcept;
 
 	private:
-		friend class pcdDescriptorLayoutCreator;
+		friend class pcdDescriptorLayoutCreate;
 		friend struct rhi::access::descriptorLayout_pAccess;
 
 		VkDescriptorSetLayout m_setLayout;
 
-		VkDevice _dvc;
+		VkDevice r_device;
 
 	};
 

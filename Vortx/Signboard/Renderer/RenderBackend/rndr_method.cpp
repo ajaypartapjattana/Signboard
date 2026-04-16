@@ -3,6 +3,10 @@
 #include "Signboard/Renderer/Context/render_context_Access.h"
 #include "rndr_presentation_Access.h"
 
+#include "Signboard/Assets/io/io.h"
+
+#include <external/spirv_cross/spirv_cross.hpp>
+
 rndr_method::rndr_method(const RHIContext& context, const rndr_presentation& presentation) 
 	:
 	r_device(rndr_context_Access::get_device(context)),
@@ -13,10 +17,10 @@ rndr_method::rndr_method(const RHIContext& context, const rndr_presentation& pre
 
 	m_writeAccess(targets)
 {
-	create_primaryTarget();
+	VkResult result = create_primaryTarget();
 }
 
-void rndr_method::create_primaryTarget() {
+VkResult rndr_method::create_primaryTarget() {
 	passes::createInfo passInfo{};
 	passInfo.tu_swapchain = &r_swapchain;
 	
@@ -29,26 +33,35 @@ void rndr_method::create_primaryTarget() {
 		VK_FORMAT_R32G32B32A32_SFLOAT
 	};
 
-	materials::createInfo matInfo{};
-	matInfo.vertShader_path = "shaders/base.vert.spv";
-	matInfo.fragShader_path = "shaders/base.frag.spv";
+	materials::pipelineCreateInfo matInfo{};
+	matInfo.shaders.resize(2);
 
-	createInfo info = { passInfo, fieldInfo, matInfo };
+	io::loader::file_loader _loader;
+
+	matInfo.shaders[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+	matInfo.shaders[0].data = _loader.load_SPIRV("shaders/base.vert.spv");
+
+	matInfo.shaders[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	matInfo.shaders[1].data = _loader.load_SPIRV("shaders/base.frag.spv");
 	
-	create_renderTarget(info);
+	create_renderTarget(passInfo, fieldInfo, matInfo);
+
+	return VK_SUCCESS;
 }
 
-void rndr_method::create_renderTarget(const createInfo& info) {
+void rndr_method::create_renderTarget(const passes::createInfo& passInfo, const vertexFields::createInfo& fieldsInfo, const materials::pipelineCreateInfo& pipeInfo) {	
+	uint32_t _rpIndex = m_passes.createRenderPass(&passInfo);
+	uint32_t _vlIndex = m_fields.createVertexLayout(fieldsInfo);
+	uint32_t _plIndex = m_materials.createPipelineLayout(pipeInfo.shaders);
+	uint32_t _pIndex = m_materials.createPipeline(_rpIndex, 0, _plIndex, pipeInfo);
+
+
 	auto builder = [&](renderTarget* tgt) {
 		renderTarget& tw_target = *tgt;
 
-		tw_target.renderPassIndex = m_passes.createRenderPass(&info.passInfo);
-		m_passes.createFramebuffers(tw_target.renderPassIndex, tw_target.framebufferIndices, &info.passInfo);
-
-		uint32_t vertexLayoutIndex = m_fields.createVertexLayout(info.fieldInfo);
-
-		uint32_t pipelineIndex = m_materials.createPipeline(tw_target.renderPassIndex, vertexLayoutIndex, 0, info.materialInfo);
-		tw_target.pipelineIndices.push_back(pipelineIndex);
+		tw_target.renderPassIndex = _rpIndex;
+		m_passes.createFramebuffers(_rpIndex, tw_target.framebufferIndices, &passInfo);
+		tw_target.pipelineIndices.push_back(_pIndex);
 	};
 
 	m_primaryTarget_handle = m_writeAccess.construct(builder);

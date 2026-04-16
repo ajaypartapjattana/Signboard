@@ -8,27 +8,27 @@
 
 namespace rhi{
 
-	pcdPipelineLayoutBuilder::pcdPipelineLayoutBuilder(const rhi::creDevice& device)
+	pcdPipelineLayoutCreate::pcdPipelineLayoutCreate(const rhi::creDevice& device)
 		: _dvc(rhi::access::device_pAccess::get(device))
 	{
 
 	}
 
-	pcdPipelineLayoutBuilder& pcdPipelineLayoutBuilder::add_setLayout(const rhi::pmvDescriptorLayout& dl) {
+	pcdPipelineLayoutCreate& pcdPipelineLayoutCreate::add_setLayout(const rhi::pmvDescriptorLayout& dl) {
 		VkDescriptorSetLayout vk_setLayout = rhi::access::descriptorLayout_pAccess::get(dl);
 		m_setLayouts.push_back(vk_setLayout);
 
 		return *this;
 	}
 
-	pcdPipelineLayoutBuilder& pcdPipelineLayoutBuilder::add_pushConstantRange(const rhi::pmvPushConstantRange& range) {
+	pcdPipelineLayoutCreate& pcdPipelineLayoutCreate::add_pushConstantRange(const rhi::pmvPushConstantRange& range) {
 		VkPushConstantRange vk_pushConstantRange = rhi::access::pushConstantRange_pAccess::get(range);
 		m_pushConstantRanges.push_back(vk_pushConstantRange);
 
 		return *this;
 	}
 
-	VkResult pcdPipelineLayoutBuilder::build(rhi::pmvPipelineLayout& tw_pipelineLayout) {
+	VkResult pcdPipelineLayoutCreate::build(rhi::pmvPipelineLayout& tw_pipelineLayout) {
 
 		VkPipelineLayoutCreateInfo layoutInfo{};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

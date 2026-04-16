@@ -39,7 +39,7 @@ namespace rhi {
 	class pcdSwapchainHandler;
 	class pcdSwapchainPresenter;
 	class pcdRenderPassBuilder;
-	class pcdPipelineLayoutBuilder;
+	class pcdPipelineLayoutCreate;
 	class pcdShaderWrapper;
 	class pcdPipelineBuilder;
 	class pcdFramebufferCreator;
