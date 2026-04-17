@@ -44,12 +44,12 @@ uint32_t materials::createPipelineLayout(const std::vector<shaderBinary>& shader
 		sets[b.set].push_back(b);
 	}
 	
-	ctnr::vault_writeAccessor<rhi::pmvDescriptorLayout> _DLwrt{ m_descriptorLayouts };
+	ctnr::vault_writeAccessor<rhi::pmvDescriptorSetLayout> _DLwrt{ m_descriptorLayouts };
 	std::vector<uint32_t> descHandles;
 	for (auto& [setIndex, bindings] : sets) {
-		rhi::pcdDescriptorLayoutCreate DLCreate{ r_device };
+		rhi::pcdDescriptorSetLayoutCreate DLCreate{ r_device };
 
-		std::vector<rhi::pcdDescriptorLayoutCreate::binding> DLBindings;
+		std::vector<rhi::pcdDescriptorSetLayoutCreate::binding> DLBindings;
 
 		uint32_t _bSz = static_cast<uint32_t>(bindings.size());
 		DLBindings.reserve(_bSz);
@@ -59,8 +59,8 @@ uint32_t materials::createPipelineLayout(const std::vector<shaderBinary>& shader
 
 		DLCreate.push_bindings(DLBindings);
 
-		auto builder = [&](rhi::pmvDescriptorLayout* dl) {
-			DLCreate.create(*dl);
+		auto builder = [&](rhi::pmvDescriptorSetLayout* dl) {
+			DLCreate.publish(*dl);
 		};
 
 		descHandles.push_back(_DLwrt.construct(builder));
@@ -69,12 +69,12 @@ uint32_t materials::createPipelineLayout(const std::vector<shaderBinary>& shader
 	rhi::pcdPipelineLayoutCreate PLCreate{ r_device };
 
 	for (uint32_t h : descHandles) {
-		const rhi::pmvDescriptorLayout& _dl = *_DLwrt.get(h);
-		PLCreate.add_setLayout(_dl);
+		const rhi::pmvDescriptorSetLayout& _dl = *_DLwrt.get(h);
+		PLCreate.push_descriptorSetLayouts(_dl);
 	}
 
 	auto builder = [&](rhi::pmvPipelineLayout* pl) {
-		PLCreate.build(*pl);
+		PLCreate.publish(*pl);
 	};
 
 	ctnr::vault_writeAccessor<rhi::pmvPipelineLayout> _wrt{ m_pipelineLayouts };
@@ -91,16 +91,16 @@ uint32_t materials::createPipeline(uint32_t renderPassIndex, uint32_t subpass, u
 	uint32_t _shaderSz = static_cast<uint32_t>(info.shaders.size());
 	std::vector<rhi::pmvShader> _pipeShaders(_shaderSz);
 
-	rhi::pcdShaderWrapper wrapper{ r_device };
+	rhi::pcdShaderModuleCreate wrapper{ r_device };
 	
 	for (uint32_t i = 0; i < _shaderSz; ++i) {
 		const shaderBinary& bin = info.shaders[i];
-		rhi::pmvShader& tgt = _pipeShaders[i];
+		rhi::pmvShader& shader = _pipeShaders[i];
 
-		wrapper.setBinary(bin.data);
-		wrapper.wrapShaderCode(tgt);
+		wrapper.target_source(bin.data);
+		wrapper.publish(shader);
 
-		prcdr.push_shader(bin.stage, tgt);
+		prcdr.push_shader(bin.stage, shader);
 	}
 
 	prcdr.set_targetPass(a_renderPassView.get(renderPassIndex));

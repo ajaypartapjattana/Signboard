@@ -8,7 +8,7 @@ namespace rhi::access {
 
 namespace rhi {
 	
-	class pcdShaderWrapper;
+	class pcdShaderModuleCreate;
 
 	class pmvShader {
 	public:
@@ -23,7 +23,7 @@ namespace rhi {
 		~pmvShader() noexcept;
 
 	private:
-		friend class pcdShaderWrapper;
+		friend class pcdShaderModuleCreate;
 		friend struct rhi::access::shader_pAccess;
 
 		VkShaderModule m_shader;

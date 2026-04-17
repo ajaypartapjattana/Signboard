@@ -30,7 +30,7 @@ private:
 	const ctnr::vltView<rhi::pmvRenderPass> a_renderPassView;
 	const ctnr::vltView<rhi::pmvVertexLayout> a_vertexLayoutView;
 
-	ctnr::vault<rhi::pmvDescriptorLayout> m_descriptorLayouts;
+	ctnr::vault<rhi::pmvDescriptorSetLayout> m_descriptorLayouts;
 
 	ctnr::vault<rhi::pmvPipelineLayout> m_pipelineLayouts;
 	ctnr::vault<rhi::pmvPipeline> m_pipelines;

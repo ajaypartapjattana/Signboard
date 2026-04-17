@@ -6,37 +6,54 @@
 
 namespace rhi {
 
-	pcdShaderWrapper::pcdShaderWrapper(const rhi::creDevice& device) noexcept
+	pcdShaderModuleCreate::pcdShaderModuleCreate(const rhi::creDevice& device, VkShaderModuleCreateInfo* pCreateInfo) noexcept
 		: 
-		m_Device(rhi::access::device_pAccess::get(device)),
-		m_binary(nullptr)
+		r_device(rhi::access::device_pAccess::get(device)),
+		_info(fetch_basic(pCreateInfo))
 	{
 
 	}
 
-	pcdShaderWrapper& pcdShaderWrapper::setBinary(const std::vector<uint32_t>& bin) {
-		m_binary = &bin;
+	VkShaderModuleCreateInfo pcdShaderModuleCreate::fetch_basic(VkShaderModuleCreateInfo* pCreateInfo) const noexcept {
+		if (pCreateInfo)
+			return *pCreateInfo;
+
+		VkShaderModuleCreateInfo info{};
+		info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+
+		return info;
+	}
+
+	pcdShaderModuleCreate& pcdShaderModuleCreate::target_source(const std::vector<uint32_t>& bin) {
+		_pBin = &bin;
+
+		_info.pCode = _pBin->data();
+		_info.codeSize = _pBin->size() * sizeof(uint32_t);
 
 		return *this;
 	}
 
-	VkResult pcdShaderWrapper::wrapShaderCode(pmvShader& tgtShader) const {
-		if (!m_binary)
+	VkResult pcdShaderModuleCreate::publish(pmvShader& target) const noexcept {
+		if (!_pBin)
 			return VK_INCOMPLETE;
 
-		VkShaderModuleCreateInfo shaderInfo{};
-		shaderInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		shaderInfo.pCode = m_binary->data();
-		shaderInfo.codeSize = m_binary->size() * sizeof(uint32_t);
-
-		VkResult result = vkCreateShaderModule(m_Device, &shaderInfo, nullptr, &tgtShader.m_shader);
+		VkResult result = vkCreateShaderModule(r_device, &_info, nullptr, &target.m_shader);
 		if (result != VK_SUCCESS)
 			return result;
 
-		tgtShader._dvc = m_Device;
+		target._dvc = r_device;
 
 		return VK_SUCCESS;
 
-	}	
+	}
+
+	void pcdShaderModuleCreate::preset(VkShaderModuleCreateInfo* pCreateInfo) noexcept {
+		_info = fetch_basic(pCreateInfo);
+	}
+
+	void pcdShaderModuleCreate::reset() noexcept {
+		_pBin = nullptr;
+		_info = fetch_basic(nullptr);
+	}
 
 }

@@ -36,7 +36,7 @@ namespace rhi {
 	class pmvSemaphore;
 	class pmvFence;
 
-	class pmvDescriptorLayout;
+	class pmvDescriptorSetLayout;
 	class pmvPushConstantRange;
 	class pmvPipelineLayout;
 	class pmvShader;

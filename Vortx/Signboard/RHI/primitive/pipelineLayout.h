@@ -28,7 +28,7 @@ namespace rhi {
 
 		VkPipelineLayout m_layout;
 
-		VkDevice _dvc;
+		VkDevice r_device;
 
 	};
 

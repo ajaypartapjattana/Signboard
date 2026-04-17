@@ -4,9 +4,9 @@
 
 namespace rhi::access {
 
-	struct descriptorLayout_pAccess {
+	struct descriptorSetLayout_pAccess {
 
-		static VkDescriptorSetLayout get(const rhi::pmvDescriptorLayout& dl) noexcept {
+		static VkDescriptorSetLayout extract(const rhi::pmvDescriptorSetLayout& dl) noexcept {
 			return dl.m_setLayout;
 		}
 

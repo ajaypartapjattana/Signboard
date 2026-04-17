@@ -6,7 +6,7 @@
 
 namespace rhi {
 
-	pcdDescriptorLayoutCreate::pcdDescriptorLayoutCreate(const creDevice& device) noexcept 
+	pcdDescriptorSetLayoutCreate::pcdDescriptorSetLayoutCreate(const creDevice& device) noexcept 
 		:
 		r_device(rhi::access::device_pAccess::get(device)),
 		_info()
@@ -14,7 +14,7 @@ namespace rhi {
 		_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 	}
 
-	void pcdDescriptorLayoutCreate::push_bindings(const std::vector<binding>& _binds) {
+	void pcdDescriptorSetLayoutCreate::push_bindings(const std::vector<binding>& _binds) {
 		uint32_t _bCt = static_cast<uint32_t>(_binds.size());
 		bindings.reserve(_bCt);
 
@@ -29,7 +29,7 @@ namespace rhi {
 		}
 	}
 
-	VkResult pcdDescriptorLayoutCreate::create(rhi::pmvDescriptorLayout& dl) {
+	VkResult pcdDescriptorSetLayoutCreate::publish(rhi::pmvDescriptorSetLayout& dl) {
 		if (bindings.empty())
 			return VK_INCOMPLETE;
 

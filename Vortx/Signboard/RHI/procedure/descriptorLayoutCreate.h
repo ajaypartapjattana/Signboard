@@ -7,11 +7,11 @@ namespace rhi {
 
 	class creDevice;
 
-	class pmvDescriptorLayout;
+	class pmvDescriptorSetLayout;
 
-	class pcdDescriptorLayoutCreate {
+	class pcdDescriptorSetLayoutCreate {
 	public:
-		pcdDescriptorLayoutCreate(const creDevice& device) noexcept;
+		pcdDescriptorSetLayoutCreate(const creDevice& device) noexcept;
 
 		struct binding {
 			uint32_t index;
@@ -22,7 +22,7 @@ namespace rhi {
 
 		void push_bindings(const std::vector<binding>& bindings);
 
-		VkResult create(rhi::pmvDescriptorLayout& descriptorLayout);
+		VkResult publish(rhi::pmvDescriptorSetLayout& descriptorLayout);
 
 	private:
 		VkDevice r_device;

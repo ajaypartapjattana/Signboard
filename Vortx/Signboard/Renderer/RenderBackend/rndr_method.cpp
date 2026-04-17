@@ -55,7 +55,6 @@ void rndr_method::create_renderTarget(const passes::createInfo& passInfo, const 
 	uint32_t _plIndex = m_materials.createPipelineLayout(pipeInfo.shaders);
 	uint32_t _pIndex = m_materials.createPipeline(_rpIndex, 0, _plIndex, pipeInfo);
 
-
 	auto builder = [&](renderTarget* tgt) {
 		renderTarget& tw_target = *tgt;
 

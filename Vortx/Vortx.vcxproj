@@ -205,7 +205,6 @@
     <ClCompile Include="Signboard\RHI\primitive\image.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\pipeline.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\pipelineLayout.cpp" />
-    <ClCompile Include="Signboard\RHI\primitive\pushConstantRange.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\renderPass.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\sampler.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\shader.cpp" />
@@ -346,8 +345,6 @@
     <ClInclude Include="Signboard\RHI\primitive\pipelineLayout.h" />
     <ClInclude Include="Signboard\RHI\primitive\pipelineLayout_pAccess.h" />
     <ClInclude Include="Signboard\RHI\primitive\pipeline_pAccess.h" />
-    <ClInclude Include="Signboard\RHI\primitive\pushConstantRange.h" />
-    <ClInclude Include="Signboard\RHI\primitive\pushConstantRange_pAccess.h" />
     <ClInclude Include="Signboard\RHI\primitive\renderPass.h" />
     <ClInclude Include="Signboard\RHI\primitive\renderPass_pAccess.h" />
     <ClInclude Include="Signboard\RHI\primitive\rhi_primitive.h" />

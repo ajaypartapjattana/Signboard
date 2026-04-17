@@ -9,23 +9,31 @@ namespace rhi {
 
 	class pmvPipelineLayout;
 
-	class pmvDescriptorLayout;
+	class pmvDescriptorSetLayout;
 	class pmvPushConstantRange;
 
 	class pcdPipelineLayoutCreate {
 	public:
-		pcdPipelineLayoutCreate(const rhi::creDevice& device);
+		pcdPipelineLayoutCreate(const rhi::creDevice& device, VkPipelineLayoutCreateInfo* pCreateInfo = nullptr);
 
-		pcdPipelineLayoutCreate& add_setLayout(const rhi::pmvDescriptorLayout& descriptorLayout);
-		pcdPipelineLayoutCreate& add_pushConstantRange(const rhi::pmvPushConstantRange& pushConstantRange);
+		pcdPipelineLayoutCreate& push_descriptorSetLayouts(const rhi::pmvDescriptorSetLayout& descriptorLayout);
+		pcdPipelineLayoutCreate& push_descriptorSetLayouts(const std::vector<rhi::pmvDescriptorSetLayout>& descriptorLayouts);
+		pcdPipelineLayoutCreate& target_pushConstantRanges(const std::vector<VkPushConstantRange>& pushConstantRanges);
 
-		VkResult build(rhi::pmvPipelineLayout& target_layout);
+		VkResult publish(rhi::pmvPipelineLayout& pipelineLayout);
+
+		void preset(VkPipelineLayoutCreateInfo* pCreateInfo) noexcept;
+		void reset() noexcept;
 
 	private:
-		VkDevice _dvc;
+		VkPipelineLayoutCreateInfo fetch_basic(VkPipelineLayoutCreateInfo* pCreateInfo) const noexcept;
 
-		std::vector<VkDescriptorSetLayout> m_setLayouts;
-		std::vector<VkPushConstantRange> m_pushConstantRanges;
+	private:
+		VkDevice r_device;
+
+		std::vector<VkDescriptorSetLayout> m_descriptorSetLayouts;
+		
+		VkPipelineLayoutCreateInfo _info;
 
 	};
 

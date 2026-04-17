@@ -21,7 +21,7 @@ namespace rhi {
 	class pmvFramebuffer;
 	class pmvSemaphore;
 	class pmvFence;
-	class pmvDescriptorLayout;
+	class pmvDescriptorSetLayout;
 	class pmvPushConstantRange;
 	class pmvPipelineLayout;
 	class pmvShader;
@@ -40,7 +40,7 @@ namespace rhi {
 	class pcdSwapchainPresenter;
 	class pcdRenderPassBuilder;
 	class pcdPipelineLayoutCreate;
-	class pcdShaderWrapper;
+	class pcdShaderModuleCreate;
 	class pcdPipelineBuilder;
 	class pcdFramebufferCreator;
 

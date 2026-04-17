@@ -3,28 +3,28 @@
 #include <vulkan/vulkan.h>
 
 namespace rhi::access {
-	struct descriptorLayout_pAccess;
+	struct descriptorSetLayout_pAccess;
 }
 
 namespace rhi {
 
-	class pcdDescriptorLayoutCreate;
+	class pcdDescriptorSetLayoutCreate;
 
-	class pmvDescriptorLayout {
+	class pmvDescriptorSetLayout {
 	public:
-		pmvDescriptorLayout() noexcept;
+		pmvDescriptorSetLayout() noexcept;
 
-		pmvDescriptorLayout(const pmvDescriptorLayout&) = delete;
-		pmvDescriptorLayout& operator=(const pmvDescriptorLayout&) = delete;
+		pmvDescriptorSetLayout(const pmvDescriptorSetLayout&) = delete;
+		pmvDescriptorSetLayout& operator=(const pmvDescriptorSetLayout&) = delete;
 
-		pmvDescriptorLayout(pmvDescriptorLayout&&) noexcept;
-		pmvDescriptorLayout& operator=(pmvDescriptorLayout&&) noexcept;
+		pmvDescriptorSetLayout(pmvDescriptorSetLayout&&) noexcept;
+		pmvDescriptorSetLayout& operator=(pmvDescriptorSetLayout&&) noexcept;
 
-		~pmvDescriptorLayout() noexcept;
+		~pmvDescriptorSetLayout() noexcept;
 
 	private:
-		friend class pcdDescriptorLayoutCreate;
-		friend struct rhi::access::descriptorLayout_pAccess;
+		friend class pcdDescriptorSetLayoutCreate;
+		friend struct rhi::access::descriptorSetLayout_pAccess;
 
 		VkDescriptorSetLayout m_setLayout;
 
