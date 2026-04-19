@@ -6,45 +6,54 @@
 
 namespace rhi {
 
-	pcdDescriptorSetLayoutCreate::pcdDescriptorSetLayoutCreate(const creDevice& device) noexcept 
+	pcdDescriptorSetLayoutCreate::pcdDescriptorSetLayoutCreate(const creDevice& device, VkDescriptorSetLayoutCreateInfo* pCreateInfo) noexcept 
 		:
 		r_device(rhi::access::device_pAccess::get(device)),
-		_info()
+		_info(fetch_basic(pCreateInfo))
 	{
-		_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+
 	}
 
-	void pcdDescriptorSetLayoutCreate::push_bindings(const std::vector<binding>& _binds) {
-		uint32_t _bCt = static_cast<uint32_t>(_binds.size());
-		bindings.reserve(_bCt);
+	VkDescriptorSetLayoutCreateInfo pcdDescriptorSetLayoutCreate::fetch_basic(VkDescriptorSetLayoutCreateInfo* pCreateInfo) const noexcept {
+		if (pCreateInfo)
+			return *pCreateInfo;
 
-		for (const binding& b : _binds) {
-			VkDescriptorSetLayoutBinding binding{};
-			binding.binding = b.index;
-			binding.descriptorType = b.type;
-			binding.descriptorCount = b.count;
-			binding.stageFlags = b.stage;
+		VkDescriptorSetLayoutCreateInfo info{};
+		info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 
-			bindings.push_back(binding);
-		}
+		return info;
 	}
 
-	VkResult pcdDescriptorSetLayoutCreate::publish(rhi::pmvDescriptorSetLayout& dl) {
+
+	pcdDescriptorSetLayoutCreate& pcdDescriptorSetLayoutCreate::target_bindings(const std::vector<VkDescriptorSetLayoutBinding>& bindings) {
 		if (bindings.empty())
-			return VK_INCOMPLETE;
-
+			return *this;
+		
 		_info.pBindings = bindings.data();
 		_info.bindingCount = static_cast<uint32_t>(bindings.size());
 
-		VkDescriptorSetLayout _dsl;
-		VkResult result = vkCreateDescriptorSetLayout(r_device, &_info, nullptr, &_dsl);
+		return *this;
+	}
+
+	VkResult pcdDescriptorSetLayoutCreate::publish(rhi::pmvDescriptorSetLayout& target) const noexcept {
+		if (_info.bindingCount <= 0)
+			return VK_INCOMPLETE;
+
+		VkResult result = vkCreateDescriptorSetLayout(r_device, &_info, nullptr, &target.m_setLayout);
 		if (result != VK_SUCCESS)
 			return result;
 
-		dl.m_setLayout = _dsl;
-		dl.r_device = r_device;
+		target.r_device = r_device;
 
 		return VK_SUCCESS;
+	}
+
+	void pcdDescriptorSetLayoutCreate::preset(VkDescriptorSetLayoutCreateInfo* pCreateInfo) noexcept {
+		_info = fetch_basic(pCreateInfo);
+	}
+
+	void pcdDescriptorSetLayoutCreate::reset() noexcept {
+		_info = fetch_basic(nullptr);
 	}
 
 }

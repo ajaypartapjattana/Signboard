@@ -1,15 +1,18 @@
 #include "materials.h"
 
-#include "Signboard/Assets/shaderReflect/shaderReflect.h"
 #include <map>
+#include "Signboard/Assets/shaderReflect/shaderReflect.h"
 
-materials::materials(const rhi::creDevice& device, const rhi::pmvSwapchain& swapchain, ctnr::vltView<rhi::pmvRenderPass> passAccess, ctnr::vltView<rhi::pmvVertexLayout> fieldsAccess)
+#include "Signboard/Renderer/Pass/passes.h"
+#include "Signboard/Renderer/Vertex/vertexFields.h"
+
+materials::materials(const rhi::creDevice& device, const rhi::pmvSwapchain& swapchain, passes& passes, vertexFields& fields)
 	: 
 	r_device(device), 
 	r_swapchain(swapchain),
 
-	a_renderPassView(std::move(passAccess)),
-	a_vertexLayoutView(std::move(fieldsAccess))
+	a_renderPassView(passes.read_renderPasses()),
+	a_vertexLayoutView(fields.read_vertexLayouts())
 {
 	
 }
@@ -49,15 +52,21 @@ uint32_t materials::createPipelineLayout(const std::vector<shaderBinary>& shader
 	for (auto& [setIndex, bindings] : sets) {
 		rhi::pcdDescriptorSetLayoutCreate DLCreate{ r_device };
 
-		std::vector<rhi::pcdDescriptorSetLayoutCreate::binding> DLBindings;
+		std::vector<VkDescriptorSetLayoutBinding> DLBindings;
 
 		uint32_t _bSz = static_cast<uint32_t>(bindings.size());
 		DLBindings.reserve(_bSz);
 		for (DescriptorBinding& b : bindings) {
-			DLBindings.push_back({ b.binding, b.type, b.count, b.stage });
+			VkDescriptorSetLayoutBinding _bind{};
+			_bind.binding = b.binding;
+			_bind.descriptorType = b.type;
+			_bind.descriptorCount = b.count;
+			_bind.stageFlags = b.stage;
+
+			DLBindings.emplace_back(_bind);
 		}
 
-		DLCreate.push_bindings(DLBindings);
+		DLCreate.target_bindings(DLBindings);
 
 		auto builder = [&](rhi::pmvDescriptorSetLayout* dl) {
 			DLCreate.publish(*dl);

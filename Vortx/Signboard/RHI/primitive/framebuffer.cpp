@@ -5,8 +5,8 @@ namespace rhi {
 	pmvFramebuffer::pmvFramebuffer() noexcept
 		: 
 		m_framebuffer(VK_NULL_HANDLE),
-		m_extent(),
-		_dvc(VK_NULL_HANDLE)
+		extent(),
+		r_device(VK_NULL_HANDLE)
 	{
 
 	}
@@ -14,8 +14,8 @@ namespace rhi {
 	pmvFramebuffer::pmvFramebuffer(pmvFramebuffer&& other) noexcept
 		: 
 		m_framebuffer(other.m_framebuffer),
-		m_extent(other.m_extent),
-		_dvc(other._dvc)
+		extent(other.extent),
+		r_device(other.r_device)
 	{
 		other.m_framebuffer = VK_NULL_HANDLE;
 	}
@@ -25,11 +25,11 @@ namespace rhi {
 			return *this;
 
 		if (m_framebuffer)
-			vkDestroyFramebuffer(_dvc, m_framebuffer, nullptr);
+			vkDestroyFramebuffer(r_device, m_framebuffer, nullptr);
 
 		m_framebuffer = other.m_framebuffer;
-		m_extent = other.m_extent;
-		_dvc = other._dvc;
+		extent = other.extent;
+		r_device = other.r_device;
 
 		other.m_framebuffer = VK_NULL_HANDLE;
 
@@ -38,7 +38,7 @@ namespace rhi {
 
 	pmvFramebuffer::~pmvFramebuffer() noexcept {
 		if (m_framebuffer)
-			vkDestroyFramebuffer(_dvc, m_framebuffer, nullptr);
+			vkDestroyFramebuffer(r_device, m_framebuffer, nullptr);
 	}
 
 }

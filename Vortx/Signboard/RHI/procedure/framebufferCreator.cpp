@@ -9,61 +9,83 @@
 
 namespace rhi {
 
-	pcdFramebufferCreator::pcdFramebufferCreator(const rhi::creDevice& device) noexcept
+	pcdFramebufferCreate::pcdFramebufferCreate(const rhi::creDevice& device, const rhi::pmvRenderPass& renderPass, VkFramebufferCreateInfo* pCreateInfo) noexcept
 		: 
 		r_device(rhi::access::device_pAccess::get(device)),
-		r_toBindPass(VK_NULL_HANDLE),
-		m_bufferExtent()
+		r_renderPass(rhi::access::renderPass_pAccess::extract(renderPass)),
+		renderPass_attachmentFormats(rhi::access::renderPass_pAccess::get_orderedAttachmentFormats(renderPass)),
+		_info(fetch_basic(pCreateInfo))
 	{
 
 	}
 
-	pcdFramebufferCreator& pcdFramebufferCreator::bind_renderpass(const rhi::pmvRenderPass& pass) noexcept {
-		r_toBindPass = rhi::access::renderPass_pAccess::get(pass);
-		return *this;
+	VkFramebufferCreateInfo pcdFramebufferCreate::fetch_basic(VkFramebufferCreateInfo* pCreateInfo) const noexcept {
+		if (pCreateInfo)
+			return *pCreateInfo;
+
+		VkFramebufferCreateInfo info{};
+		info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		info.renderPass = r_renderPass;
+		info.layers = 1;
+
+		return info;
 	}
 
-	pcdFramebufferCreator& pcdFramebufferCreator::add_attachament(const rhi::pmvImage& image) {
-		VkImageView a_view = rhi::access::image_pAccess::get_view(image);
-		m_attachments.push_back(a_view);
-		return *this;
+	VkResult pcdFramebufferCreate::push_attachments(ctnr::span<const rhi::pmvImage> images) {
+		if (images.size() != renderPass_attachmentFormats.size())
+			return VK_INCOMPLETE;
+
+		uint32_t _ISz = static_cast<uint32_t>(images.size());
+
+		VkExtent3D extent_t = rhi::access::image_pAccess::get_extent(images[0]);
+		for (uint32_t i = 0; i < _ISz; ++i) {
+			VkFormat attachmentFormat = rhi::access::image_pAccess::get_format(images[i]);
+			if (attachmentFormat != renderPass_attachmentFormats[i]) {
+				return VK_INCOMPLETE;
+			}
+			VkExtent3D attachmentExtent = rhi::access::image_pAccess::get_extent(images[i]);
+			if (attachmentExtent.width != extent_t.width || attachmentExtent.height != extent_t.height)
+				return VK_INCOMPLETE;
+		}
+
+		m_attachmentImageViews.clear();
+		m_attachmentImageViews.reserve(_ISz);
+		for (const rhi::pmvImage& image : images) {
+			m_attachmentImageViews.push_back(rhi::access::image_pAccess::get_view(image));
+		}
+
+		_info.width = extent_t.width;
+		_info.height = extent_t.height;
+		_info.attachmentCount = static_cast<uint32_t>(m_attachmentImageViews.size());
+		_info.pAttachments = m_attachmentImageViews.data();
+
+		return VK_SUCCESS;
 	}
 
-	pcdFramebufferCreator& pcdFramebufferCreator::set_extent(const VkExtent3D extent) noexcept {
-		m_bufferExtent = extent;
-		return *this;
-	}
+	VkResult pcdFramebufferCreate::publish(rhi::pmvFramebuffer& target) {
+		if (m_attachmentImageViews.empty())
+			return VK_INCOMPLETE;
 
-	pcdFramebufferCreator& pcdFramebufferCreator::set_swapchainExtent(const rhi::pmvSwapchain& swapchain) noexcept {
-		VkExtent2D a_swapchainExtent = rhi::access::swapchain_pAccess::get_extent(swapchain);
-		m_bufferExtent.width = a_swapchainExtent.width;
-		m_bufferExtent.height = a_swapchainExtent.height;
-		m_bufferExtent.depth = 1;
-		return *this;
-	}
-
-	VkResult pcdFramebufferCreator::create_offScreenTarget_framebuffer(rhi::pmvFramebuffer& target_framebuffer) {
-		VkFramebufferCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		createInfo.renderPass = r_toBindPass;
-		createInfo.attachmentCount = static_cast<uint32_t>(m_attachments.size());
-		createInfo.pAttachments = m_attachments.data();
-		createInfo.width = m_bufferExtent.width;
-		createInfo.height = m_bufferExtent.height;
-		createInfo.layers = m_bufferExtent.depth;
-
-		VkResult result = vkCreateFramebuffer(r_device, &createInfo, nullptr, &target_framebuffer.m_framebuffer);
+		VkResult result = vkCreateFramebuffer(r_device, &_info, nullptr, &target.m_framebuffer);
 		if (result != VK_SUCCESS)
 			return result;
 
-		target_framebuffer.m_extent = { m_bufferExtent.width, m_bufferExtent.height };
-		target_framebuffer._dvc = r_device;
+		target.extent = { _info.width, _info.height };
+		target.r_device = r_device;
 
-		m_attachments.clear();
 		return result;
 	}
 
-	VkResult pcdFramebufferCreator::create_swapchainTarget_framebuffer(const rhi::pmvSwapchain& swapchain, ctnr::vault_writeAccessor<rhi::pmvFramebuffer>& writer, std::vector<uint32_t>& fb_handles) const {	
+	void pcdFramebufferCreate::preset(VkFramebufferCreateInfo* pCreateInfo) noexcept {
+		_info = fetch_basic(pCreateInfo);
+	}
+
+	void pcdFramebufferCreate::reset() noexcept {
+		m_attachmentImageViews = {};
+		_info = fetch_basic(nullptr);
+	}
+
+	/*VkResult pcdFramebufferCreate::create_swapchainTarget_framebuffer(const rhi::pmvSwapchain& swapchain, ctnr::vault_writeAccessor<rhi::pmvFramebuffer>& writer, std::vector<uint32_t>& fb_handles) const {	
 		const std::vector<VkImageView>& a_swapchainViews = rhi::access::swapchain_pAccess::get_views(swapchain);
 		const uint32_t swapchainView_count = static_cast<uint32_t>(a_swapchainViews.size());
 
@@ -104,8 +126,8 @@ namespace rhi {
 			vkDestroyFramebuffer(r_device, a_framebuffer.m_framebuffer, nullptr);
 
 			a_framebuffer.m_framebuffer = l_framebuffers[i];
-			a_framebuffer.m_extent = a_swapchainExtent;
-			a_framebuffer._dvc = r_device;
+			a_framebuffer.extent = a_swapchainExtent;
+			a_framebuffer.r_device = r_device;
 		}
 
 		for (uint32_t i = newCount; i < oldCount; ++i) {
@@ -120,15 +142,15 @@ namespace rhi {
 				rhi::pmvFramebuffer& a_framebuffer = *fb;
 
 				a_framebuffer.m_framebuffer = vk_framebuffer;
-				a_framebuffer.m_extent = a_swapchainExtent;
-				a_framebuffer._dvc = device;
+				a_framebuffer.extent = a_swapchainExtent;
+				a_framebuffer.r_device = device;
 			};
 
 			fb_handles.push_back(writer.construct(builder));
 		}
 
 		return VK_SUCCESS;
-	}
+	}*/
 
 
 }

@@ -8,7 +8,7 @@ namespace rhi::access {
 
 namespace rhi {
 
-	class pcdFramebufferCreator;
+	class pcdFramebufferCreate;
 
 	class pmvFramebuffer {
 	public:
@@ -23,13 +23,13 @@ namespace rhi {
 		~pmvFramebuffer() noexcept;
 
 	private:
-		friend class pcdFramebufferCreator;
+		friend class pcdFramebufferCreate;
 		friend struct rhi::access::framebuffer_pAccess;
 
-		VkFramebuffer m_framebuffer = VK_NULL_HANDLE;
-		VkExtent2D m_extent;
+		VkFramebuffer m_framebuffer;
+		VkExtent2D extent;
 
-		VkDevice _dvc = VK_NULL_HANDLE;
+		VkDevice r_device;
 
 	};
 

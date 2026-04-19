@@ -8,7 +8,7 @@ namespace rhi::access {
 
 namespace rhi {
 
-	class pcdRenderPassBuilder;
+	class pcdRenderPassCreate;
 
 	class pmvRenderPass {
 	public:
@@ -23,11 +23,13 @@ namespace rhi {
 		~pmvRenderPass() noexcept;
 
 	private:
-		friend class pcdRenderPassBuilder;
+		friend class pcdRenderPassCreate;
 		friend struct rhi::access::renderPass_pAccess;
 
 		VkRenderPass m_renderPass;
-		VkDevice _dvc;
+		std::vector<VkFormat> ordered_attachmentFormats;
+
+		VkDevice r_device;
 
 	};
 

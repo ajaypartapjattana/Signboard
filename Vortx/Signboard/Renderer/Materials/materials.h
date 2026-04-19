@@ -4,10 +4,11 @@
 #include "Signboard/Core/Containers/storage.h"
 
 class passes;
+class vertexFields;
 
 class materials {
 public:
-	materials(const rhi::creDevice& device, const rhi::pmvSwapchain& swapchain, ctnr::vltView<rhi::pmvRenderPass> passAccess, ctnr::vltView<rhi::pmvVertexLayout> fieldsAccess);
+	materials(const rhi::creDevice& device, const rhi::pmvSwapchain& swapchain, passes& passes, vertexFields& fieldsAccess);
 
 	struct shaderBinary {
 		VkShaderStageFlagBits stage;

@@ -16,7 +16,6 @@
 
 #include "vertexLayout.h"
 #include "descriptorLayout.h"
-#include "pushConstantRange.h"
 #include "pipelineLayout.h"
 #include "shader.h"
 #include "pipeline.h"
@@ -37,7 +36,6 @@ namespace rhi {
 	class pmvFence;
 
 	class pmvDescriptorSetLayout;
-	class pmvPushConstantRange;
 	class pmvPipelineLayout;
 	class pmvShader;
 	class pmvPipeline;

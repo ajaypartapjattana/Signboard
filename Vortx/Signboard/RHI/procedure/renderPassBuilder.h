@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
-#include <vector>
+#include "Signboard/Core/Containers/storage.h"
 
 namespace rhi {
 
@@ -10,29 +10,36 @@ namespace rhi {
 	class pmvRenderPass;
 	class pmvImage;
 
-	class pcdRenderPassBuilder {
+	class pcdRenderPassCreate {
 	public:
-		pcdRenderPassBuilder(const rhi::creDevice& device);
+		pcdRenderPassCreate(const rhi::creDevice& device, VkRenderPassCreateInfo* pCreateInfo = nullptr) noexcept;
 
-		pcdRenderPassBuilder(const pcdRenderPassBuilder&) = delete;
-		pcdRenderPassBuilder& operator=(const pcdRenderPassBuilder&) = delete;
+		pcdRenderPassCreate(const pcdRenderPassCreate&) = delete;
+		pcdRenderPassCreate& operator=(const pcdRenderPassCreate&) = delete;
 
-		struct attachment_desc {
-			VkFormat format = VK_FORMAT_UNDEFINED;
-			VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			VkImageLayout finalLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			VkImageLayout usageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		};
+		void target_attachments(ctnr::span<const VkAttachmentDescription> attachments);
 
-		pcdRenderPassBuilder& add_colorAttachment(const rhi::pmvImage* image, const attachment_desc& desc);
+		_NODISCARD uint32_t issue_subpass(VkPipelineBindPoint pipelineBindPoint);
 
-		VkResult build_graphicsPass(rhi::pmvRenderPass& targetPass);
+		void refer_colorAttachments(uint32_t subpass, ctnr::span<const VkAttachmentReference> references);
+		void refer_depthStencilAttachment(uint32_t subpass, VkAttachmentReference& reference);
+
+		void target_dependancies(ctnr::span<const VkSubpassDependency> dependancies);
+
+		VkResult publish(rhi::pmvRenderPass& renderPass);
+
+		void preset(VkRenderPassCreateInfo* pCreateInfo) noexcept;
+		void reset() noexcept;
 
 	private:
-		VkDevice _dvc;
+		VkRenderPassCreateInfo fetch_basic(VkRenderPassCreateInfo* pCreateInfo) const noexcept;
 
-		std::vector<VkAttachmentDescription> m_attachments;
-		std::vector<VkAttachmentReference> m_attachmentRef;
+	private:
+		VkDevice r_device;
+
+		std::vector<VkSubpassDescription> m_subpasses;
+
+		VkRenderPassCreateInfo _info;
 
 	};
 

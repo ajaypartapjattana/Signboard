@@ -42,10 +42,10 @@ namespace rhi {
 
 	class pcdDescriptorSetLayoutCreate;
 
-	class pcdRenderPassBuilder;
+	class pcdRenderPassCreate;
 	class pcdPipelineLayoutCreate;
 	class pcdShaderModuleCreate;
 	class pcdPipelineBuilder;
-	class pcdFramebufferCreator;
+	class pcdFramebufferCreate;
 
 }

@@ -35,8 +35,8 @@ namespace rhi {
 
 		VkRenderPassBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		beginInfo.renderPass = rhi::access::renderPass_pAccess::get(renderPass);
-		beginInfo.framebuffer = rhi::access::framebuffer_pAccess::get(framebuffer);
+		beginInfo.renderPass = rhi::access::renderPass_pAccess::extract(renderPass);
+		beginInfo.framebuffer = rhi::access::framebuffer_pAccess::extract(framebuffer);
 
 		beginInfo.renderArea.offset = { 0, 0 };
 		beginInfo.renderArea.extent = a_targetExtent;

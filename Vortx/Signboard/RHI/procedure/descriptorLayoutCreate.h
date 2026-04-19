@@ -11,7 +11,7 @@ namespace rhi {
 
 	class pcdDescriptorSetLayoutCreate {
 	public:
-		pcdDescriptorSetLayoutCreate(const creDevice& device) noexcept;
+		pcdDescriptorSetLayoutCreate(const creDevice& device, VkDescriptorSetLayoutCreateInfo* pCreateInfo = nullptr) noexcept;
 
 		struct binding {
 			uint32_t index;
@@ -20,14 +20,19 @@ namespace rhi {
 			VkPipelineStageFlags stage;
 		};
 
-		void push_bindings(const std::vector<binding>& bindings);
+		pcdDescriptorSetLayoutCreate& target_bindings(const std::vector<VkDescriptorSetLayoutBinding>& bindings);
 
-		VkResult publish(rhi::pmvDescriptorSetLayout& descriptorLayout);
+		VkResult publish(rhi::pmvDescriptorSetLayout& descriptorLayout) const noexcept;
+
+		void preset(VkDescriptorSetLayoutCreateInfo* pCreateInfo) noexcept;
+		void reset() noexcept;
+
+	private:
+		VkDescriptorSetLayoutCreateInfo fetch_basic(VkDescriptorSetLayoutCreateInfo* pCreateInfo) const noexcept;
 
 	private:
 		VkDevice r_device;
 
-		std::vector<VkDescriptorSetLayoutBinding> bindings;
 		VkDescriptorSetLayoutCreateInfo _info;
 
 	};

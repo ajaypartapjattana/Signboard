@@ -13,7 +13,7 @@ rndr_method::rndr_method(const RHIContext& context, const rndr_presentation& pre
 	r_swapchain(rndr_presentation_Access::get_swapchain(presentation)),
 
 	m_passes(r_device),
-	m_materials(r_device, r_swapchain, m_passes.read_renderPasses(), m_fields.read_vertexLayouts()),
+	m_materials(r_device, r_swapchain, m_passes, m_fields),
 
 	m_writeAccess(targets)
 {
@@ -53,6 +53,7 @@ void rndr_method::create_renderTarget(const passes::createInfo& passInfo, const 
 	uint32_t _rpIndex = m_passes.createRenderPass(&passInfo);
 	uint32_t _vlIndex = m_fields.createVertexLayout(fieldsInfo);
 	uint32_t _plIndex = m_materials.createPipelineLayout(pipeInfo.shaders);
+
 	uint32_t _pIndex = m_materials.createPipeline(_rpIndex, 0, _plIndex, pipeInfo);
 
 	auto builder = [&](renderTarget* tgt) {

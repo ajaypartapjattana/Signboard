@@ -29,9 +29,6 @@ private:
 	const rhi::creDevice& r_device;
 
 	ctnr::vault<rhi::pmvRenderPass> m_renderPasses;
-	ctnr::vault_writeAccessor<rhi::pmvRenderPass> rp_writeAccess;
-
 	ctnr::vault<rhi::pmvFramebuffer> m_framebuffers;
-	ctnr::vault_writeAccessor<rhi::pmvFramebuffer> fb_writeAccess;
 
 };

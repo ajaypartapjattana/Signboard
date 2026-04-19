@@ -139,7 +139,7 @@ namespace rhi {
 		pipeInfo.pColorBlendState = &colorblendStateInfo;
 
 		pipeInfo.layout = m_pipelineLayout;
-		pipeInfo.renderPass = rhi::access::renderPass_pAccess::get(*r_renderPass);
+		pipeInfo.renderPass = rhi::access::renderPass_pAccess::extract(*r_renderPass);
 		pipeInfo.subpass = target_subpass;
 
 		pipeInfo.basePipelineHandle = VK_NULL_HANDLE;

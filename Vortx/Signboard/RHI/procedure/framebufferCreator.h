@@ -9,33 +9,34 @@ namespace rhi {
 
 	class pmvFramebuffer;
 
-	class pmvSwapchain;
 	class pmvRenderPass;
 	class pmvImage;
 
-	class pcdFramebufferCreator {
+	class pcdFramebufferCreate {
 	public:
-		pcdFramebufferCreator(const rhi::creDevice& device) noexcept;
+		pcdFramebufferCreate(const rhi::creDevice& device, const rhi::pmvRenderPass& renderPass, VkFramebufferCreateInfo* pCreateInfo = nullptr) noexcept;
 
-		pcdFramebufferCreator(const pcdFramebufferCreator&) = delete;
-		pcdFramebufferCreator& operator=(const pcdFramebufferCreator&) = delete;
+		pcdFramebufferCreate(const pcdFramebufferCreate&) = delete;
+		pcdFramebufferCreate& operator=(const pcdFramebufferCreate&) = delete;
 
-		pcdFramebufferCreator& bind_renderpass(const rhi::pmvRenderPass& pass) noexcept;
-		
-		pcdFramebufferCreator& add_attachament(const rhi::pmvImage& image);
-		pcdFramebufferCreator& set_extent(const VkExtent3D extent) noexcept;
-		pcdFramebufferCreator& set_swapchainExtent(const rhi::pmvSwapchain& swapchain) noexcept;
+		VkResult push_attachments(ctnr::span<const rhi::pmvImage> images);
 
-		VkResult create_offScreenTarget_framebuffer(rhi::pmvFramebuffer& target_framebuffer);
-		VkResult create_swapchainTarget_framebuffer(const rhi::pmvSwapchain& swapchain, ctnr::vault_writeAccessor<rhi::pmvFramebuffer>& writer, std::vector<uint32_t>& fb_handles) const;
+		VkResult publish(rhi::pmvFramebuffer& target_framebuffer);
+
+		void preset(VkFramebufferCreateInfo* pCreateInfo) noexcept;
+		void reset() noexcept;
 
 	private:
+		VkFramebufferCreateInfo fetch_basic(VkFramebufferCreateInfo* pCreateInfo) const noexcept;
+		
+	private:
 		VkDevice r_device;
+		VkRenderPass r_renderPass;
+		ctnr::span<const VkFormat> renderPass_attachmentFormats;
 
-		VkRenderPass r_toBindPass;
-		VkExtent3D m_bufferExtent;
-
-		std::vector<VkImageView> m_attachments;
+		std::vector<VkImageView> m_attachmentImageViews;
+		
+		VkFramebufferCreateInfo _info;
 
 	};
 

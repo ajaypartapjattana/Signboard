@@ -6,7 +6,7 @@ namespace rhi::access {
 
 	struct image_pAccess {
 		
-		static VkImage get(const rhi::pmvImage& i) noexcept {
+		static VkImage extract(const rhi::pmvImage& i) noexcept {
 			return i.m_image;
 		}
 

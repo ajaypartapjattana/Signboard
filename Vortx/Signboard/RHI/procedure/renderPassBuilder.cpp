@@ -2,81 +2,97 @@
 
 #include "Signboard/RHI/primitive/renderPass.h"
 #include "Signboard/RHI/core/device_pAccess.h"
-#include "Signboard/RHI/primitive/image_pAccess.h"
-
-#include <stdexcept>
 
 namespace rhi {
 
-	pcdRenderPassBuilder::pcdRenderPassBuilder(const rhi::creDevice& device)
+	pcdRenderPassCreate::pcdRenderPassCreate(const rhi::creDevice& device, VkRenderPassCreateInfo* pCreateInfo) noexcept
 		: 
-		_dvc(rhi::access::device_pAccess::get(device))
+		r_device(rhi::access::device_pAccess::get(device)),
+		_info(fetch_basic(pCreateInfo))
 	{
 
 	}
 
-	pcdRenderPassBuilder& pcdRenderPassBuilder::add_colorAttachment(const rhi::pmvImage* image, const attachment_desc& desc) {
-		VkAttachmentDescription attachment{};
-		attachment.format = image ? rhi::access::image_pAccess::get_format(*image) : desc.format;
-		attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		attachment.initialLayout = desc.initialLayout;
-		attachment.finalLayout = desc.finalLayout;
+	VkRenderPassCreateInfo pcdRenderPassCreate::fetch_basic(VkRenderPassCreateInfo* pCreateInfo) const noexcept {
+		if (pCreateInfo)
+			return *pCreateInfo;
 
-		m_attachments.push_back(attachment);
+		VkRenderPassCreateInfo info{};
+		info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 
-		VkAttachmentReference reference{};
-		reference.attachment = static_cast<uint32_t>(m_attachments.size() - 1);
-		reference.layout = desc.usageLayout;
-
-		m_attachmentRef.push_back(reference);
-
-		return *this;
+		return info;
 	}
 
-	VkResult pcdRenderPassBuilder::build_graphicsPass(rhi::pmvRenderPass& tw_renderPass) {
-		if (m_attachments.empty())
+	void pcdRenderPassCreate::target_attachments(ctnr::span<const VkAttachmentDescription> attachments) {
+		if (attachments.empty())
+			return;
+		
+		_info.pAttachments = attachments.data();
+		_info.attachmentCount = static_cast<uint32_t>(attachments.size());
+		
+		return;
+	}
+
+	uint32_t pcdRenderPassCreate::issue_subpass(VkPipelineBindPoint bindPoint) {
+		VkSubpassDescription subpass{};
+		subpass.pipelineBindPoint = bindPoint;
+
+		m_subpasses.emplace_back(subpass);
+
+		return m_subpasses.size() - 1;
+	}
+
+	void pcdRenderPassCreate::refer_colorAttachments(uint32_t subpassIndex, ctnr::span<const VkAttachmentReference> references) {
+		if (references.empty() || subpassIndex > m_subpasses.size() - 1)
+			return;
+
+		m_subpasses[subpassIndex].pColorAttachments = references.data();
+		m_subpasses[subpassIndex].colorAttachmentCount = static_cast<uint32_t>(references.size());
+	}
+
+	void pcdRenderPassCreate::refer_depthStencilAttachment(uint32_t subpassIndex, VkAttachmentReference& reference) {
+		if (subpassIndex > m_subpasses.size() - 1)
+			return;
+
+		m_subpasses[subpassIndex].pDepthStencilAttachment = &reference;
+	}
+
+	void pcdRenderPassCreate::target_dependancies(ctnr::span<const VkSubpassDependency> dependancies) {
+		if (dependancies.empty())
+			return;
+
+		_info.pDependencies = dependancies.data();
+		_info.dependencyCount = static_cast<uint32_t>(dependancies.size());
+	}
+
+	VkResult pcdRenderPassCreate::publish(rhi::pmvRenderPass& target) {
+		if (m_subpasses.empty())
 			return VK_INCOMPLETE;
 
-		std::vector<VkAttachmentReference> colorAttachmentRef;
+		_info.subpassCount = static_cast<uint32_t>(m_subpasses.size());
+		_info.pSubpasses = m_subpasses.data();
 
-		for (const VkAttachmentReference& r : m_attachmentRef) {
-			if (r.layout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
-				colorAttachmentRef.push_back(r);
+		VkResult result = vkCreateRenderPass(r_device, &_info, nullptr, &target.m_renderPass);
+		if (result != VK_SUCCESS)
+			return result;
+
+		target.ordered_attachmentFormats.reserve(_info.attachmentCount);
+		for (uint32_t i = 0; i < _info.attachmentCount; ++i) {
+			target.ordered_attachmentFormats.push_back(_info.pAttachments[i].format);
 		}
 
-		VkSubpassDescription subpassDesc{};
-		subpassDesc.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpassDesc.colorAttachmentCount = static_cast<uint32_t>(colorAttachmentRef.size());
-		subpassDesc.pColorAttachments = colorAttachmentRef.data();
+		target.r_device = r_device;
 
-		VkSubpassDependency dependancy{};
-		dependancy.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependancy.dstSubpass = 0;
-		dependancy.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependancy.srcAccessMask = 0;
-		dependancy.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependancy.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		return VK_SUCCESS;
+	}
 
-		VkRenderPassCreateInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.attachmentCount = static_cast<uint32_t>(m_attachments.size());
-		renderPassInfo.pAttachments = m_attachments.empty() ? nullptr : m_attachments.data();
-		renderPassInfo.subpassCount = 1;
-		renderPassInfo.pSubpasses = &subpassDesc;
-		renderPassInfo.dependencyCount = 1;
-		renderPassInfo.pDependencies = &dependancy;
+	void pcdRenderPassCreate::preset(VkRenderPassCreateInfo* pCreateInfo) noexcept {
+		_info = fetch_basic(pCreateInfo);
+	}
 
-		VkRenderPass vk_renderPass = VK_NULL_HANDLE;
-		VkResult result = vkCreateRenderPass(_dvc, &renderPassInfo, nullptr, &vk_renderPass);
-
-		tw_renderPass.m_renderPass = vk_renderPass;
-		tw_renderPass._dvc = _dvc;
-
-		return result;
+	void pcdRenderPassCreate::reset() noexcept {
+		m_subpasses.clear();
+		_info = fetch_basic(nullptr);
 	}
 
 }

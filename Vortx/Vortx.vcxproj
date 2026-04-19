@@ -258,6 +258,7 @@
     <ClInclude Include="Signboard\Assets\io\ResourceLoaders\file_loader.h" />
     <ClInclude Include="Signboard\Assets\io\ResourceLoaders\loader.h" />
     <ClInclude Include="Signboard\Assets\shaderReflect\shaderReflect.h" />
+    <ClInclude Include="Signboard\Core\Containers\span\span.h" />
     <ClInclude Include="Signboard\Core\Containers\storage.h" />
     <ClInclude Include="Signboard\Core\Containers\storage\vault.h" />
     <ClInclude Include="Signboard\Core\Frame\Frame.h" />
