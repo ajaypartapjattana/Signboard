@@ -29,7 +29,7 @@ private:
 	bool prepareFrame();
 
 private:
-	resourceView r_resourceRead;
+	ResourceView r_resources;
 
 	rndr_presentation m_presentation;
 	rndr_method m_methods;

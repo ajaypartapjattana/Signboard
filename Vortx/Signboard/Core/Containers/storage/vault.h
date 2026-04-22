@@ -32,6 +32,11 @@ namespace ctnr {
 		vault(vault&&) noexcept = default;
 		vault& operator=(vault&&) noexcept = default;
 
+		constexpr _NODISCARD T* operator[](size_t index) const noexcept {
+			if (!_is_alive(index)) return nullptr;
+			return slots[index].object_ptr();
+		}
+
 		~vault() noexcept(std::is_nothrow_destructible_v<T>) {
 			uint32_t size = static_cast<uint32_t>(aliveBits.size());
 			uint32_t _slotC = static_cast<uint32_t>(slots.size());
@@ -451,7 +456,13 @@ namespace ctnr {
 
 		}
 
-		vault_writeAccessor(const vault_writeAccessor&) = delete;
+		vault_writeAccessor(const vault_writeAccessor& other) noexcept
+			:
+			m_vault(other.m_vault)
+		{
+
+		}
+
 		vault_writeAccessor& operator=(const vault_writeAccessor&) = delete;
 
 		vault_writeAccessor(vault_writeAccessor&& other) noexcept
@@ -461,7 +472,7 @@ namespace ctnr {
 
 		}
 
-		vault_writeAccessor& operator=(vault_writeAccessor&& other) = delete;
+		vault_writeAccessor& operator=(vault_writeAccessor&&) = delete;
 
 		void reserve_slots(uint32_t count) {
 			if (count == 0) return;

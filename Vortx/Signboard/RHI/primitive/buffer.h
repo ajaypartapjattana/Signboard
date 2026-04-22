@@ -8,7 +8,7 @@ namespace rhi::access {
 
 namespace rhi {
 
-	class pcdBufferAllocator;
+	class pcdBufferAllocate;
 
 	class pmvBuffer {
 	public:
@@ -26,7 +26,7 @@ namespace rhi {
 		void flush(VkDeviceSize begin, VkDeviceSize end) const;
 
 	private:
-		friend class pcdBufferAllocator;
+		friend class pcdBufferAllocate;
 		friend struct rhi::access::buffer_pAccess;
 
 		VkBuffer m_buffer;
@@ -35,7 +35,7 @@ namespace rhi {
 		bool _is_host_coherent;
 		void* _mpd;
 
-		VmaAllocator _allctr;
+		VmaAllocator r_allocator;
 
 	};
 

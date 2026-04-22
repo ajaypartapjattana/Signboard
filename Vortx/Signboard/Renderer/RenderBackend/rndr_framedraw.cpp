@@ -2,12 +2,12 @@
 
 #include "rndr_method_Access.h"
 
-rndr_framedraw::rndr_framedraw(const rndr_method& methods, const resourceView& resourceRead)
+rndr_framedraw::rndr_framedraw(const rndr_method& methods, const ResourceView& resources)
 	:
 	m_targets(methods.read_renderTargets()),
 	m_methodRead(rndr_method_Access::read_methods(methods)),
 
-	m_resourceRead(resourceRead)
+	r_resources(resources)
 {
 
 }
@@ -27,9 +27,9 @@ void rndr_framedraw::drawFrame(const uint32_t target_index, const rhi::pmvComman
 				true
 			);
 
-			for (const Mesh& m : m_resourceRead.meshView) {
-				prcdr.bind_vertexBuffer(*m_resourceRead.buffersView.get(m.vertexBuffer));
-				prcdr.bind_indexBuffer(*m_resourceRead.buffersView.get(m.indexBuffer));
+			for (const Mesh& m : r_resources.meshes) {
+				prcdr.bind_vertexBuffer(*r_resources.buffers.get(m.vertexBuffer));
+				prcdr.bind_indexBuffer(*r_resources.buffers.get(m.indexBuffer));
 
 				prcdr.draw(m.indexCount);
 			}

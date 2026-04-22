@@ -5,7 +5,7 @@
 
 class rsrc_buffers {
 public:
-	rsrc_buffers(const rhi::creAllocator& allocator);
+	rsrc_buffers(const rhi::creAllocator& allocator, ctnr::vault_writeAccessor<rhi::pmvBuffer>&& buffer_write);
 
 	struct createInfo {
 		VkBufferUsageFlags usage;
@@ -14,14 +14,13 @@ public:
 		size_t size;
 	};
 
-	uint32_t createBuffer(const createInfo& info) noexcept;
+	uint32_t createVertexBuffer(size_t size) noexcept;
+	uint32_t createIndexBuffer(size_t size) noexcept;
 
-	ctnr::vltView<rhi::pmvBuffer> read_buffers() const noexcept;
+	_NODISCARD uint32_t createBuffer(const createInfo& info) noexcept;
 
 private:
-	rhi::pcdBufferAllocator _allctr;
-
-	ctnr::vault<rhi::pmvBuffer> m_buffers;
+	rhi::pcdBufferAllocate r_bufferAllocator;
 	ctnr::vault_writeAccessor<rhi::pmvBuffer> m_writer;
 
 };

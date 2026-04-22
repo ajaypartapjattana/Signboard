@@ -1,27 +1,55 @@
 #include "rsrc_buffers.h"
 
-rsrc_buffers::rsrc_buffers(const rhi::creAllocator& allocator)
+rsrc_buffers::rsrc_buffers(const rhi::creAllocator& allocator, ctnr::vault_writeAccessor<rhi::pmvBuffer>&& buffer_write)
 	:
-	_allctr(allocator),
-
-	m_writer(m_buffers)
+	r_bufferAllocator(allocator),
+	m_writer(buffer_write)
 {
 
 }
 
-_NODISCARD uint32_t rsrc_buffers::createBuffer(const createInfo& info) noexcept {
-	_allctr.addUsage(info.usage);
-	_allctr.setMemoryPreference(info.memory);
-	_allctr.setBufferSize(info.size);
-	_allctr.setMemoryFlags(info.allocationFlags);
+uint32_t rsrc_buffers::createVertexBuffer(size_t _BSz) noexcept {
+	r_bufferAllocator.add_usage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	r_bufferAllocator.prefer_memory(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+	r_bufferAllocator.size(_BSz);
+	r_bufferAllocator.set_allocationFlags(0);
 
 	auto builder = [&](rhi::pmvBuffer* b) {
-		_allctr.allocateBuffer(*b);
+		r_bufferAllocator.publish(*b);
+	};
+
+	uint32_t bufferIndex = m_writer.construct(builder);
+
+	r_bufferAllocator.reset();
+	return bufferIndex;
+}
+
+
+uint32_t rsrc_buffers::createIndexBuffer(size_t _BSz) noexcept {
+	r_bufferAllocator.add_usage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	r_bufferAllocator.prefer_memory(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+	r_bufferAllocator.size(_BSz);
+	r_bufferAllocator.set_allocationFlags(0);
+
+	auto builder = [&](rhi::pmvBuffer* b) {
+		r_bufferAllocator.publish(*b);
+		};
+
+	uint32_t bufferIndex = m_writer.construct(builder);
+
+	r_bufferAllocator.reset();
+	return bufferIndex;
+}
+
+uint32_t rsrc_buffers::createBuffer(const createInfo& info) noexcept {
+	r_bufferAllocator.add_usage(info.usage);
+	r_bufferAllocator.prefer_memory(info.memory);
+	r_bufferAllocator.size(info.size);
+	r_bufferAllocator.set_allocationFlags(info.allocationFlags);
+
+	auto builder = [&](rhi::pmvBuffer* b) {
+		r_bufferAllocator.publish(*b);
 	};
 
 	return m_writer.construct(builder);
-}
-
-ctnr::vltView<rhi::pmvBuffer> rsrc_buffers::read_buffers() const noexcept {
-	return ctnr::vltView<rhi::pmvBuffer>{ m_buffers };
 }

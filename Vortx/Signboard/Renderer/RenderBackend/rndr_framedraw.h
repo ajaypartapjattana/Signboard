@@ -8,7 +8,7 @@
 
 class rndr_framedraw {
 public:
-	rndr_framedraw(const rndr_method& methods, const resourceView& resourceRead);
+	rndr_framedraw(const rndr_method& methods, const ResourceView& resources);
 
 	rndr_framedraw(const rndr_framedraw&) = delete;
 	rndr_framedraw& operator=(const rndr_framedraw&) = delete;
@@ -19,6 +19,6 @@ private:
 	const ctnr::vltView<renderTarget> m_targets;
 	methodView m_methodRead;
 
-	const resourceView& m_resourceRead;
+	const ResourceView& r_resources;
 
 };

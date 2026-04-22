@@ -2,22 +2,20 @@
 
 #include "Signboard/Renderer/Context/render_context_Access.h"
 
-rndr_transfer::rndr_transfer(const RHIContext& context, resourceView& resourceRead) noexcept
+rndr_transfer::rndr_transfer(const RHIContext& context, const ResourceView& resources) noexcept
 	:
-	currentOffset(0),
-
-	m_resourceRead(std::move(resourceRead))
+	r_resources(resources)
 {
 	regions.reserve(10);
 
-	rhi::pcdBufferAllocator prcdr{ rndr_context_Access::get_allocator(context) };
+	rhi::pcdBufferAllocate prcdr{ rndr_context_Access::get_allocator(context) };
 
-	prcdr.addUsage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-	prcdr.setMemoryPreference(VMA_MEMORY_USAGE_AUTO);
-	prcdr.setMemoryFlags(VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT);
-	prcdr.setBufferSize(STAGING_SIZE);
+	prcdr.add_usage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+	prcdr.prefer_memory(VMA_MEMORY_USAGE_AUTO);
+	prcdr.set_allocationFlags(VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT);
+	prcdr.size(STAGING_SIZE);
 
-	prcdr.allocateBuffer(m_staging);
+	prcdr.publish(m_staging);
 	m_mappedStaging = m_staging.native_mapped();
 }
 
@@ -73,7 +71,7 @@ VkResult rndr_transfer::recordUploads(const rhi::pmvCommandBuffer& CMDGraphics) 
 	}
 
 	for (auto& [buffers, copies] : batches) {
-		prcdr.uploadBuffer(m_staging, *m_resourceRead.buffersView.get(buffers), copies);
+		prcdr.uploadBuffer(m_staging, *r_resources.buffers.get(buffers), copies);
 	}
 
 	prcdr.end_recording();

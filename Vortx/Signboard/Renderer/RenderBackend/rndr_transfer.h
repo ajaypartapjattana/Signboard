@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Signboard/RHI/rhi.h"
+#include "Signboard/core/Containers/storage.h"
 #include "Signboard/Resources/resources.h"
 
 #include "Signboard/Core/Interfaces/renderer/upload/uploadINF.h"
@@ -11,7 +12,7 @@ class RHIContext;
 
 class rndr_transfer {
 public:
-	rndr_transfer(const RHIContext& context, resourceView& resourceRead) noexcept;
+	rndr_transfer(const RHIContext& context, const ResourceView& resources) noexcept;
 
 	VkResult stageUpload(const UploadSpan& src, const UploadTarget& dst);
 	VkResult recordUploads(const rhi::pmvCommandBuffer& CMDGraphics) const;
@@ -25,7 +26,7 @@ private:
 	rhi::pmvBuffer m_staging;
 	void* m_mappedStaging;
 
-	size_t currentOffset;
+	size_t currentOffset = 0;
 	size_t flushStart = SIZE_MAX;
 	size_t flushEnd = 0;
 
@@ -35,6 +36,6 @@ private:
 	};
 	std::vector<CopyRegion> regions;
 
-	const resourceView& m_resourceRead;
+	const ResourceView& r_resources;
 
 };

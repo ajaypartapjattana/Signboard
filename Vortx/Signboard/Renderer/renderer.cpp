@@ -2,13 +2,13 @@
 
 Renderer::Renderer(const RHIContext& context, const Resources& resources, const Scene& scene)
 	: 
-	r_resourceRead(resources.read_resources()),
+	r_resources(resources.read_resources()),
 
 	m_presentation(context, IMAGE_COUNT),
 	m_methods(context, m_presentation),
 	m_interface(context, m_presentation),
-	m_transfer(context, r_resourceRead),
-	m_framedraw(m_methods, r_resourceRead)
+	m_transfer(context, r_resources),
+	m_framedraw(m_methods, r_resources)
 {
 
 }
@@ -66,7 +66,7 @@ void Renderer::configurePresentation(uint32_t* imageCount) {
 }
 
 void Renderer::queueUpload(const Model& model, uint32_t allocatedMesh) {
-	const Mesh& _mesh = *r_resourceRead.meshView.get(allocatedMesh);
+	const Mesh& _mesh = *r_resources.meshes.get(allocatedMesh);
 
 	m_transfer.stageUpload(UploadSpan(model.vertices), { _mesh.vertexBuffer, 0 });
 	m_transfer.stageUpload(UploadSpan(model.indices), { _mesh.indexBuffer, 0 });

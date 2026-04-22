@@ -8,26 +8,32 @@ namespace rhi {
 
 	class pmvBuffer;
 
-	class pcdBufferAllocator {
+	class pcdBufferAllocate {
 	public:
-		pcdBufferAllocator(const rhi::creAllocator& allocator) noexcept;
+		pcdBufferAllocate(const rhi::creAllocator& allocator, VkBufferCreateInfo* pCreateInfo = nullptr) noexcept;
 
-		pcdBufferAllocator(const pcdBufferAllocator&) = delete;
-		pcdBufferAllocator& operator=(const pcdBufferAllocator&) = delete;
+		pcdBufferAllocate(const pcdBufferAllocate&) = delete;
+		pcdBufferAllocate& operator=(const pcdBufferAllocate&) = delete;
 
-		pcdBufferAllocator& addUsage(VkBufferUsageFlags usage) noexcept;
-		pcdBufferAllocator& setMemoryPreference(VmaMemoryUsage memory) noexcept;
-		pcdBufferAllocator& setMemoryFlags(VmaAllocationCreateFlags allocationFlags) noexcept;
-		pcdBufferAllocator& setBufferSize(VkDeviceSize size) noexcept;
+		pcdBufferAllocate& add_usage(VkBufferUsageFlags usage) noexcept;
+		pcdBufferAllocate& prefer_memory(VmaMemoryUsage memory) noexcept;
+		pcdBufferAllocate& set_allocationFlags(VmaAllocationCreateFlags allocationFlags) noexcept;
+		pcdBufferAllocate& size(VkDeviceSize size) noexcept;
 
-		VkResult allocateBuffer(rhi::pmvBuffer& targetBuffer) const noexcept;
+		VkResult publish(rhi::pmvBuffer& buffer) const noexcept;
+
+		void preset(VkBufferCreateInfo* pCreateInfo, VmaAllocationCreateInfo* pAllocInfo) noexcept;
+		void reset() noexcept;
 
 	private:
-		VmaAllocator _allctr;
-		const VkPhysicalDeviceMemoryProperties& _memProps;
+		VkBufferCreateInfo fetch_basic(VkBufferCreateInfo* pCreateInfo) const noexcept;
 
-		VkBufferCreateInfo m_bufferInfo;
-		VmaAllocationCreateInfo m_allocationInfo;
+	private:
+		VmaAllocator r_allocator;
+		const VkPhysicalDeviceMemoryProperties& memProps;
+
+		VkBufferCreateInfo _bufferInfo;
+		VmaAllocationCreateInfo _allocInfo;
 
 	};
 

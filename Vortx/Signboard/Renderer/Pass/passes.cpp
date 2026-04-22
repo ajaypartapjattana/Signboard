@@ -7,15 +7,17 @@ passes::passes(const rhi::creDevice& device)
 
 }
 
+void passes::createSwapchainFramebuffer(const rhi::pmvSwapchain& swapchain) {
+
+}
+
 uint32_t passes::createRenderPass(const createInfo* info) {
 	rhi::pcdRenderPassCreate prcdr{ r_device };
 
 	std::vector<VkAttachmentDescription> attachments(1);
 
-	desc.format = a_info.tu_swapchain ? a_info.tu_swapchain->native_format() : a_info.format;
-
 	attachments[0].flags = 0;
-	attachments[0].format = ;
+	attachments[0].format = info->tu_swapchain->native_format();
 	attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
 	attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -58,13 +60,12 @@ const ctnr::vltView<rhi::pmvRenderPass> passes::read_renderPasses() const noexce
 	return ctnr::vltView<rhi::pmvRenderPass>{ m_renderPasses };
 }
 
-void passes::createFramebuffers(const uint32_t renderPassIndex, std::vector<uint32_t>& fb_handles, const createInfo* info) {
+uint32_t passes::createFramebuffers(const uint32_t renderPassIndex, const createInfo* info) {
 	const createInfo& a_info = *info;
 
-	rhi::pcdFramebufferCreate prcdr{ r_device };
+	rhi::pcdFramebufferCreate prcdr{ r_device, *m_renderPasses[renderPassIndex] };
 
-	ctnr::vault_writeAccessor<rhi::pmvRenderPass> _rpRead{ m_renderPasses };
-	prcdr.target_renderPass(*_rpRead.get(renderPassIndex));
+	prcdr.push_attachments();
 
 	if (a_info.tu_swapchain) {
 		prcdr.create_swapchainTarget_framebuffer(*a_info.tu_swapchain, fb_writeAccess, fb_handles);

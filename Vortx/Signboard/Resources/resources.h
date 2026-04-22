@@ -6,11 +6,11 @@
 
 class RHIContext;
 
-struct resourceView {
-	ctnr::vltView<rhi::pmvBuffer> buffersView;
-	ctnr::vltView<rhi::pmvImage> imagesView;
+struct ResourceView {
+	ctnr::vltView<rhi::pmvBuffer> buffers;
+	ctnr::vltView<rhi::pmvImage> images;
 
-	ctnr::vltView<Mesh> meshView;
+	ctnr::vltView<Mesh> meshes;
 };
 
 class Resources {
@@ -19,11 +19,14 @@ public:
 
 	uint32_t allocateMesh(const Model& model);
 
-	resourceView read_resources() const noexcept;
+	ResourceView read_resources() const noexcept;
 
 private:
-	rsrc_buffers m_buffers;
-	rsrc_images m_images;
+	rsrc_buffers bufferControl;
+	rsrc_images imageControl;
+
+	ctnr::vault<rhi::pmvBuffer> m_buffers;
+	ctnr::vault<rhi::pmvImage> m_images;
 
 	ctnr::vault<Mesh> m_meshes;
 

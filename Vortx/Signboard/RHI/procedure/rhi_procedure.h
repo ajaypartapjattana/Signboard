@@ -33,7 +33,7 @@ namespace rhi {
 	class pcdWatchdog;
 
 	class pcdImageAllocator;
-	class pcdBufferAllocator;
+	class pcdBufferAllocate;
 	class pcdSamplerCreator;
 
 	class pcdSwapchainBuilder;

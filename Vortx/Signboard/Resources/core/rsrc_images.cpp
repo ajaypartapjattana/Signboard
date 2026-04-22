@@ -1,11 +1,10 @@
 #include "rsrc_images.h"
 
-rsrc_images::rsrc_images(const rhi::creDevice& device, const rhi::creAllocator& allocator)
+rsrc_images::rsrc_images(const rhi::creDevice& device, const rhi::creAllocator& allocator, ctnr::vault_writeAccessor<rhi::pmvImage> imageWrite)
 	:
 	r_device(device),
 	r_allocator(allocator),
-
-	m_writer(m_textureImages)
+	m_writer(imageWrite)
 {
 
 }
@@ -26,6 +25,3 @@ uint32_t rsrc_images::createImage(const createInfo& info) {
 
 }
 
-ctnr::vltView<rhi::pmvImage> rsrc_images::read_Images() const noexcept {
-	return ctnr::vltView<rhi::pmvImage>{ m_textureImages };
-}

@@ -294,7 +294,6 @@
     <ClInclude Include="Signboard\Core\Interfaces\renderer\mesh\mesh.h" />
     <ClInclude Include="Signboard\Renderer\Mesh\mesher.h" />
     <ClInclude Include="Signboard\Renderer\Pass\passes.h" />
-    <ClInclude Include="Signboard\Renderer\Pass\passes_Access.h" />
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_Backend.h" />
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_framedraw.h" />
     <ClInclude Include="Signboard\Renderer\RenderBackend\rndr_interface.h" />
