@@ -11,7 +11,7 @@ namespace rhi {
 
 	pcdCommandBufferAllocator::pcdCommandBufferAllocator(const rhi::creDevice& device) noexcept
 		: 
-		_dvc(rhi::access::device_pAccess::get(device))
+		_dvc(rhi::access::device_pAccess::extract(device))
 	{
 	
 	}

@@ -116,7 +116,7 @@ namespace rhi {
 			if (idx.transfer == UINT32_MAX) idx.transfer = idx.compute;
 
 			if (ci.present_surface) {
-				VkSurfaceKHR a_surface = rhi::access::surface_pAccess::get(*ci.present_surface);
+				VkSurfaceKHR a_surface = rhi::access::surface_pAccess::extract(*ci.present_surface);
 				for (uint32_t i = 0; i < qCount; ++i) {
 					VkBool32 supported = false;
 					vkGetPhysicalDeviceSurfaceSupportKHR(phys, i, a_surface, &supported);

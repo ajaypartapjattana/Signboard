@@ -9,8 +9,8 @@ namespace rhi {
 
 	pcdSwapchainHandler::pcdSwapchainHandler(const rhi::creDevice& device, const rhi::pmvSwapchain& swapchain) noexcept
 		:
-		r_device(rhi::access::device_pAccess::get(device)),
-		r_swapchain(rhi::access::swapchain_pAccess::get(swapchain))
+		r_device(rhi::access::device_pAccess::extract(device)),
+		r_swapchain(rhi::access::swapchain_pAccess::extract(swapchain))
 	{
 
 	}

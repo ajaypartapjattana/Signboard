@@ -483,7 +483,7 @@ namespace ctnr {
 			m_vault._ensure_cap(_start + count - 1);
 		}
 
-		template<typename F>
+		template <typename F>
 		_NODISCARD uint32_t construct(F&& builder) noexcept(std::is_nothrow_constructible_v<T> && noexcept(builder(std::declval<T*>()))) {
 			uint32_t idx = m_vault._alloc();
 
@@ -497,10 +497,48 @@ namespace ctnr {
 			}
 			catch (...) {
 				obj->~T();
+				m_vault._set_dead(idx);
 				throw;
 			}
 
 			return idx;
+		}
+
+		template <typename F>
+		std::vector<uint32_t> construct_many(uint32_t count, F&& builder) {
+			std::vector<uint32_t> indices;
+			indices.reserve(count);
+
+			uint32_t constructedCount = 0;
+
+			try {
+				for (uint32_t i = 0; i < count; ++i) {
+					uint32_t idx = m_vault._alloc();
+					indices.push_back(idx);
+
+					T* obj = m_vault.slots[idx].object_ptr();
+					
+					new (obj) T();
+					++constructedCount;
+
+					builder(i, obj);
+					
+					m_vault._set_alive(idx);
+				}
+			}
+			catch (...) {
+				for (uint32_t i = 0; i < constructedCount; ++i) {
+					uint32_t idx = indices[i];
+
+					T* obj = m_vault.slots[idx].object_ptr();
+					obj->~T();
+					
+					m_vault._set_dead(idx);
+				}
+				throw;
+			}
+
+			return indices;
 		}
 
 		template <typename... Args>

@@ -10,7 +10,7 @@ rsrc_images::rsrc_images(const rhi::creDevice& device, const rhi::creAllocator& 
 }
 
 uint32_t rsrc_images::createImage(const createInfo& info) {
-	rhi::pcdImageAllocator prcdr{ r_device, r_allocator };
+	rhi::pcdImageAllocate prcdr{ r_device, r_allocator };
 	
 	prcdr.set_format(info.format);
 	prcdr.set_extent(info.extent);

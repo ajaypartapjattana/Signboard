@@ -9,7 +9,7 @@ namespace rhi {
 	pcdSwapchainPresenter::pcdSwapchainPresenter(const rhi::creDevice& device, const rhi::pmvSwapchain& swapchain) noexcept
 		:
 		r_presentQueue(rhi::access::device_pAccess::get_queues(device).present),
-		r_swapchain(rhi::access::swapchain_pAccess::get(swapchain)),
+		r_swapchain(rhi::access::swapchain_pAccess::extract(swapchain)),
 
 		info()
 	{

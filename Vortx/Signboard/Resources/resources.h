@@ -13,15 +13,20 @@ struct ResourceView {
 	ctnr::vltView<Mesh> meshes;
 };
 
+struct Resources_pAccess;
+
 class Resources {
 public:
 	Resources(const RHIContext& context) noexcept;
 
 	uint32_t allocateMesh(const Model& model);
+	uint32_t allocateImage();
 
 	ResourceView read_resources() const noexcept;
 
 private:
+	friend struct Resources_pAccess;
+
 	rsrc_buffers bufferControl;
 	rsrc_images imageControl;
 

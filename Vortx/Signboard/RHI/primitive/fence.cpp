@@ -7,7 +7,7 @@ namespace rhi {
 	pmvFence::pmvFence(const rhi::creDevice& device) noexcept
 		:
 		m_fence(VK_NULL_HANDLE),
-		_dvc(rhi::access::device_pAccess::get(device))
+		_dvc(rhi::access::device_pAccess::extract(device))
 	{
 		create(false);
 	}
@@ -15,7 +15,7 @@ namespace rhi {
 	pmvFence::pmvFence(const rhi::creDevice& device, const bool signaled) noexcept
 		:
 		m_fence(VK_NULL_HANDLE),
-		_dvc(rhi::access::device_pAccess::get(device))
+		_dvc(rhi::access::device_pAccess::extract(device))
 	{
 		create(true);
 	}

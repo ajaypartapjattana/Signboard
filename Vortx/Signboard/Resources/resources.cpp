@@ -34,6 +34,10 @@ uint32_t Resources::allocateMesh(const Model& model) {
 	return l_writer.construct(builder);
 }
 
+uint32_t Resources::allocateImage() {
+
+}
+
 ResourceView Resources::read_resources() const noexcept {
 	return {
 		ctnr::vltView<rhi::pmvBuffer>{ m_buffers },

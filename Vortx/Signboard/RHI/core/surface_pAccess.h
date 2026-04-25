@@ -6,7 +6,7 @@ namespace rhi::access {
 
 	struct surface_pAccess {
 
-		static VkSurfaceKHR get(const rhi::creSurface& s) noexcept {
+		static VkSurfaceKHR extract(const rhi::creSurface& s) noexcept {
 			return s.m_surface;
 		}
 

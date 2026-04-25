@@ -12,6 +12,7 @@
 #include "samplerCreator.h"
 
 #include "swapchainBuilder.h"
+#include "swapchainImageCreate.h"
 #include "swapchainHandler.h"
 #include "swapchainPresenter.h"
 
@@ -32,11 +33,12 @@ namespace rhi {
 	class pcdQueueSubmission;
 	class pcdWatchdog;
 
-	class pcdImageAllocator;
+	class pcdImageAllocate;
 	class pcdBufferAllocate;
 	class pcdSamplerCreator;
 
-	class pcdSwapchainBuilder;
+	class pcdSwapchainCreate;
+	class pcdSwapchainImageAllocate;
 	class pcdSwapchainHandler;
 	class pcdSwapchainPresenter;
 

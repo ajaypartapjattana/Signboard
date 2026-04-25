@@ -15,7 +15,7 @@ namespace rhi {
 
 	pcdPipelineBuilder::pcdPipelineBuilder(const rhi::creDevice& device, const rhi::pmvSwapchain& swapchain, const rhi::pmvPipelineLayout& pipelineLayout) noexcept
 		: 
-		_dvc(rhi::access::device_pAccess::get(device)), 
+		_dvc(rhi::access::device_pAccess::extract(device)), 
 		m_pipelineLayout(rhi::access::pipelineLayout_pAccess::get(pipelineLayout)),
 		
 		r_renderPass(nullptr),

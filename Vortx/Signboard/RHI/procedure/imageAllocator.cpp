@@ -6,40 +6,40 @@
 
 namespace rhi {
 
-	pcdImageAllocator::pcdImageAllocator(const rhi::creDevice& device, const rhi::creAllocator& allocator)
+	pcdImageAllocate::pcdImageAllocate(const rhi::creDevice& device, const rhi::creAllocator& allocator)
 		: 
-		_dvc(rhi::access::device_pAccess::get(device)), 
+		_dvc(rhi::access::device_pAccess::extract(device)), 
 		_allctr(rhi::access::allocator_pAccess::get(allocator))
 	{
 
 	}
 
-	pcdImageAllocator& pcdImageAllocator::set_usage(VkImageUsageFlags usage) noexcept {
+	pcdImageAllocate& pcdImageAllocate::set_usage(VkImageUsageFlags usage) noexcept {
 		final_usage |= usage;
 		return *this;
 	}
 
-	pcdImageAllocator& pcdImageAllocator::set_format(VkFormat format) noexcept {
+	pcdImageAllocate& pcdImageAllocate::set_format(VkFormat format) noexcept {
 		final_format = format;
 		return *this;
 	}
 
-	pcdImageAllocator& pcdImageAllocator::set_aspect(VkImageAspectFlags aspect) noexcept {
+	pcdImageAllocate& pcdImageAllocate::set_aspect(VkImageAspectFlags aspect) noexcept {
 		final_aspect = aspect;
 		return *this;
 	}
 
-	pcdImageAllocator& pcdImageAllocator::set_extent(VkExtent2D extent) noexcept {
+	pcdImageAllocate& pcdImageAllocate::set_extent(VkExtent2D extent) noexcept {
 		final_extent = { extent.width, extent.height, 1 };
 		return *this;
 	}
 
-	pcdImageAllocator& pcdImageAllocator::set_extent(VkExtent3D extent) noexcept {
+	pcdImageAllocate& pcdImageAllocate::set_extent(VkExtent3D extent) noexcept {
 		final_extent = extent;
 		return *this;
 	}
 
-	VkResult pcdImageAllocator::allocate(rhi::pmvImage& target_image) const {
+	VkResult pcdImageAllocate::allocate(rhi::pmvImage& target_image) const {
 		if (final_format == VK_FORMAT_UNDEFINED ||
 			final_usage == 0 ||
 			(final_extent.width == 0 || final_extent.height == 0) ||
@@ -89,13 +89,13 @@ namespace rhi {
 		}
 
 		target_image.m_image = vk_image;
-		target_image._alloc = vma_allocation;
+		target_image.m_allocation = vma_allocation;
 		target_image.m_view = vk_view;
 
-		target_image.m_extent = final_extent;
+		target_image.extent = final_extent;
 
-		target_image._dvc = _dvc;
-		target_image._allctr = _allctr;
+		target_image.r_device = _dvc;
+		target_image.r_allocator = _allctr;
 
 		return result;
 	}

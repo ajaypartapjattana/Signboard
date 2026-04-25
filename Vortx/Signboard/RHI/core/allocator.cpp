@@ -39,7 +39,7 @@ namespace rhi {
 		_allctr(VK_NULL_HANDLE)
 	{
 		VkInstance a_instance = rhi::access::instance_pAccess::get(instance);
-		VkDevice a_device = rhi::access::device_pAccess::get(device);
+		VkDevice a_device = rhi::access::device_pAccess::extract(device);
 		VkPhysicalDevice a_phys = rhi::access::device_pAccess::get_physicalDevice(device);
 
 		VmaAllocatorCreateInfo info{};

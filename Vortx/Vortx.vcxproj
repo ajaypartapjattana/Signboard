@@ -214,6 +214,7 @@
     <ClCompile Include="Signboard\RHI\procedure\commandBufferAllocator.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\commandPoolCreator.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\descriptorLayoutCreate.cpp" />
+    <ClCompile Include="Signboard\RHI\procedure\swapchainImageCreate.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\watchdog.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\framebufferCreator.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\imageAllocator.cpp" />
@@ -311,6 +312,7 @@
     <ClInclude Include="Signboard\Resources\resources.h" />
     <ClInclude Include="Signboard\Resources\core\rsrc_images.h" />
     <ClInclude Include="Signboard\Resources\core\rsrc_buffers.h" />
+    <ClInclude Include="Signboard\Resources\resources_pAccess.h" />
     <ClInclude Include="Signboard\RHI\detail\standardCommandPools.h" />
     <ClInclude Include="Signboard\RHI\detail\standardQueues.h" />
     <ClInclude Include="Signboard\RHI\primitive\commandPool_pAccess.h" />
@@ -386,6 +388,7 @@
     <ClInclude Include="Signboard\Signboard.h" />
     <ClInclude Include="Signboard\Assets\io\ResourceLoaders\TextureLoader.h" />
     <ClInclude Include="Signboard\Platform\primitive\display_window.h" />
+    <ClInclude Include="Signboard\RHI\procedure\swapchainImageCreate.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ShaderBuild.targets" />

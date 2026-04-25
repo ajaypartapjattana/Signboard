@@ -6,6 +6,8 @@
 #include "Signboard/Renderer/Vertex/vertexFields.h"
 #include "Signboard/Renderer/Materials/materials.h"
 
+struct ResourceView;
+
 class RHIContext;
 class rndr_presentation;
 
@@ -25,7 +27,7 @@ struct renderTarget {
 
 class rndr_method {
 public:
-	rndr_method(const RHIContext& context, const rndr_presentation& presentation);
+	rndr_method(const RHIContext& context, const ResourceView& view, const rndr_presentation& presentation);
 
 	rndr_method(const rndr_method&) = delete;
 	rndr_method& operator=(const rndr_method&) = delete;
@@ -44,12 +46,14 @@ private:
 
 	const rhi::creDevice& r_device;
 	const rhi::pmvSwapchain& r_swapchain;
+	const ResourceView& r_resources;
 
 	passes m_passes;
 	vertexFields m_fields;
 	materials m_materials;
 
 	uint32_t m_primaryTarget_handle;
+
 	ctnr::vault<renderTarget> targets;
 	ctnr::vault_writeAccessor<renderTarget> m_writeAccess;
 

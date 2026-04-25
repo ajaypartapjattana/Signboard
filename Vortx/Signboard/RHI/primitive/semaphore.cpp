@@ -15,7 +15,7 @@ namespace rhi {
 	pmvSemaphore::pmvSemaphore(const rhi::creDevice& device) noexcept
 		:
 		m_semaphore(VK_NULL_HANDLE),
-		_dvc(rhi::access::device_pAccess::get(device))
+		_dvc(rhi::access::device_pAccess::extract(device))
 	{
 		VkSemaphoreCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;

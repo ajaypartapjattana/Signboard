@@ -11,41 +11,37 @@ namespace rhi {
 
 	class pmvSwapchain;
 
-	class pcdSwapchainBuilder {
+	class pcdSwapchainCreate {
 	public:
-		pcdSwapchainBuilder(const rhi::creDevice& device, const rhi::creSurface& surface);
+		pcdSwapchainCreate(const rhi::creDevice& device, const rhi::creSurface& surface, VkSwapchainCreateInfoKHR* pCreateInfo = nullptr) noexcept;
 
-		pcdSwapchainBuilder& prefer_format(VkFormat format);
-		pcdSwapchainBuilder& prefer_presentMode(VkPresentModeKHR presentMode);
+		void carry_surface() noexcept;
 
-		pcdSwapchainBuilder& set_extent(uint32_t w, uint32_t h);
-		pcdSwapchainBuilder& set_imageCount(uint32_t count);
+		VkResult set_transform(VkSurfaceTransformFlagBitsKHR transform);
+		VkResult set_presentMode(VkPresentModeKHR presentMode);
 
-		pcdSwapchainBuilder& allow_tearing(bool);
+		VkResult set_imageFormat(VkFormat format, VkColorSpaceKHR colorSpace) noexcept;
+		VkResult set_imageCount(uint32_t count) noexcept;
+		void set_extent(uint32_t width, uint32_t height) noexcept;
 
-		pcdSwapchainBuilder& recycle_swapchain(const rhi::pmvSwapchain&);
+		void recycle_swapchain(const rhi::pmvSwapchain& swapchain) noexcept;
 
-		VkResult build(rhi::pmvSwapchain& target_swapchain);
+		VkResult publish(rhi::pmvSwapchain& swapchain) const noexcept;
+
+		void preset(VkSwapchainCreateInfoKHR* pCreateInfo) noexcept;
+		void reset() noexcept;
 
 	private:
-		VkDevice _dvc;
-		VkPhysicalDevice m_phys;
-		VkSurfaceKHR m_surface;
-		VkSwapchainKHR recycled_swapchain = VK_NULL_HANDLE;
+		VkSwapchainCreateInfoKHR fetch_basic(VkSwapchainCreateInfoKHR* pCreateInfo) const noexcept;
+
+	private:
+		const VkDevice r_device;
+		const VkPhysicalDevice m_phys;
+		const VkSurfaceKHR r_surface;
+		
+		VkSwapchainCreateInfoKHR _info;
 
 		VkSurfaceCapabilitiesKHR surface_caps;
-		std::vector<VkSurfaceFormatKHR> available_surfaceFormat;
-		std::vector<VkPresentModeKHR> available_presentMode;
-
-		VkExtent2D final_extent;
-
-		uint32_t final_imageCount = 2;
-
-		VkSurfaceFormatKHR final_format{};
-		bool format_chosen = false;
-
-		VkPresentModeKHR final_presentMode{};
-		bool presentMode_chosen = false;
 
 	};
 

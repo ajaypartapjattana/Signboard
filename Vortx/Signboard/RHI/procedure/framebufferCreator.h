@@ -14,14 +14,14 @@ namespace rhi {
 
 	class pcdFramebufferCreate {
 	public:
-		pcdFramebufferCreate(const rhi::creDevice& device, const rhi::pmvRenderPass& renderPass, VkFramebufferCreateInfo* pCreateInfo = nullptr) noexcept;
+		pcdFramebufferCreate(const creDevice& device, const pmvRenderPass& renderPass, VkFramebufferCreateInfo* pCreateInfo = nullptr) noexcept;
 
 		pcdFramebufferCreate(const pcdFramebufferCreate&) = delete;
 		pcdFramebufferCreate& operator=(const pcdFramebufferCreate&) = delete;
 
-		VkResult push_attachments(ctnr::span<const rhi::pmvImage> images);
+		VkResult push_attachments(ctnr::span<const pmvImage> images);
 
-		VkResult publish(rhi::pmvFramebuffer& target_framebuffer);
+		VkResult publish(pmvFramebuffer& target_framebuffer);
 
 		void preset(VkFramebufferCreateInfo* pCreateInfo) noexcept;
 		void reset() noexcept;

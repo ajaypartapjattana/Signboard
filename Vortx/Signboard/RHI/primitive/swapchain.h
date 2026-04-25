@@ -9,7 +9,7 @@ namespace rhi::access {
 
 namespace rhi {
 
-	class pcdSwapchainBuilder;
+	class pcdSwapchainCreate;
 
 	class pmvSwapchain {
 	public:
@@ -25,20 +25,17 @@ namespace rhi {
 
 		VkFormat native_format() const noexcept;
 		VkExtent2D native_extent() const noexcept;
-		uint32_t native_imageCount() const noexcept;
 
 	private:
-		friend class pcdSwapchainBuilder;
+		friend class pcdSwapchainCreate;
 		friend struct rhi::access::swapchain_pAccess;
 
 		VkSwapchainKHR m_swapchain;
-		std::vector<VkImage> m_images;
-		std::vector<VkImageView> m_views;
 		
-		VkFormat m_format;
-		VkExtent2D m_extent;
-		
-		VkDevice _dvc;
+		VkExtent2D extent;
+		VkFormat format;
+
+		VkDevice r_device;
 
 	};
 

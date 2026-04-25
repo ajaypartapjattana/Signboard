@@ -14,7 +14,7 @@ namespace rhi {
 	}
 
 	VkResult pcdCommandPoolCreator::create(standardCommandPools& pools) {
-		VkDevice a_device = rhi::access::device_pAccess::get(_dvc);
+		VkDevice a_device = rhi::access::device_pAccess::extract(_dvc);
 		const auto& families = rhi::access::device_pAccess::get_queueFamilies(_dvc);
 
 		std::array<uint32_t, 4> l_families = { families.graphics, families.compute, families.transfer, families.present };

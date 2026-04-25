@@ -9,19 +9,19 @@ namespace rhi {
 
 	class pmvImage;
 
-	class pcdImageAllocator {
+	class pcdImageAllocate {
 	public:
-		pcdImageAllocator(const rhi::creDevice& deivce, const rhi::creAllocator& allocator);
+		pcdImageAllocate(const rhi::creDevice& deivce, const rhi::creAllocator& allocator);
 
-		pcdImageAllocator(const pcdImageAllocator&) = delete;
-		pcdImageAllocator& operator=(const pcdImageAllocator&) = delete;
+		pcdImageAllocate(const pcdImageAllocate&) = delete;
+		pcdImageAllocate& operator=(const pcdImageAllocate&) = delete;
 
-		pcdImageAllocator& set_usage(VkImageUsageFlags usage) noexcept;
-		pcdImageAllocator& set_format(VkFormat format) noexcept;
-		pcdImageAllocator& set_aspect(VkImageAspectFlags aspect) noexcept;
+		pcdImageAllocate& set_usage(VkImageUsageFlags usage) noexcept;
+		pcdImageAllocate& set_format(VkFormat format) noexcept;
+		pcdImageAllocate& set_aspect(VkImageAspectFlags aspect) noexcept;
 
-		pcdImageAllocator& set_extent(VkExtent2D extent) noexcept;
-		pcdImageAllocator& set_extent(VkExtent3D extent) noexcept;
+		pcdImageAllocate& set_extent(VkExtent2D extent) noexcept;
+		pcdImageAllocate& set_extent(VkExtent3D extent) noexcept;
 
 		VkResult allocate(rhi::pmvImage& targetImage) const;
 

@@ -6,13 +6,13 @@ namespace rhi {
 		:
 		m_image(VK_NULL_HANDLE),
 		m_view(VK_NULL_HANDLE),
-		_alloc(VK_NULL_HANDLE),
+		m_allocation(VK_NULL_HANDLE),
 
-		m_extent(),
-		m_format(VK_FORMAT_UNDEFINED),
+		extent(),
+		format(VK_FORMAT_UNDEFINED),
 
-		_dvc(VK_NULL_HANDLE),
-		_allctr(VK_NULL_HANDLE)
+		r_device(VK_NULL_HANDLE),
+		r_allocator(VK_NULL_HANDLE)
 	{
 
 	}
@@ -21,13 +21,13 @@ namespace rhi {
 		:
 		m_image(other.m_image),
 		m_view(other.m_view),
-		_alloc(other._alloc),
+		m_allocation(other.m_allocation),
 
-		m_extent(other.m_extent),
-		m_format(other.m_format),
+		extent(other.extent),
+		format(other.format),
 
-		_dvc(other._dvc),
-		_allctr(other._allctr)
+		r_device(other.r_device),
+		r_allocator(other.r_allocator)
 	{
 		other.m_image = VK_NULL_HANDLE;
 		other.m_view = VK_NULL_HANDLE;
@@ -38,17 +38,17 @@ namespace rhi {
 			return *this;
 
 		if (m_view)
-			vkDestroyImageView(_dvc, m_view, nullptr);
+			vkDestroyImageView(r_device, m_view, nullptr);
 
-		if (m_image)
-			vmaDestroyImage(_allctr, m_image, _alloc);
+		if (r_allocator && m_allocation)
+			vmaDestroyImage(r_allocator, m_image, m_allocation);
 
 		m_image = other.m_image;
 		m_view = other.m_view;
-		_alloc = other._alloc;
+		m_allocation = other.m_allocation;
 		
-		_dvc = other._dvc;
-		_allctr = other._allctr;
+		r_device = other.r_device;
+		r_allocator = other.r_allocator;
 
 		other.m_image = VK_NULL_HANDLE;
 		other.m_view = VK_NULL_HANDLE;
@@ -58,10 +58,24 @@ namespace rhi {
 
 	pmvImage::~pmvImage() noexcept {
 		if (m_view)
-			vkDestroyImageView(_dvc, m_view, nullptr);
+			vkDestroyImageView(r_device, m_view, nullptr);
 		
-		if (m_image && _alloc)
-			vmaDestroyImage(_allctr, m_image, _alloc);
+		if (r_allocator && m_allocation)
+			vmaDestroyImage(r_allocator, m_image, m_allocation);
 	}
+
+	void pmvImage::reset() noexcept {
+		if (m_view) {
+			vkDestroyImageView(r_device, m_view, nullptr);
+			m_view = VK_NULL_HANDLE;
+		}
+
+		if (r_allocator && m_allocation) {
+			vmaDestroyImage(r_allocator, m_image, m_allocation);
+			m_allocation = VK_NULL_HANDLE;
+			m_image = VK_NULL_HANDLE;
+		}
+	}
+
 
 }

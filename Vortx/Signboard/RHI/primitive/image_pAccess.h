@@ -15,15 +15,15 @@ namespace rhi::access {
 		}
 
 		static VmaAllocation get_allocation(const rhi::pmvImage& i) noexcept {
-			return i._alloc;
+			return i.m_allocation;
 		}
 
 		static VkExtent3D get_extent(const rhi::pmvImage& i) noexcept {
-			return i.m_extent;
+			return i.extent;
 		}
 
 		static VkFormat get_format(const rhi::pmvImage& i) noexcept {
-			return i.m_format;
+			return i.format;
 		}
 
 	};

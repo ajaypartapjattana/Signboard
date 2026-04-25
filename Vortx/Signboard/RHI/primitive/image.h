@@ -8,7 +8,8 @@ namespace rhi::access{
 
 namespace rhi {
 
-	class pcdImageAllocator;
+	class pcdImageAllocate;
+	class pcdSwapchainImageAllocate;
 
 	class pmvImage {
 	public:
@@ -22,19 +23,22 @@ namespace rhi {
 
 		~pmvImage() noexcept;
 
+		void reset() noexcept;
+
 	private:
-		friend class pcdImageAllocator;
+		friend class pcdImageAllocate;
+		friend class pcdSwapchainImageAllocate;
 		friend struct rhi::access::image_pAccess;
 
 		VkImage m_image;
-		VmaAllocation _alloc;
+		VmaAllocation m_allocation;
 		VkImageView m_view;
 
-		VkExtent3D m_extent;
-		VkFormat m_format;
+		VkExtent3D extent;
+		VkFormat format;
 
-		VkDevice _dvc;
-		VmaAllocator _allctr;
+		VkDevice r_device;
+		VmaAllocator r_allocator;
 
 	};
 

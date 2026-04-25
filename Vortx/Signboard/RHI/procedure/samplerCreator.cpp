@@ -9,7 +9,7 @@ namespace rhi{
 
 	pcdSamplerCreator::pcdSamplerCreator(const rhi::creDevice& device) noexcept
 		: 
-		_dvc(rhi::access::device_pAccess::get(device)),
+		_dvc(rhi::access::device_pAccess::extract(device)),
 		info()
 	{
 		info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;

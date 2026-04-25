@@ -1,10 +1,10 @@
 #include "renderer.h"
 
-Renderer::Renderer(const RHIContext& context, const Resources& resources, const Scene& scene)
+Renderer::Renderer(const RHIContext& context, Resources& resources, const Scene& scene)
 	: 
 	r_resources(resources.read_resources()),
 
-	m_presentation(context, IMAGE_COUNT),
+	m_presentation(context, resources, IMAGE_COUNT),
 	m_methods(context, m_presentation),
 	m_interface(context, m_presentation),
 	m_transfer(context, r_resources),

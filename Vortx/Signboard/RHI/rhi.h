@@ -32,10 +32,10 @@ namespace rhi {
 	class pcdCommandBufferRecorder;
 	class pcdQueueSubmission;
 	class pcdWatchdog;
-	class pcdImageAllocator;
+	class pcdImageAllocate;
 	class pcdBufferAllocate;
 	class pcdSamplerCreator;
-	class pcdSwapchainBuilder;
+	class pcdSwapchainCreate;
 	class pcdSwapchainHandler;
 	class pcdSwapchainPresenter;
 	class pcdRenderPassCreate;

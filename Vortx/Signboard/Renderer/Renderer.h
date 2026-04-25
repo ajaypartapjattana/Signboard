@@ -15,7 +15,7 @@ constexpr uint32_t IMAGE_COUNT = 2;
 
 class Renderer {
 public:
-	Renderer(const RHIContext& context, const Resources& resources, const Scene& scene);
+	Renderer(const RHIContext& context, Resources& resources, const Scene& scene);
 
 	~Renderer() noexcept;
 		

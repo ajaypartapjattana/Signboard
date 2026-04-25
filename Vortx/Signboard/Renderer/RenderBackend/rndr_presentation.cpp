@@ -1,28 +1,26 @@
 #include "rndr_presentation.h"
 
 #include "Signboard/Renderer/Context/render_context_Access.h"
+#include "Signboard/Resources/resources_pAccess.h"
 
-rndr_presentation::rndr_presentation(const RHIContext& ctx, const uint32_t bufferedFrame_count )
-	: 
+rndr_presentation::rndr_presentation(const RHIContext& ctx, Resources& resources, const uint32_t bufferedFrame_count)
+	:
 	r_device(rndr_context_Access::get_device(ctx)),
 	r_surface(rndr_context_Access::get_surface(ctx)),
+	r_resources(resources),
+
+	bufferedFrame_count(bufferedFrame_count),
 
 	m_watchdog(r_device),
+	m_swapchainCreate(r_device, r_surface),
 
-	m_swapchain(),
-	bufferedFrame_count(bufferedFrame_count)
+	m_swapchain()
 {
-	construct_swapchain();
-}
+	m_swapchainCreate.set_imageFormat(VK_FORMAT_B8G8R8A8_SRGB, VK_COLORSPACE_SRGB_NONLINEAR_KHR);
+	m_swapchainCreate.set_imageCount(bufferedFrame_count);
+	m_swapchainCreate.set_transform(VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR);
+	m_swapchainCreate.carry_surface();
 
-void rndr_presentation::update_bufferedFrameCount(const uint32_t count) {
-	uint32_t clampedFrames = std::max(2u, bufferedFrame_count);
-	if (clampedFrames == bufferedFrame_count)
-		return;
-
-	bufferedFrame_count = clampedFrames;
-
-	m_watchdog.wait_device();
 	construct_swapchain();
 }
 
@@ -30,17 +28,35 @@ void rndr_presentation::recreate_swapchain(uint32_t* imageCount) {
 	m_watchdog.wait_device();
 
 	if (imageCount) {
-		bufferedFrame_count = *imageCount;
+		bufferedFrame_count = std::max(2u, *imageCount);
+		m_swapchainCreate.set_imageCount(bufferedFrame_count);
 	}
+	m_swapchainCreate.carry_surface();
 	construct_swapchain();
 }
 
 VkResult rndr_presentation::construct_swapchain() {
-	rhi::pcdSwapchainBuilder prcdr{ r_device, r_surface };
+	m_swapchainCreate.recycle_swapchain(m_swapchain);
 
-	prcdr.prefer_format(VK_FORMAT_B8G8R8A8_SRGB);
-	prcdr.set_imageCount(bufferedFrame_count);
-	prcdr.recycle_swapchain(m_swapchain);
+	VkResult result = m_swapchainCreate.publish(m_swapchain);
+	if (result != VK_SUCCESS)
+		return result;
 
-	return prcdr.build(m_swapchain);
+	rhi::pcdSwapchainImageAllocate pcd{ r_device, m_swapchain };
+
+	auto _ctor = [&](uint32_t i, rhi::pmvImage* image) {
+		pcd.publish(*image, i);
+	};
+
+	uint32_t _siCt = pcd.get_imageCount();
+
+	ctnr::vault_writeAccessor<rhi::pmvImage> _wrt = Resources_pAccess::get_imageWrite(r_resources);
+
+	for (uint32_t idx : swapchainImageHandles) {
+		_wrt.destroy(idx);
+	}
+
+	swapchainImageHandles = _wrt.construct_many(_siCt, _ctor);
+
+	return VK_SUCCESS;
 }
