@@ -19,7 +19,7 @@ rndr_interface::rndr_interface(const RHIContext& context, const rndr_presentatio
 	m_tranfer_submission(r_device)
 {
 	summon_commandPools();
-	configure_bufferedFrames();
+	configure_bufferedFrames(presentation.expose_swapchainImageCount());
 }
 
 rndr_interface::~rndr_interface() noexcept {
@@ -48,8 +48,8 @@ void rndr_interface::validate_swapchainDependancy() {
 	m_presenter = std::move(l_presenter);
 }
 
-void rndr_interface::configure_bufferedFrames() {
-	bufferedFrame_count = r_swapchain.native_imageCount();
+void rndr_interface::configure_bufferedFrames(uint32_t count) {
+	bufferedFrame_count = count;
 	
 	imagesInFlight.resize(bufferedFrame_count, -1);
 

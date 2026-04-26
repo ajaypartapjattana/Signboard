@@ -6,10 +6,9 @@
 #include "Signboard/Renderer/Vertex/vertexFields.h"
 #include "Signboard/Renderer/Materials/materials.h"
 
-struct ResourceView;
-
 class RHIContext;
 class rndr_presentation;
+struct ResourceView;
 
 struct rndr_method_Access;
 
@@ -27,19 +26,26 @@ struct renderTarget {
 
 class rndr_method {
 public:
-	rndr_method(const RHIContext& context, const ResourceView& view, const rndr_presentation& presentation);
+	rndr_method(const RHIContext& context, const rndr_presentation& presentation, const ResourceView& view);
 
 	rndr_method(const rndr_method&) = delete;
 	rndr_method& operator=(const rndr_method&) = delete;
 
-	void create_renderTarget(const passes::createInfo& passInfo, const vertexFields::createInfo& fieldsInfo, const materials::pipelineCreateInfo& pipeInfo);
+	struct renderTargetCreateInfo {
+		passes::renderPassCreateInfo renderPassInfo;
+		passes::framebufferCreateInfo framebufferInfo;
+		vertexFields::createInfo VertexLayoutInfo;
+		materials::pipelineCreateInfo pipelineInfo;
+	};
+
+	void create_renderTarget(renderTargetCreateInfo& creatInfo);
 
 	const ctnr::vltView<renderTarget> read_renderTargets() const noexcept;
 
-	void validate_primaryTarget();
+	void validate_primaryTarget(ctnr::span<const uint32_t> swapchainImageIndices);
 
 private:
-	VkResult create_primaryTarget();
+	VkResult create_primaryTarget(ctnr::span<const uint32_t> swapchainImageIndices);
 
 private:
 	friend struct rndr_method_Access;
@@ -52,9 +58,8 @@ private:
 	vertexFields m_fields;
 	materials m_materials;
 
-	uint32_t m_primaryTarget_handle;
+	uint32_t primaryTarget_idx;
 
-	ctnr::vault<renderTarget> targets;
-	ctnr::vault_writeAccessor<renderTarget> m_writeAccess;
+	ctnr::vault<renderTarget> m_renderTargets;
 
 };

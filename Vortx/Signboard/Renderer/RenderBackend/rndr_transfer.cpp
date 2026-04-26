@@ -1,6 +1,7 @@
 #include "rndr_transfer.h"
 
 #include "Signboard/Renderer/Context/render_context_Access.h"
+#include "Signboard/Resources/resources_pAccess.h"
 
 rndr_transfer::rndr_transfer(const RHIContext& context, const ResourceView& resources) noexcept
 	:

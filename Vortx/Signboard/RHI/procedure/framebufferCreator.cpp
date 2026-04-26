@@ -31,27 +31,37 @@ namespace rhi {
 		return info;
 	}
 
-	VkResult pcdFramebufferCreate::push_attachments(ctnr::span<const pmvImage> images) {
-		if (images.size() != renderPass_attachmentFormats.size())
+	VkResult pcdFramebufferCreate::push_attachments(const ctnr::vltView<rhi::pmvImage>& images, ctnr::span<const uint32_t> imageHandles) {
+		if (imageHandles.empty())
 			return VK_INCOMPLETE;
 
-		uint32_t _ISz = static_cast<uint32_t>(images.size());
+#ifdef _VALIDATE
+		if (imageHandles.size() != renderPass_attachmentFormats.size())
+			return VK_INCOMPLETE;
+#endif
 
-		VkExtent3D extent_t = access::image_pAccess::get_extent(images[0]);
-		for (uint32_t i = 0; i < _ISz; ++i) {
-			VkFormat attachmentFormat = access::image_pAccess::get_format(images[i]);
+		VkExtent3D extent_t = access::image_pAccess::get_extent(*images.get(imageHandles[0]));
+
+		size_t _ISz = imageHandles.size();
+
+#ifdef _VALIDATE
+		for (size_t i = 0; i < _ISz; ++i) {
+			const pmvImage& _img = *images.get(imageHandles[i]);
+
+			VkFormat attachmentFormat = access::image_pAccess::get_format(_img);
 			if (attachmentFormat != renderPass_attachmentFormats[i]) {
 				return VK_INCOMPLETE;
 			}
-			VkExtent3D attachmentExtent = access::image_pAccess::get_extent(images[i]);
+			VkExtent3D attachmentExtent = access::image_pAccess::get_extent(_img);
 			if (attachmentExtent.width != extent_t.width || attachmentExtent.height != extent_t.height)
 				return VK_INCOMPLETE;
 		}
+#endif
 
 		m_attachmentImageViews.clear();
 		m_attachmentImageViews.reserve(_ISz);
-		for (const pmvImage& image : images) {
-			m_attachmentImageViews.push_back(access::image_pAccess::get_view(image));
+		for (size_t i = 0; i < _ISz; ++i) {
+			m_attachmentImageViews.push_back(access::image_pAccess::get_view(*images.get(imageHandles[i])));
 		}
 
 		_info.width = extent_t.width;

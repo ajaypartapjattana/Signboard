@@ -17,6 +17,7 @@ public:
 	rndr_presentation& operator=(const rndr_presentation&) = delete;
 
 	void recreate_swapchain(uint32_t* imageCount);
+	uint32_t expose_swapchainImageCount() const noexcept;
 	ctnr::span<const uint32_t> expose_swapchainImages() const noexcept;
 
 private:

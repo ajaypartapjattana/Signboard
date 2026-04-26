@@ -2,10 +2,10 @@
 
 Renderer::Renderer(const RHIContext& context, Resources& resources, const Scene& scene)
 	: 
-	r_resources(resources.read_resources()),
+	r_resources(Resources_pAccess::create_view(resources)),
 
 	m_presentation(context, resources, IMAGE_COUNT),
-	m_methods(context, m_presentation),
+	m_methods(context, m_presentation, r_resources),
 	m_interface(context, m_presentation),
 	m_transfer(context, r_resources),
 	m_framedraw(m_methods, r_resources)
@@ -57,11 +57,11 @@ bool Renderer::defferUploads() {
 
 void Renderer::configurePresentation(uint32_t* imageCount) {
 	m_presentation.recreate_swapchain(imageCount);
-	m_methods.validate_primaryTarget();
+	m_methods.validate_primaryTarget(m_presentation.expose_swapchainImages());
 	m_interface.validate_swapchainDependancy();
 
 	if (imageCount) {
-		m_interface.configure_bufferedFrames();
+		m_interface.configure_bufferedFrames(m_presentation.expose_swapchainImageCount());
 	}
 }
 

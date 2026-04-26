@@ -32,7 +32,7 @@ namespace ctnr {
 		vault(vault&&) noexcept = default;
 		vault& operator=(vault&&) noexcept = default;
 
-		constexpr _NODISCARD T* operator[](size_t index) const noexcept {
+		constexpr _NODISCARD const T* operator[](uint32_t index) const noexcept {
 			if (!_is_alive(index)) return nullptr;
 			return slots[index].object_ptr();
 		}

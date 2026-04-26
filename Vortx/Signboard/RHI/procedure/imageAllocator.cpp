@@ -6,98 +6,77 @@
 
 namespace rhi {
 
-	pcdImageAllocate::pcdImageAllocate(const rhi::creDevice& device, const rhi::creAllocator& allocator)
+	pcdImageAllocate::pcdImageAllocate(const rhi::creDevice& device, const rhi::creAllocator& allocator, const VkImageCreateInfo* pCreateInfo)
 		: 
-		_dvc(rhi::access::device_pAccess::extract(device)), 
-		_allctr(rhi::access::allocator_pAccess::get(allocator))
+		r_device(rhi::access::device_pAccess::extract(device)), 
+		r_allocator(rhi::access::allocator_pAccess::get(allocator)),
+
+		_imageInfo(fetch_basicImageInfo(pCreateInfo)),
+		_allocInfo()
 	{
 
 	}
 
-	pcdImageAllocate& pcdImageAllocate::set_usage(VkImageUsageFlags usage) noexcept {
-		final_usage |= usage;
-		return *this;
+	VkImageCreateInfo pcdImageAllocate::fetch_basicImageInfo(const VkImageCreateInfo* pCreateInfo) const noexcept {
+		if (pCreateInfo)
+			return *pCreateInfo;
+
+		VkImageCreateInfo info{};
+		info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+
+		info.imageType = VK_IMAGE_TYPE_2D;
+		info.mipLevels = 1;
+		info.arrayLayers = 1;
+		info.samples = VK_SAMPLE_COUNT_1_BIT;
+		info.tiling = VK_IMAGE_TILING_OPTIMAL;
+		info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		
+		return info;
 	}
 
-	pcdImageAllocate& pcdImageAllocate::set_format(VkFormat format) noexcept {
-		final_format = format;
-		return *this;
+	void pcdImageAllocate::image_usage(VkImageUsageFlags usage) noexcept {
+		_imageInfo.usage = usage;
 	}
 
-	pcdImageAllocate& pcdImageAllocate::set_aspect(VkImageAspectFlags aspect) noexcept {
-		final_aspect = aspect;
-		return *this;
+	void pcdImageAllocate::image_format(VkFormat format) noexcept {
+		_imageInfo.format = format;
 	}
 
-	pcdImageAllocate& pcdImageAllocate::set_extent(VkExtent2D extent) noexcept {
-		final_extent = { extent.width, extent.height, 1 };
-		return *this;
+	void pcdImageAllocate::image_extent(VkExtent3D extent) noexcept {
+		_imageInfo.extent = extent;
 	}
 
-	pcdImageAllocate& pcdImageAllocate::set_extent(VkExtent3D extent) noexcept {
-		final_extent = extent;
-		return *this;
+	void pcdImageAllocate::allocation_usage(VmaMemoryUsage memory) noexcept {
+		_allocInfo.usage = memory;
 	}
 
-	VkResult pcdImageAllocate::allocate(rhi::pmvImage& target_image) const {
-		if (final_format == VK_FORMAT_UNDEFINED ||
-			final_usage == 0 ||
-			(final_extent.width == 0 || final_extent.height == 0) ||
-			final_aspect == 0)
-			return VK_INCOMPLETE;
-
-		VkImageCreateInfo imageInfo{};
-		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		imageInfo.imageType = VK_IMAGE_TYPE_2D;
-		imageInfo.format = final_format;
-		imageInfo.extent = final_extent;
-		imageInfo.mipLevels = 1;
-		imageInfo.arrayLayers = 1;
-		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageInfo.usage = final_usage;
-		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		VmaAllocationCreateInfo allocInfo{};
-		allocInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
-
-		VkImage vk_image = VK_NULL_HANDLE;
-		VmaAllocation vma_allocation = VK_NULL_HANDLE;
-		VkResult result = vmaCreateImage(_allctr, &imageInfo, &allocInfo, &vk_image, &vma_allocation, nullptr);
-
+	VkResult pcdImageAllocate::allocate(rhi::pmvImage& target) const {
+		VkImage vk_image;
+		VmaAllocation vma_allocation;
+		VkResult result = vmaCreateImage(r_allocator, &_imageInfo, &_allocInfo, &vk_image, &vma_allocation, nullptr);
 		if (result != VK_SUCCESS)
 			return result;
 
-		VkImageViewCreateInfo viewInfo{};
-		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		viewInfo.image = vk_image;
-		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewInfo.format = final_format;
-		viewInfo.subresourceRange.aspectMask = final_aspect;
-		viewInfo.subresourceRange.levelCount = imageInfo.mipLevels;
-		viewInfo.subresourceRange.baseMipLevel = 0;
-		viewInfo.subresourceRange.layerCount = 1;
-		viewInfo.subresourceRange.baseArrayLayer = 0;
-		
-		VkImageView vk_view = VK_NULL_HANDLE;
-		result = vkCreateImageView(_dvc, &viewInfo, nullptr, &vk_view);
+		target.reset();
 
-		if (result != VK_SUCCESS) {
-			vmaDestroyImage(_allctr, vk_image, vma_allocation);
-			return result;
-		}
+		target.m_image = vk_image;
+		target.m_allocation = vma_allocation;
 
-		target_image.m_image = vk_image;
-		target_image.m_allocation = vma_allocation;
-		target_image.m_view = vk_view;
+		target.format = _imageInfo.format;
+		target.extent = _imageInfo.extent;
 
-		target_image.extent = final_extent;
+		target.mip_levels = _imageInfo.mipLevels;
+		target.array_layers = _imageInfo.arrayLayers;
 
-		target_image.r_device = _dvc;
-		target_image.r_allocator = _allctr;
+		target.r_device = r_device;
+		target.r_allocator = r_allocator;
 
 		return result;
+	}
+
+	void pcdImageAllocate::preset(const VkImageCreateInfo* pCreateInfo) noexcept {
+		fetch_basicImageInfo(pCreateInfo);
 	}
 
 }

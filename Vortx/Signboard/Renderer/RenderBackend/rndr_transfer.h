@@ -2,13 +2,13 @@
 
 #include "Signboard/RHI/rhi.h"
 #include "Signboard/core/Containers/storage.h"
-#include "Signboard/Resources/resources.h"
 
 #include "Signboard/Core/Interfaces/renderer/upload/uploadINF.h"
 
 constexpr size_t STAGING_SIZE = 4ull * 1024 * 1024;
 
 class RHIContext;
+struct ResourceView;
 
 class rndr_transfer {
 public:
@@ -23,6 +23,8 @@ private:
 	void* allocate(size_t size, size_t alignment, size_t& outOffest);
 
 private:
+	const ResourceView& r_resources;
+
 	rhi::pmvBuffer m_staging;
 	void* m_mappedStaging;
 
@@ -35,7 +37,5 @@ private:
 		VkBufferCopy copyInfo;
 	};
 	std::vector<CopyRegion> regions;
-
-	const ResourceView& r_resources;
 
 };

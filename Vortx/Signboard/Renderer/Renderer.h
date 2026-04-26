@@ -1,14 +1,9 @@
 #pragma once
 
-#include <array>
-#include <vector>
-#include <memory>
-
 #include "Signboard/Core/Interfaces/renderer/rendererINF.h"
 
-#include "Mesh/mesher.h"
-
 #include "Context/render_context.h"
+#include "Signboard/Resources/resources_pAccess.h"
 #include "RenderBackend/rndr_Backend.h"
 
 constexpr uint32_t IMAGE_COUNT = 2;

@@ -43,7 +43,7 @@ namespace rhi {
 	}
 
 	VkResult pcdSwapchainCreate::set_imageFormat(VkFormat format, VkColorSpaceKHR colorSpace) noexcept {
-#ifndef NDEBUG
+#ifdef _VALIDATE
 		uint32_t _expFormatCt = 0;
 		vkGetPhysicalDeviceSurfaceFormatsKHR(m_phys, r_surface, &_expFormatCt, nullptr);
 		std::vector<VkSurfaceFormatKHR> available_surfaceFormat(_expFormatCt);
@@ -76,7 +76,7 @@ namespace rhi {
 	}
 
 	VkResult pcdSwapchainCreate::set_transform(VkSurfaceTransformFlagBitsKHR transform) {
-#ifndef NDEBUG
+#ifdef _VALIDATE
 		if (!(surface_caps.supportedTransforms & transform))
 			return VK_ERROR_FEATURE_NOT_PRESENT;
 #endif
@@ -87,7 +87,7 @@ namespace rhi {
 	}
 
 	VkResult pcdSwapchainCreate::set_presentMode(VkPresentModeKHR mode) noexcept {
-#ifndef NDEBUG
+#ifdef _VALIDATE
 		uint32_t _expModeCt = 0;
 		vkGetPhysicalDeviceSurfacePresentModesKHR(m_phys, r_surface, &_expModeCt, nullptr);
 		std::vector<VkPresentModeKHR> available_presentMode(_expModeCt);
@@ -118,7 +118,7 @@ namespace rhi {
 	}
 
 	VkResult pcdSwapchainCreate::set_imageCount(uint32_t count) noexcept {
-#ifndef NDEBUG
+#ifdef _VALIDATE
 		if (count < surface_caps.minImageCount) {
 			return VK_ERROR_NOT_PERMITTED;
 		}
@@ -137,13 +137,17 @@ namespace rhi {
 	}
 
 	VkResult pcdSwapchainCreate::publish(rhi::pmvSwapchain& target) const noexcept {
-		if (target.m_swapchain)
-			vkDestroySwapchainKHR(r_device, target.m_swapchain, nullptr);
-
-		VkResult result = vkCreateSwapchainKHR(r_device, &_info, nullptr, &target.m_swapchain);
+		VkSwapchainKHR _swapchain;
+		VkResult result = vkCreateSwapchainKHR(r_device, &_info, nullptr, &_swapchain);
 		if (result != VK_SUCCESS)
 			return result;
 
+		if (target.m_swapchain)
+			vkDestroySwapchainKHR(r_device, target.m_swapchain, nullptr);
+
+		target.m_swapchain = _swapchain;
+		target.format = _info.imageFormat;
+		target.extent = _info.imageExtent;
 		target.r_device = r_device;
 
 		return VK_SUCCESS;

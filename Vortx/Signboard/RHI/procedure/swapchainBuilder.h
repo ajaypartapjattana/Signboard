@@ -18,7 +18,7 @@ namespace rhi {
 		void carry_surface() noexcept;
 
 		VkResult set_transform(VkSurfaceTransformFlagBitsKHR transform);
-		VkResult set_presentMode(VkPresentModeKHR presentMode);
+		VkResult set_presentMode(VkPresentModeKHR presentMode) noexcept;
 
 		VkResult set_imageFormat(VkFormat format, VkColorSpaceKHR colorSpace) noexcept;
 		VkResult set_imageCount(uint32_t count) noexcept;

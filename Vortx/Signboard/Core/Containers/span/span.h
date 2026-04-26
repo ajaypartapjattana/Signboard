@@ -56,18 +56,18 @@ namespace ctnr {
 
 		template <typename Alloc, typename U = T, typename = std::enable_if_t<!std::is_const_v<U>>>
 		span(std::vector<value_type, Alloc>& vec) noexcept
-			:
-			m_data(vec.data()),
-			m_size(vec.size())
+			: 
+			m_data(vec.data()), 
+			m_size(vec.size()) 
 		{
 
 		}
 
-		template <typename Alloc>
+		template <typename Alloc, typename U = T, typename = std::enable_if_t<std::is_const_v<U>>>
 		span(const std::vector<value_type, Alloc>& vec) noexcept
-			:
-			m_data(vec.data()),
-			m_size(vec.size())
+			: 
+			m_data(vec.data()), 
+			m_size(vec.size()) 
 		{
 
 		}

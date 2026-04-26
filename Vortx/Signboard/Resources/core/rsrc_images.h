@@ -19,6 +19,6 @@ public:
 private:
 	const rhi::creDevice& r_device;
 	const rhi::creAllocator& r_allocator;
-	ctnr::vault_writeAccessor<rhi::pmvImage> m_writer;
+	ctnr::vault_writeAccessor<rhi::pmvImage> _wrt;
 
 };

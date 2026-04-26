@@ -3,8 +3,9 @@
 #include "Signboard/RHI/rhi.h"
 
 #include "rndr_method.h"
-#include "Signboard/Resources/resources.h"
 #include "Signboard/Scene/Scene.h"
+
+struct ResourceView;
 
 class rndr_framedraw {
 public:

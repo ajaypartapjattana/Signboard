@@ -15,7 +15,7 @@ public:
 	~rndr_interface() noexcept;
 
 	void validate_swapchainDependancy();
-	void configure_bufferedFrames();
+	void configure_bufferedFrames(uint32_t count);
 
 	rhi::pmvCommandBuffer& get_graphicsCMD();
 	rhi::pmvCommandBuffer& get_transferCMD();

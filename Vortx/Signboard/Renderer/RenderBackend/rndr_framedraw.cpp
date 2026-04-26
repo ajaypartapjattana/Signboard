@@ -1,5 +1,6 @@
 #include "rndr_framedraw.h"
 
+#include "Signboard/Resources/resources_pAccess.h"
 #include "rndr_method_Access.h"
 
 rndr_framedraw::rndr_framedraw(const rndr_method& methods, const ResourceView& resources)

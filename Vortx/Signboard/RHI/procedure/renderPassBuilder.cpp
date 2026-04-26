@@ -37,9 +37,11 @@ namespace rhi {
 		VkSubpassDescription subpass{};
 		subpass.pipelineBindPoint = bindPoint;
 
+		uint32_t _idx = static_cast<uint32_t>(m_subpasses.size());
+
 		m_subpasses.emplace_back(subpass);
 
-		return m_subpasses.size() - 1;
+		return _idx;
 	}
 
 	void pcdRenderPassCreate::refer_colorAttachments(uint32_t subpassIndex, ctnr::span<const VkAttachmentReference> references) {

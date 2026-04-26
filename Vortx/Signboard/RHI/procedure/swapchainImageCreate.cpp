@@ -31,11 +31,6 @@ namespace rhi {
 		info.viewType = VK_IMAGE_VIEW_TYPE_2D;
 		info.format = format;
 
-		info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-		info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-		info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-		info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-
 		info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		info.subresourceRange.baseMipLevel = 0;
 		info.subresourceRange.levelCount = 1;
@@ -64,14 +59,15 @@ namespace rhi {
 		target.reset();
 
 		target.m_image = _info.image;
-		target.m_allocation = VK_NULL_HANDLE;
 		target.m_view = _view;
 
 		target.format = format;
 		target.extent = { extent.width, extent.height, 1 };
 
+		target.mip_levels = 1;
+		target.array_layers = 1;
+
 		target.r_device = r_device;
-		target.r_allocator = VK_NULL_HANDLE;
 
 		return VK_SUCCESS;
 	}

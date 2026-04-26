@@ -11,6 +11,9 @@ namespace rhi {
 		extent(),
 		format(VK_FORMAT_UNDEFINED),
 
+		mip_levels(0),
+		array_layers(0),
+
 		r_device(VK_NULL_HANDLE),
 		r_allocator(VK_NULL_HANDLE)
 	{
@@ -25,6 +28,9 @@ namespace rhi {
 
 		extent(other.extent),
 		format(other.format),
+
+		mip_levels(other.mip_levels),
+		array_layers(other.array_layers),
 
 		r_device(other.r_device),
 		r_allocator(other.r_allocator)
@@ -46,6 +52,12 @@ namespace rhi {
 		m_image = other.m_image;
 		m_view = other.m_view;
 		m_allocation = other.m_allocation;
+
+		extent = other.extent;
+		format = other.format;
+
+		mip_levels = other.mip_levels;
+		array_layers = other.array_layers;
 		
 		r_device = other.r_device;
 		r_allocator = other.r_allocator;
@@ -62,6 +74,14 @@ namespace rhi {
 		
 		if (r_allocator && m_allocation)
 			vmaDestroyImage(r_allocator, m_image, m_allocation);
+	}
+
+	VkFormat pmvImage::native_format() const noexcept {
+		return format;
+	}
+
+	VkExtent3D pmvImage::native_extent() const noexcept {
+		return extent;
 	}
 
 	void pmvImage::reset() noexcept {

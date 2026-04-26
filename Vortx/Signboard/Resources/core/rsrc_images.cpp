@@ -4,24 +4,25 @@ rsrc_images::rsrc_images(const rhi::creDevice& device, const rhi::creAllocator& 
 	:
 	r_device(device),
 	r_allocator(allocator),
-	m_writer(imageWrite)
+	_wrt(imageWrite)
 {
 
 }
 
 uint32_t rsrc_images::createImage(const createInfo& info) {
-	rhi::pcdImageAllocate prcdr{ r_device, r_allocator };
+	rhi::pcdImageAllocate pcd{ r_device, r_allocator };
 	
-	prcdr.set_format(info.format);
-	prcdr.set_extent(info.extent);
-	prcdr.set_usage(info.usage);
-	prcdr.set_aspect(info.aspect);
+	pcd.image_format(info.format);
+	pcd.image_extent(info.extent);
+	pcd.image_usage(info.usage);
 
-	auto builder = [&](rhi::pmvImage* i) {
-		prcdr.allocate(*i);
+	pcd.allocation_usage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+
+	auto _ctor = [&](rhi::pmvImage* i) {
+		pcd.allocate(*i);
 	};
 
-	return m_writer.construct(builder);
+	return _wrt.construct(_ctor);
 
 }
 

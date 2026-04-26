@@ -19,7 +19,7 @@ namespace rhi {
 		pcdFramebufferCreate(const pcdFramebufferCreate&) = delete;
 		pcdFramebufferCreate& operator=(const pcdFramebufferCreate&) = delete;
 
-		VkResult push_attachments(ctnr::span<const pmvImage> images);
+		VkResult push_attachments(const ctnr::vltView<rhi::pmvImage>& images, ctnr::span<const uint32_t> imageHandles);
 
 		VkResult publish(pmvFramebuffer& target_framebuffer);
 

@@ -35,14 +35,6 @@ uint32_t Resources::allocateMesh(const Model& model) {
 }
 
 uint32_t Resources::allocateImage() {
-
-}
-
-ResourceView Resources::read_resources() const noexcept {
-	return {
-		ctnr::vltView<rhi::pmvBuffer>{ m_buffers },
-		ctnr::vltView<rhi::pmvImage>{m_images},
-		ctnr::vltView<Mesh>{m_meshes}
-	};
+	return -1;
 }
 

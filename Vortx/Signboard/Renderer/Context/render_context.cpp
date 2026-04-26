@@ -21,7 +21,7 @@ rhi::creInstance::createInfo RHIContext::get_instanceCreateInfo() noexcept {
 		info.extensions.push_back(exts[i]);
 	}
 
-#ifndef NDEBUG
+#ifdef _VALIDATE
 	info.enable_validation = true;
 #endif
 

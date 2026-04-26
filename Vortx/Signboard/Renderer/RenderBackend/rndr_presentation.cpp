@@ -60,3 +60,11 @@ VkResult rndr_presentation::construct_swapchain() {
 
 	return VK_SUCCESS;
 }
+
+uint32_t rndr_presentation::expose_swapchainImageCount() const noexcept {
+	return static_cast<uint32_t>(swapchainImageHandles.size());
+}
+
+ctnr::span<const uint32_t> rndr_presentation::expose_swapchainImages() const noexcept {
+	return swapchainImageHandles;
+}
