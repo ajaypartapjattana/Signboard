@@ -5,11 +5,11 @@
 
 #include "Signboard/RHI/detail/standardQueues.h"
 
-namespace rhi::access {
-	struct device_pAccess;
-}
-
 namespace rhi {
+
+	namespace access {
+		struct device_pAccess;
+	}
 
 	class creInstance;
 	class creSurface;
@@ -41,9 +41,9 @@ namespace rhi {
 
 	private:
 		friend class pcdQueueSubmission;
-		friend struct rhi::access::device_pAccess;
+		friend struct access::device_pAccess;
 
-		VkDevice _dvc;
+		VkDevice r_device;
 		VkPhysicalDevice m_physical;
 
 		standardQueues m_queues;

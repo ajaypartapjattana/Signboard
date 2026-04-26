@@ -4,8 +4,8 @@
 
 Resources::Resources(const RHIContext& context) noexcept
 	:
-	bufferControl(rndr_context_Access::get_allocator(context), ctnr::vault_writeAccessor<rhi::pmvBuffer>{ m_buffers }),
-	imageControl(rndr_context_Access::get_device(context), rndr_context_Access::get_allocator(context), ctnr::vault_writeAccessor<rhi::pmvImage>{m_images})
+	bufferControl(rndr_context_Access::get_allocator(context), ctnr::vltWrite<rhi::pmvBuffer>{ m_buffers }),
+	imageControl(rndr_context_Access::get_device(context), rndr_context_Access::get_allocator(context), ctnr::vltWrite<rhi::pmvImage>{m_images})
 {
 
 }
@@ -29,7 +29,7 @@ uint32_t Resources::allocateMesh(const Model& model) {
 		_mesh.indexCount = static_cast<uint32_t>(indexCount);
 	};
 	
-	ctnr::vault_writeAccessor l_writer{ m_meshes };
+	ctnr::vltWrite l_writer{ m_meshes };
 	
 	return l_writer.construct(builder);
 }

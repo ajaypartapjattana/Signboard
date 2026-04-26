@@ -10,27 +10,32 @@ namespace rhi {
 	class pmvSwapchain;
 	class pmvSemaphore;
 
-	class pcdSwapchainPresenter {
+	class pcdQueuePresent {
 	public:
-		pcdSwapchainPresenter(const rhi::creDevice& device, const rhi::pmvSwapchain& swapchain) noexcept;
+		pcdQueuePresent(const creDevice& device, const VkPresentInfoKHR* pCreateInfo = nullptr) noexcept;
 
-		pcdSwapchainPresenter(const pcdSwapchainPresenter&) = delete;
-		pcdSwapchainPresenter& operator=(const pcdSwapchainPresenter&) = delete;
+		pcdQueuePresent(const pcdQueuePresent&) = delete;
+		pcdQueuePresent& operator=(const pcdQueuePresent&) = delete;
 
-		pcdSwapchainPresenter(pcdSwapchainPresenter&&) noexcept;
-		pcdSwapchainPresenter& operator=(pcdSwapchainPresenter&&) noexcept;
+		pcdQueuePresent(pcdQueuePresent&&) noexcept;
+		pcdQueuePresent& operator=(pcdQueuePresent&&) = delete;
 
-		pcdSwapchainPresenter& add_wait(const rhi::pmvSemaphore* pSemaphores, uint32_t count);
+		void target_swapchain(const pmvSwapchain& swapchain) noexcept;
+
+		pcdQueuePresent& add_wait(const pmvSemaphore* pSemaphores, uint32_t count);
 
 		VkResult present(uint32_t imageIndex);
 
 	private:
-		VkQueue r_presentQueue;
-		VkSwapchainKHR r_swapchain;
+		VkPresentInfoKHR fetch_basic(const VkPresentInfoKHR* pCreateInfo) const noexcept;
 
+	private:
+		const VkQueue r_presentQueue;
+
+		VkSwapchainKHR r_swapchain;
 		std::vector<VkSemaphore> waitSemaphores;
 
-		VkPresentInfoKHR info;
+		VkPresentInfoKHR _info;
 
 	};
 

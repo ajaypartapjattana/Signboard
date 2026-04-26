@@ -36,8 +36,8 @@ namespace rhi {
 	class pcdBufferAllocate;
 	class pcdSamplerCreator;
 	class pcdSwapchainCreate;
-	class pcdSwapchainHandler;
-	class pcdSwapchainPresenter;
+	class pcdSwapchainImageAcquire;
+	class pcdQueuePresent;
 	class pcdRenderPassCreate;
 	class pcdPipelineLayoutCreate;
 	class pcdShaderModuleCreate;

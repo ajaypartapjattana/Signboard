@@ -9,20 +9,23 @@ namespace rhi{
 	class pmvSwapchain;
 	class pmvSemaphore;
 	
-	class pcdSwapchainHandler {
+	class pcdSwapchainImageAcquire {
 	public:
-		pcdSwapchainHandler(const rhi::creDevice& device, const rhi::pmvSwapchain& swapchain) noexcept;
+		pcdSwapchainImageAcquire(const creDevice& device) noexcept;
 
-		pcdSwapchainHandler(const pcdSwapchainHandler&) = delete;
-		pcdSwapchainHandler& operator=(const pcdSwapchainHandler&) = delete;
+		pcdSwapchainImageAcquire(const pcdSwapchainImageAcquire&) = delete;
+		pcdSwapchainImageAcquire& operator=(const pcdSwapchainImageAcquire&) = delete;
 
-		pcdSwapchainHandler(pcdSwapchainHandler&&) noexcept;
-		pcdSwapchainHandler& operator=(pcdSwapchainHandler&&) noexcept;
+		pcdSwapchainImageAcquire(pcdSwapchainImageAcquire&&) noexcept;
+		pcdSwapchainImageAcquire& operator=(pcdSwapchainImageAcquire&&) = delete;
 
-		VkResult acquire_freeSwapchainImage(const rhi::pmvSemaphore* semaphore, uint32_t& index) const noexcept;
+		void target_swapchain(const pmvSwapchain& swapchain) noexcept;
+
+		VkResult acquire_freeSwapchainImage(const pmvSemaphore* semaphore, uint32_t& index) const noexcept;
 
 	private:
-		VkDevice r_device;
+		const VkDevice r_device;
+
 		VkSwapchainKHR r_swapchain;
 
 	};

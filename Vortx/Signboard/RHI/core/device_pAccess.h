@@ -7,7 +7,7 @@ namespace rhi::access {
 	struct device_pAccess {
 
 		static VkDevice extract(const rhi::creDevice& d) noexcept {
-			return d._dvc;
+			return d.r_device;
 		}
 
 		static VkPhysicalDevice get_physicalDevice(const rhi::creDevice& d) noexcept {

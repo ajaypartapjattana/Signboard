@@ -1,6 +1,6 @@
 #include "rsrc_buffers.h"
 
-rsrc_buffers::rsrc_buffers(const rhi::creAllocator& allocator, ctnr::vault_writeAccessor<rhi::pmvBuffer>&& buffer_write)
+rsrc_buffers::rsrc_buffers(const rhi::creAllocator& allocator, ctnr::vltWrite<rhi::pmvBuffer>&& buffer_write)
 	:
 	r_bufferAllocator(allocator),
 	m_writer(buffer_write)

@@ -16,7 +16,7 @@ namespace ctnr {
 
 	template<typename T> class vltView;
 	template<typename T, typename... Masks> class vltView_const;
-	template<typename T> class vault_writeAccessor;
+	template<typename T> class vltWrite;
 
 	template <typename T>
 	class vault {
@@ -146,7 +146,7 @@ namespace ctnr {
 		template <typename, typename, typename...>
 		friend class storage_readIterator;
 
-		template <typename>	friend class vault_writeAccessor;
+		template <typename>	friend class vltWrite;
 		template <typename> friend class vltView;
 		template <typename, typename...> friend class vltView_const;
 
@@ -447,32 +447,32 @@ namespace ctnr {
 	};
 
 	template <typename T>
-	class vault_writeAccessor {
+	class vltWrite {
 	public:
-		vault_writeAccessor(vault<T>& vault)
+		vltWrite(vault<T>& vault)
 			:
 			m_vault(vault)
 		{
 
 		}
 
-		vault_writeAccessor(const vault_writeAccessor& other) noexcept
+		vltWrite(const vltWrite& other) noexcept
 			:
 			m_vault(other.m_vault)
 		{
 
 		}
 
-		vault_writeAccessor& operator=(const vault_writeAccessor&) = delete;
+		vltWrite& operator=(const vltWrite&) = delete;
 
-		vault_writeAccessor(vault_writeAccessor&& other) noexcept
+		vltWrite(vltWrite&& other) noexcept
 			:
 			m_vault(other.m_vault)
 		{
 
 		}
 
-		vault_writeAccessor& operator=(vault_writeAccessor&&) = delete;
+		vltWrite& operator=(vltWrite&&) = delete;
 
 		void reserve_slots(uint32_t count) {
 			if (count == 0) return;

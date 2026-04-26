@@ -49,7 +49,7 @@ uint32_t passes::createSwapchainRenderPass(const rhi::pmvSwapchain& swapchain) {
 		pcd.publish(*renderPass);
 		};
 
-	ctnr::vault_writeAccessor<rhi::pmvRenderPass> _wrt{ m_renderPasses };
+	ctnr::vltWrite<rhi::pmvRenderPass> _wrt{ m_renderPasses };
 	return _wrt.construct(builder);
 }
 
@@ -82,7 +82,7 @@ uint32_t passes::createRenderPass(const renderPassCreateInfo& info) {
 		prcdr.publish(*renderPass);
 	};
 
-	ctnr::vault_writeAccessor<rhi::pmvRenderPass> _wrt{ m_renderPasses };
+	ctnr::vltWrite<rhi::pmvRenderPass> _wrt{ m_renderPasses };
 	return _wrt.construct(builder);
 }
 
@@ -99,7 +99,7 @@ uint32_t passes::createFramebuffers(const uint32_t renderPassIndex, const frameb
 		pcd.publish(*fb);
 	};
 
-	ctnr::vault_writeAccessor<rhi::pmvFramebuffer> _wrt{ m_framebuffers };
+	ctnr::vltWrite<rhi::pmvFramebuffer> _wrt{ m_framebuffers };
 
 	return _wrt.construct(_ctor);
 }

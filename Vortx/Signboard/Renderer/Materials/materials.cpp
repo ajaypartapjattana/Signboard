@@ -47,7 +47,7 @@ uint32_t materials::createPipelineLayout(const std::vector<shaderBinary>& shader
 		sets[b.set].push_back(b);
 	}
 	
-	ctnr::vault_writeAccessor<rhi::pmvDescriptorSetLayout> _DLwrt{ m_descriptorLayouts };
+	ctnr::vltWrite<rhi::pmvDescriptorSetLayout> _DLwrt{ m_descriptorLayouts };
 	std::vector<uint32_t> descHandles;
 	for (auto& [setIndex, bindings] : sets) {
 		rhi::pcdDescriptorSetLayoutCreate DLCreate{ r_device };
@@ -86,12 +86,12 @@ uint32_t materials::createPipelineLayout(const std::vector<shaderBinary>& shader
 		PLCreate.publish(*pl);
 	};
 
-	ctnr::vault_writeAccessor<rhi::pmvPipelineLayout> _wrt{ m_pipelineLayouts };
+	ctnr::vltWrite<rhi::pmvPipelineLayout> _wrt{ m_pipelineLayouts };
 	return _wrt.construct(builder);
 }
 
 uint32_t materials::createPipeline(uint32_t renderPassIndex, uint32_t subpass, uint32_t pipelineLayoutIndex, const pipelineCreateInfo& info) {
-	ctnr::vault_writeAccessor<rhi::pmvPipelineLayout> _PLView{ m_pipelineLayouts };
+	ctnr::vltWrite<rhi::pmvPipelineLayout> _PLView{ m_pipelineLayouts };
 	const rhi::pmvPipelineLayout& pipeLayout = *_PLView.get(pipelineLayoutIndex);
 	
 	rhi::pcdPipelineBuilder prcdr{ r_device, r_swapchain, pipeLayout };
@@ -118,7 +118,7 @@ uint32_t materials::createPipeline(uint32_t renderPassIndex, uint32_t subpass, u
 		prcdr.build_graphicsPipeline(subpass, *p);
 	};
 	
-	ctnr::vault_writeAccessor<rhi::pmvPipeline> _wrt{ m_pipelines };
+	ctnr::vltWrite<rhi::pmvPipeline> _wrt{ m_pipelines };
 	return _wrt.construct(builder);
 }
 

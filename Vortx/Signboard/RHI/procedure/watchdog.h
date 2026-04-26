@@ -18,7 +18,7 @@ namespace rhi {
 		void wait_device() const noexcept;
 
 	private:
-		VkDevice r_device;
+		const VkDevice r_device;
 
 	};
 

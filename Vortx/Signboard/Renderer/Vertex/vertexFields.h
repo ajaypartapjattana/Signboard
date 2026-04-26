@@ -20,6 +20,6 @@ public:
 
 private:
 	ctnr::vault<rhi::pmvVertexLayout> m_vertexLayouts;
-	ctnr::vault_writeAccessor<rhi::pmvVertexLayout> m_writer;
+	ctnr::vltWrite<rhi::pmvVertexLayout> m_writer;
 
 };

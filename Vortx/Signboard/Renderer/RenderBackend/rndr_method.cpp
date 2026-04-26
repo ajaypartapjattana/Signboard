@@ -66,7 +66,7 @@ VkResult rndr_method::create_primaryTarget(ctnr::span<const uint32_t> swapchainI
 		target.pipelineIndices.push_back(pipeline_idx);
 	};
 
-	ctnr::vault_writeAccessor<renderTarget> _wrt{ m_renderTargets };
+	ctnr::vltWrite<renderTarget> _wrt{ m_renderTargets };
 	primaryTarget_idx = _wrt.construct(_ctor);
 	
 	return VK_SUCCESS;
@@ -90,12 +90,12 @@ void rndr_method::create_renderTarget(renderTargetCreateInfo& creatInfo) {
 		target.pipelineIndices.push_back(pipeline_idx);
 	};
 
-	ctnr::vault_writeAccessor<renderTarget> _wrt{ m_renderTargets };
+	ctnr::vltWrite<renderTarget> _wrt{ m_renderTargets };
 	primaryTarget_idx = _wrt.construct(builder);
 }
 
 void rndr_method::validate_primaryTarget(ctnr::span<const uint32_t> swapchainImageIndices) {
-	ctnr::vault_writeAccessor<renderTarget> _wrt{ m_renderTargets };
+	ctnr::vltWrite<renderTarget> _wrt{ m_renderTargets };
 	renderTarget& primary = *_wrt.get(primaryTarget_idx);
 
 	passes::framebufferCreateInfo passInfo{};

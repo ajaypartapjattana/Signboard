@@ -5,7 +5,7 @@
 
 class rsrc_images {
 public:
-	rsrc_images(const rhi::creDevice& device, const rhi::creAllocator& allocator, ctnr::vault_writeAccessor<rhi::pmvImage> imageWrite);
+	rsrc_images(const rhi::creDevice& device, const rhi::creAllocator& allocator, ctnr::vltWrite<rhi::pmvImage> imageWrite);
 
 	struct createInfo {
 		VkFormat format;
@@ -17,8 +17,7 @@ public:
 	uint32_t createImage(const createInfo& info);
 
 private:
-	const rhi::creDevice& r_device;
-	const rhi::creAllocator& r_allocator;
-	ctnr::vault_writeAccessor<rhi::pmvImage> _wrt;
+	rhi::pcdImageAllocate m_allocator;
+	ctnr::vltWrite<rhi::pmvImage> _wrt;
 
 };

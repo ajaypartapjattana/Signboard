@@ -25,7 +25,7 @@ void Renderer::render() {
 		return;
 	}
 
-	m_framedraw.drawFrame(acquiredImage, m_interface.get_graphicsCMD());
+	m_framedraw.drawFrame(acquiredImage, m_interface.expose_graphicsCMD());
 	m_interface.submit_graphics(waitUploads);
 
 	m_interface.present_activeFrame();
@@ -44,7 +44,7 @@ bool Renderer::prepareFrame() {
 }
 
 bool Renderer::defferUploads() {
-	VkResult result = m_transfer.recordUploads(m_interface.get_transferCMD());
+	VkResult result = m_transfer.recordUploads(m_interface.expose_transferCMD());
 
 	if (result == VK_INCOMPLETE)
 		return false;

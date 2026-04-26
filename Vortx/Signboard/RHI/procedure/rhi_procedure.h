@@ -39,8 +39,8 @@ namespace rhi {
 
 	class pcdSwapchainCreate;
 	class pcdSwapchainImageAllocate;
-	class pcdSwapchainHandler;
-	class pcdSwapchainPresenter;
+	class pcdSwapchainImageAcquire;
+	class pcdQueuePresent;
 
 	class pcdDescriptorSetLayoutCreate;
 

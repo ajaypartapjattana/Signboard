@@ -50,7 +50,7 @@ VkResult rndr_presentation::construct_swapchain() {
 
 	uint32_t _siCt = pcd.get_imageCount();
 
-	ctnr::vault_writeAccessor<rhi::pmvImage> _wrt = Resources_pAccess::get_imageWrite(r_resources);
+	ctnr::vltWrite<rhi::pmvImage> _wrt = Resources_pAccess::get_imageWrite(r_resources);
 
 	for (uint32_t idx : swapchainImageHandles) {
 		_wrt.destroy(idx);

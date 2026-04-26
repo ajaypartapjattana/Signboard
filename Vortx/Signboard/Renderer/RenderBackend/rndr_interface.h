@@ -17,8 +17,8 @@ public:
 	void validate_swapchainDependancy();
 	void configure_bufferedFrames(uint32_t count);
 
-	rhi::pmvCommandBuffer& get_graphicsCMD();
-	rhi::pmvCommandBuffer& get_transferCMD();
+	rhi::pmvCommandBuffer& expose_graphicsCMD();
+	rhi::pmvCommandBuffer& expose_transferCMD();
 
 	uint32_t acquire_toWriteImage(VkBool32* aquire_optimal) noexcept;
 	void submit_graphics(bool waitTransfer);
@@ -39,8 +39,8 @@ private:
 	const rhi::pmvSwapchain& r_swapchain;
 
 	rhi::pcdWatchdog m_watchdog;
-	rhi::pcdSwapchainHandler m_swapchainHandler;
-	rhi::pcdSwapchainPresenter m_presenter;
+	rhi::pcdSwapchainImageAcquire m_swapchainAcquire;
+	rhi::pcdQueuePresent m_presenter;
 
 	rhi::standardCommandPools m_commandPools;
 	rhi::pcdQueueSubmission m_graphics_submission;
@@ -61,7 +61,7 @@ private:
 		rhi::pmvCommandBuffer CMDTransfer;
 
 		frame(const rhi::creDevice& device);
-	};
+	}; // [move frames owner-ship to renderer rather than the interface.
 	std::vector<frame> frames;
 	uint32_t activeFrameIndex = 0;
 	uint32_t a_imageIndex;

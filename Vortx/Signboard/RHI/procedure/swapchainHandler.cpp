@@ -7,15 +7,15 @@
 
 namespace rhi {
 
-	pcdSwapchainHandler::pcdSwapchainHandler(const rhi::creDevice& device, const rhi::pmvSwapchain& swapchain) noexcept
+	pcdSwapchainImageAcquire::pcdSwapchainImageAcquire(const creDevice& device) noexcept
 		:
-		r_device(rhi::access::device_pAccess::extract(device)),
-		r_swapchain(rhi::access::swapchain_pAccess::extract(swapchain))
+		r_device(access::device_pAccess::extract(device)),
+		r_swapchain()
 	{
 
 	}
 
-	pcdSwapchainHandler::pcdSwapchainHandler(pcdSwapchainHandler&& other) noexcept 
+	pcdSwapchainImageAcquire::pcdSwapchainImageAcquire(pcdSwapchainImageAcquire&& other) noexcept 
 		: 
 		r_swapchain(other.r_swapchain),
 		r_device(other.r_device)
@@ -23,18 +23,12 @@ namespace rhi {
 
 	}
 
-	pcdSwapchainHandler& pcdSwapchainHandler::operator=(pcdSwapchainHandler&& other) noexcept {
-		if (this == &other)
-			return *this;
-
-		r_swapchain = other.r_swapchain;
-		r_device = other.r_device;
-
-		return *this;
+	void pcdSwapchainImageAcquire::target_swapchain(const pmvSwapchain& swapchain) noexcept {
+		r_swapchain = access::swapchain_pAccess::extract(swapchain);
 	}
 
-	VkResult pcdSwapchainHandler::acquire_freeSwapchainImage(const rhi::pmvSemaphore* semaphore, uint32_t& index) const noexcept {
-		VkSemaphore a_semaphore = semaphore ? rhi::access::semaphore_pAccess::get(*semaphore) : VK_NULL_HANDLE;
+	VkResult pcdSwapchainImageAcquire::acquire_freeSwapchainImage(const pmvSemaphore* semaphore, uint32_t& index) const noexcept {
+		VkSemaphore a_semaphore = semaphore ? access::semaphore_pAccess::get(*semaphore) : VK_NULL_HANDLE;
 		return vkAcquireNextImageKHR(r_device, r_swapchain, UINT64_MAX, a_semaphore, VK_NULL_HANDLE, &index);
 	}
 

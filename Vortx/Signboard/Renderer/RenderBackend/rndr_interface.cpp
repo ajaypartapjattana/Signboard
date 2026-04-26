@@ -12,12 +12,15 @@ rndr_interface::rndr_interface(const RHIContext& context, const rndr_presentatio
 	r_swapchain(rndr_presentation_Access::get_swapchain(presentation)),
 
 	m_watchdog(r_device),
-	m_swapchainHandler(r_device, r_swapchain),
-	m_presenter(r_device, r_swapchain),
+	m_swapchainAcquire(r_device),
+	m_presenter(r_device),
 
 	m_graphics_submission(r_device),
 	m_tranfer_submission(r_device)
 {
+	m_swapchainAcquire.target_swapchain(r_swapchain);
+	m_presenter.target_swapchain(r_swapchain);
+
 	summon_commandPools();
 	configure_bufferedFrames(presentation.expose_swapchainImageCount());
 }
@@ -41,11 +44,8 @@ VkResult rndr_interface::summon_commandPools() {
 }
 
 void rndr_interface::validate_swapchainDependancy() {
-	rhi::pcdSwapchainHandler l_handler{ r_device, r_swapchain };
-	m_swapchainHandler = std::move(l_handler);
-
-	rhi::pcdSwapchainPresenter l_presenter{ r_device, r_swapchain };
-	m_presenter = std::move(l_presenter);
+	m_swapchainAcquire.target_swapchain(r_swapchain);
+	m_presenter.target_swapchain(r_swapchain);
 }
 
 void rndr_interface::configure_bufferedFrames(uint32_t count) {
@@ -78,7 +78,7 @@ void rndr_interface::allocate_command_buffers() {
 uint32_t rndr_interface::acquire_toWriteImage(VkBool32* acquire_optimal) noexcept {
 	m_watchdog.watch_fence(frames[activeFrameIndex].frameInFlight);
 
-	VkResult result = m_swapchainHandler.acquire_freeSwapchainImage(&frames[activeFrameIndex].imageAvailable, a_imageIndex);
+	VkResult result = m_swapchainAcquire.acquire_freeSwapchainImage(&frames[activeFrameIndex].imageAvailable, a_imageIndex);
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 		*acquire_optimal = VK_FALSE;
@@ -97,11 +97,11 @@ uint32_t rndr_interface::acquire_toWriteImage(VkBool32* acquire_optimal) noexcep
 	return a_imageIndex;
 }
 
-rhi::pmvCommandBuffer& rndr_interface::get_graphicsCMD() {
+rhi::pmvCommandBuffer& rndr_interface::expose_graphicsCMD() {
 	return frames[activeFrameIndex].CMDGraphics;
 }
 
-rhi::pmvCommandBuffer& rndr_interface::get_transferCMD() {
+rhi::pmvCommandBuffer& rndr_interface::expose_transferCMD() {
 	return frames[activeFrameIndex].CMDTransfer;
 }
 

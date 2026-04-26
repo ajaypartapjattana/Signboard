@@ -12,7 +12,7 @@ namespace rhi {
 
 	creDevice::creDevice(const createInfo& createInfo, const creInstance& instance)
 		: 
-		_dvc(VK_NULL_HANDLE), 
+		r_device(VK_NULL_HANDLE), 
 		m_physical(VK_NULL_HANDLE)
 	{
 		VkInstance vkInstance = rhi::access::instance_pAccess::get(instance);
@@ -21,34 +21,34 @@ namespace rhi {
 
 	creDevice::creDevice(creDevice&& other) noexcept 
 		: 
-		_dvc(other._dvc),
+		r_device(other.r_device),
 		m_physical(other.m_physical),
 		m_queues(std::move(other.m_queues)),
 		m_enabledFeatures(std::move(other.m_enabledFeatures))
 	{
-		other._dvc = VK_NULL_HANDLE;
+		other.r_device = VK_NULL_HANDLE;
 	}
 
 	creDevice& creDevice::operator=(creDevice&& other) noexcept {
 		if (this == &other)
 			return *this;
 
-		if (_dvc)
-			vkDestroyDevice(_dvc, nullptr);
+		if (r_device)
+			vkDestroyDevice(r_device, nullptr);
 
-		_dvc = other._dvc;
+		r_device = other.r_device;
 		m_physical = other.m_physical;
 		m_queues = std::move(other.m_queues);
 		m_enabledFeatures = std::move(other.m_enabledFeatures);
 
-		other._dvc = VK_NULL_HANDLE;
+		other.r_device = VK_NULL_HANDLE;
 
 		return *this;
 	}
 
 	creDevice::~creDevice() noexcept {
-		if (_dvc != VK_NULL_HANDLE)
-			vkDestroyDevice(_dvc, nullptr);
+		if (r_device != VK_NULL_HANDLE)
+			vkDestroyDevice(r_device, nullptr);
 	}
 
 	bool creDevice::active_feature(const VkBool32 VkPhysicalDeviceFeatures::* feature) const noexcept {
@@ -236,16 +236,16 @@ namespace rhi {
 		createInfo.ppEnabledExtensionNames = a_requiredExtensions.data();
 		createInfo.pEnabledFeatures = &suited_physical->enabledFeatures;
 
-		VkResult result = vkCreateDevice(suited_physical->phys, &createInfo, nullptr, &_dvc);
+		VkResult result = vkCreateDevice(suited_physical->phys, &createInfo, nullptr, &r_device);
 		if (result != VK_SUCCESS)
 			throw std::runtime_error("FAILURE: device_creation!");
 
 		m_physical = suited_physical->phys;
 
-		vkGetDeviceQueue(_dvc, idx.graphics, 0, &m_queues.graphics);
-		vkGetDeviceQueue(_dvc, idx.compute, 0, &m_queues.compute);
-		vkGetDeviceQueue(_dvc, idx.transfer, 0, &m_queues.transfer);
-		vkGetDeviceQueue(_dvc, idx.present, 0, &m_queues.present);
+		vkGetDeviceQueue(r_device, idx.graphics, 0, &m_queues.graphics);
+		vkGetDeviceQueue(r_device, idx.compute, 0, &m_queues.compute);
+		vkGetDeviceQueue(r_device, idx.transfer, 0, &m_queues.transfer);
+		vkGetDeviceQueue(r_device, idx.present, 0, &m_queues.present);
 
 		m_families.graphics = idx.graphics;
 		m_families.compute = idx.compute;

@@ -5,7 +5,7 @@
 
 class rsrc_buffers {
 public:
-	rsrc_buffers(const rhi::creAllocator& allocator, ctnr::vault_writeAccessor<rhi::pmvBuffer>&& buffer_write);
+	rsrc_buffers(const rhi::creAllocator& allocator, ctnr::vltWrite<rhi::pmvBuffer>&& buffer_write);
 
 	struct createInfo {
 		VkBufferUsageFlags usage;
@@ -21,6 +21,6 @@ public:
 
 private:
 	rhi::pcdBufferAllocate r_bufferAllocator;
-	ctnr::vault_writeAccessor<rhi::pmvBuffer> m_writer;
+	ctnr::vltWrite<rhi::pmvBuffer> m_writer;
 
 };
