@@ -3,11 +3,9 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 
-namespace rhi::access {
-	struct renderPass_pAccess;
-}
-
 namespace rhi {
+
+	struct _pAccess;
 
 	class pcdRenderPassCreate;
 
@@ -23,12 +21,14 @@ namespace rhi {
 
 		~pmvRenderPass() noexcept;
 
+		void reset() noexcept;
+
 	private:
 		friend class pcdRenderPassCreate;
-		friend struct rhi::access::renderPass_pAccess;
+		friend struct _pAccess;
 
 		VkRenderPass m_renderPass;
-		std::vector<VkFormat> ordered_attachmentFormats;
+		uint32_t attachmentCount;
 
 		VkDevice r_device;
 

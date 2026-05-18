@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
+#include <memory>
 
 namespace rhi {
 
@@ -10,23 +11,26 @@ namespace rhi {
 
 	class pcdImageViewCreate {
 	public:
-		pcdImageViewCreate(const creDevice& device, const VkImageViewCreateInfo* pCreateInfo = nullptr) noexcept;
+		pcdImageViewCreate(const creDevice& device, VkImageViewCreateInfo* pCreateInfo = nullptr) noexcept;
 
 		void aspect(VkImageAspectFlags aspect) noexcept;
-		void mipRange(uint32_t baseLevel, uint32_t levelCount) noexcept;
-		void imageArray(uint32_t baseLayer, uint32_t layerCount) noexcept;
+		void mipLevel(uint32_t baseLevel, uint32_t levelCount) noexcept;
+		void arrayLayer(uint32_t baseLayer, uint32_t layerCount) noexcept;
 
-		void envelop_image(pmvImage& image) noexcept;
+		void components(VkComponentMapping mapping) noexcept;
 
-		VkResult publish(pmvImage& image);
+		void target_image(const pmvImage& image) noexcept;
+
+		VkResult publish(pmvImage& image) const noexcept;
 
 	private:
-		VkImageViewCreateInfo fetch_basic(const VkImageViewCreateInfo* pCreateinfo) const noexcept;
+		VkImageViewCreateInfo* allot_basic(VkImageViewCreateInfo* pCreateinfo) noexcept;
 
 	private:
 		const VkDevice r_device;
 
-		VkImageViewCreateInfo _info;
+		std::unique_ptr<VkImageViewCreateInfo> m_ownedInfo;
+		VkImageViewCreateInfo* pInfo;
 
 	};
 

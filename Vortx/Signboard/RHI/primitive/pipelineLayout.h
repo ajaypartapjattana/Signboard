@@ -2,11 +2,9 @@
 
 #include <vulkan/vulkan.h>
 
-namespace rhi::access {
-	struct pipelineLayout_pAccess;
-}
-
 namespace rhi {
+
+	struct _pAccess;
 
 	class pcdPipelineLayoutCreate;
 
@@ -22,9 +20,11 @@ namespace rhi {
 
 		~pmvPipelineLayout() noexcept;
 
+		void reset() noexcept;
+
 	private:
 		friend class pcdPipelineLayoutCreate;
-		friend struct rhi::access::pipelineLayout_pAccess;
+		friend struct _pAccess;
 
 		VkPipelineLayout m_layout;
 

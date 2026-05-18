@@ -4,6 +4,7 @@
 #include "surface.h"
 #include "device.h"
 #include "allocator.h"
+#include "swapchain.h"
 
 namespace rhi {
 
@@ -11,5 +12,6 @@ namespace rhi {
 	class creSurface;
 	class creDevice;
 	class creAllocator;
+	class creSwapchain;
 
 }

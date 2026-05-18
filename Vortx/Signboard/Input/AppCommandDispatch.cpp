@@ -1,43 +1,37 @@
 #include "AppCommandDisptach.h"
 
-#include <GLFW/glfw3.h>
-#include <iostream>
+#include "Signboard/Core/core.h"
+#include "Signboard/Platform/platform.h"
 
-CommandDispatcher::CommandDispatcher(const InputMapping& mapping, std::vector<FrameCommand>& appEventQueue, bool& appRoutine)
+CommandDispatcher::CommandDispatcher(const InputMapping&& mapping, std::vector<FrameCommand>& appEventQueue, plf::windowEventState& eventState) noexcept
 	:
 	m_mapping(mapping),
 	targetCommandList(appEventQueue),
-	targetVisibility(appRoutine)
+	r_eventState(&eventState)
 {
 
 }
 
-#include "Signboard/Core/Frame/Frame_command.h"
+bool CommandDispatcher::ensureWindowVisibility() noexcept {
+	uint64_t _rszState = r_eventState->windowResize_event();
 
-void CommandDispatcher::resolveSurfaceEvents(platform::primitive::windowEventState& eventState) {
-	platform::primitive::eventStateSurfaceAccess l_surfaceAccess{ eventState };
+	auto data = event::decode_resize(_rszState);
 
-	uint64_t a_resizeState = l_surfaceAccess.windowResizeState();
-	if (verifyWindowVisibility(a_resizeState))
-		l_surfaceAccess.consumeResize();
-}
+	bool visibility = data.width != 0 && data.height != 0;
 
-bool CommandDispatcher::verifyWindowVisibility(uint64_t state) noexcept {
-	auto data = frame::event::decode_resize(state);
-
-	if (!data.dirty)
-		return false;
-	
-	targetVisibility = (data.width != 0 && data.height != 0);
-
-	if (targetVisibility)
+	if (data.dirty) {
 		targetCommandList.push_back(makeCommand(CommandID::CONFIG));
+		r_eventState->windowResize_markClean();
+	}
 
-	return true;
+	return visibility;
 }
 
-void CommandDispatcher::resolveInputEvents(platform::primitive::windowEventState& eventState) {
-	m_resolver.resolveInputs(platform::primitive::eventStateInputsAccess{ eventState });
+void CommandDispatcher::resolveInputEvents() noexcept {
+	if (!r_eventState)
+		return;
+
+	m_resolver.resolveInputs(r_eventState->input_events());
 
 	for (const InputBinding& binding : m_mapping) {
 		if(istriggered(binding)) {
@@ -48,9 +42,16 @@ void CommandDispatcher::resolveInputEvents(platform::primitive::windowEventState
 
 bool CommandDispatcher::istriggered(const InputBinding& binding) const {
 	switch (binding.trigger) {
-	case InputTrigger::Pressed:		return m_resolver.isKeyPressed(binding.key);
-	case InputTrigger::Released:	return m_resolver.isKeyReleased(binding.key);
-	case InputTrigger::Held:		return m_resolver.isKeyHeld(binding.key);
+	case InputTrigger::Pressed:		
+		return m_resolver.isKeyPressed(binding.key);
+
+	case InputTrigger::Released:	
+		return m_resolver.isKeyReleased(binding.key);
+	
+	case InputTrigger::Held:		
+		return m_resolver.isKeyHeld(binding.key);
+
+	default:
+		return false;
 	}
-	return false;
 }

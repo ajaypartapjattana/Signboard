@@ -1,17 +1,14 @@
 #pragma once
 
-#include "Signboard/Platform/platform.h"
+#include "Signboard/Core/core.h"
 
-#include <glm/glm.hpp>
 #include <bitset>
-#include <vector>
-#include <cstdint>
 
 class InputResolver {
 public:
 	InputResolver() noexcept;
 
-	void resolveInputs(platform::primitive::eventStateInputsAccess&& m_inputsView);
+	void resolveInputs(sgb::span<const InputEvent> events) noexcept;
 
 	bool isKeyPressed(int key) const;
 	bool isKeyReleased(int key) const;

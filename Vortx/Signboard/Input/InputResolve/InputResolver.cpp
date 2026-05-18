@@ -4,22 +4,22 @@ InputResolver::InputResolver() noexcept {
 
 }
 
-void InputResolver::resolveInputs(platform::primitive::eventStateInputsAccess&& m_inputsAccess) {
+void InputResolver::resolveInputs(sgb::span<const InputEvent> events) noexcept {
 	m_mousePosPrev = m_mousePos;
 	m_scrollDelta = { 0.0f, 0.0f };
 
 	m_keysPrev = m_keys;
 	m_mouseButtonsPrev = m_mouseButtons;
 
-	using type = frame::event::InputType;
+	using type = event::InputType;
 
-	for (const InputEvent& e : m_inputsAccess) {
-		type a_type = frame::event::getType(e.payload);
+	for (const InputEvent& e : events) {
+		type a_type = event::getType(e.payload);
 
 		switch (a_type) {
 
 		case type::CURSOR_MOVE: {
-			auto pos = frame::event::decode_analog(e.payload);
+			auto pos = event::decode_analog(e.payload);
 			m_mousePos = glm::vec2{
 				(float)pos.x,
 				(float)pos.y
@@ -28,7 +28,7 @@ void InputResolver::resolveInputs(platform::primitive::eventStateInputsAccess&& 
 		}
 
 		case type::SCROLL: {
-			auto delta = frame::event::decode_analog(e.payload);
+			auto delta = event::decode_analog(e.payload);
 			m_scrollDelta += glm::vec2{
 				(float)delta.x,
 				(float)delta.y
@@ -37,7 +37,7 @@ void InputResolver::resolveInputs(platform::primitive::eventStateInputsAccess&& 
 		}
 
 		case type::KEY_BUTTON: {
-			auto key = frame::event::decode_digital(e.payload);
+			auto key = event::decode_digital(e.payload);
 			if (key.flags == GLFW_PRESS)
 				m_keys.set(key.payload);
 			else if (key.flags == GLFW_RELEASE)
@@ -46,7 +46,7 @@ void InputResolver::resolveInputs(platform::primitive::eventStateInputsAccess&& 
 		}
 
 		case type::MOUSE_BUTTON: {
-			auto mouseButton = frame::event::decode_digital(e.payload);
+			auto mouseButton = event::decode_digital(e.payload);
 			if (mouseButton.flags == GLFW_PRESS)
 				m_mouseButtons.set(mouseButton.payload);
 			else if (mouseButton.flags == GLFW_RELEASE)
@@ -59,8 +59,6 @@ void InputResolver::resolveInputs(platform::primitive::eventStateInputsAccess&& 
 			
 		}
 	}
-
-	m_inputsAccess.drainInputList();
 }
 
 bool InputResolver::isKeyPressed(int key) const {

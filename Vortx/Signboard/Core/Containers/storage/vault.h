@@ -1,8 +1,6 @@
 #pragma once
 
-#include <cstddef>
 #include <cstdint>
-#include <immintrin.h>
 #include <iterator>
 #include <new>
 #include <type_traits>
@@ -10,12 +8,12 @@
 
 #include "Signboard/Core/Math/bitops.h"
 
-namespace ctnr {
+namespace sgb {
 
 	template <typename Storage, typename T, typename... Masks> class storage_readIterator;
 
+	template<typename T> class vltQuery;
 	template<typename T> class vltView;
-	template<typename T, typename... Masks> class vltView_const;
 	template<typename T> class vltWrite;
 
 	template <typename T>
@@ -350,100 +348,94 @@ namespace ctnr {
 	};
 
 	template <typename T>
-	class vltView {
+	class vltQuery {
 	public:
-		explicit vltView(const vault<T>& vault) noexcept
+		vltQuery() noexcept = default;
+
+		vltQuery(const vault<T>& vault) noexcept
 			:
-			m_vault(vault)
+			m_vault(&vault)
 		{
 
 		}
 
-		vltView(const vltView&) = delete;
-		vltView& operator=(const vltView&) = delete;
+		vltQuery(const vltQuery& other) noexcept = default;
+		vltQuery& operator=(const vltQuery& other) noexcept = default;
 
-		vltView(vltView&& other) noexcept
-			:
-			m_vault(other.m_vault)
-		{
+		vltQuery(vltQuery&& other) noexcept = default;
+		vltQuery& operator=(vltQuery&& other) noexcept = default;
 
-		}
-
-		vltView& operator=(vltView&& other) = delete;
-
-		vltView& with(const bitmask& mask) {
+		vltQuery& with(const bitmask& mask) {
 			m_masks.push_back(&mask);
 			return *this;
 		}
 
-		template <typename... Masks>
-		auto with_static(const Masks&... masks) const {
-			return vltView_const<T, Masks...>(m_vault, masks...);
-		}
-
 		_NODISCARD const T* get(uint32_t index) const noexcept {
-			if (!m_vault._is_alive(index)) return nullptr;
-			return m_vault.slots[index].object_ptr();
+			if (!m_vault->_is_alive(index)) return nullptr;
+			return m_vault->slots[index].object_ptr();
 		}
 
 		inline auto begin() const {
-			auto it = storage_readIterator<vault<T>, T>(m_vault, 0, m_masks.empty() ? nullptr : &m_masks);
+			auto it = storage_readIterator<vault<T>, T>(*m_vault, 0, m_masks.empty() ? nullptr : &m_masks);
 			it._init();
 			return it;
 		}
 
 		inline auto end() const {
-			return storage_readIterator<vault<T>, T>(m_vault, static_cast<uint32_t>(m_vault.aliveBits.size()), m_masks.empty() ? nullptr : &m_masks);
+			return storage_readIterator<vault<T>, T>(*m_vault, static_cast<uint32_t>(m_vault->aliveBits.size()), m_masks.empty() ? nullptr : &m_masks);
 		}
 
 	private:
-		const vault<T>& m_vault;
+		const vault<T>* m_vault;
 		std::vector<const bitmask*> m_masks;
 
 	};
 
-	template <typename T, typename... Masks>
-	class vltView_const {
+	template <typename T>
+	class vltView {
 	public:
-		explicit vltView_const(const vault<T>& vault, const Masks&... masks) noexcept
+		vltView() noexcept = default;
+
+		vltView(const vault<T>& vault) noexcept
 			:
-			m_vault(vault),
-			m_staticMasks{ &masks... }
+			m_vault(&vault)
 		{
 
 		}
 
-		vltView_const(const vltView_const&) = delete;
-		vltView_const& operator=(const vltView_const&) = delete;
+		vltView(const vltView&) noexcept = default;
+		vltView& operator=(const vltView&) noexcept = default;
 
-		vltView_const(vltView_const&& other) noexcept
-			:
-			m_vault(other.m_vault),
-			m_staticMasks(other.m_staticMasks)
-		{
+		vltView(vltView&&) noexcept = default;
+		vltView& operator=(vltView&&) noexcept = default;
 
+		_NODISCARD const T* operator[](uint32_t index) noexcept {
+			if (!m_vault) return nullptr;
+			if (!m_vault->_is_alive(index)) return nullptr;
+
+			return m_vault->slots[index].object_ptr();
 		}
-
-		vltView_const& operator=(vltView_const&& other) = delete;
 
 		_NODISCARD const T* get(uint32_t index) const noexcept {
-			if (!m_vault._is_alive(index)) return nullptr;
-			return m_vault.slots[index].object_ptr();
+			if (!m_vault) return nullptr;
+			if (!m_vault->_is_alive(index)) return nullptr;
+
+			return m_vault->slots[index].object_ptr();
 		}
 
 		inline auto begin() const {
-			auto it = storage_readIterator<vault<T>, T, Masks...>(m_vault, 0, m_staticMasks);
+			auto it = storage_readIterator<vault<T>, T>(*m_vault, 0);
 			it._init();
 			return it;
 		}
 
 		inline auto end() const {
-			return storage_readIterator<vault<T>, T, Masks...>(m_vault, static_cast<uint32_t>(m_vault.aliveBits.size()), m_staticMasks);
+			return storage_readIterator<vault<T>, T>(*m_vault, static_cast<uint32_t>(m_vault->aliveBits.size()));
 		}
 
 	private:
-		const vault<T>& m_vault;
-		std::tuple<const Masks*...> m_staticMasks;
+		const vault<T>* m_vault = nullptr;
+
 	};
 
 	template <typename T>
@@ -483,20 +475,23 @@ namespace ctnr {
 			m_vault._ensure_cap(_start + count - 1);
 		}
 
-		template <typename F>
-		_NODISCARD uint32_t construct(F&& builder) noexcept(std::is_nothrow_constructible_v<T> && noexcept(builder(std::declval<T*>()))) {
+		template<typename F>
+		_NODISCARD uint32_t construct(F&& builder) {
 			uint32_t idx = m_vault._alloc();
-
 			T* obj = m_vault.slots[idx].object_ptr();
 
-			new (obj) T();
-
+			bool constructed = false;
 			try {
+				new (obj) T();
+				constructed = true;
+
 				builder(obj);
 				m_vault._set_alive(idx);
 			}
 			catch (...) {
-				obj->~T();
+				if (constructed)
+					obj->~T();
+
 				m_vault._set_dead(idx);
 				throw;
 			}

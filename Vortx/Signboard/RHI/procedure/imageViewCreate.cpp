@@ -1,64 +1,69 @@
 #include "imageViewCreate.h"
 
-#include "Signboard/RHI/primitive/image.h"
-#include "Signboard/RHI/core/device_pAccess.h"
+#include "Signboard/RHI/Internal/rhi_pAccess.h"
 
 namespace rhi {
 
-	pcdImageViewCreate::pcdImageViewCreate(const creDevice& device, const VkImageViewCreateInfo* pCreateInfo) noexcept
+	pcdImageViewCreate::pcdImageViewCreate(const creDevice& device, VkImageViewCreateInfo* pCreateInfo) noexcept
 		:
-		r_device(access::device_pAccess::extract(device)),
-		_info(fetch_basic(pCreateInfo))
+		r_device(_pAccess::extract(device)),
+		pInfo(allot_basic(pCreateInfo))
 	{
 
 	}
 
-	VkImageViewCreateInfo pcdImageViewCreate::fetch_basic(const VkImageViewCreateInfo* pCreateinfo) const noexcept {
+	VkImageViewCreateInfo* pcdImageViewCreate::allot_basic(VkImageViewCreateInfo* pCreateinfo) noexcept {
 		if (pCreateinfo)
-			return *pCreateinfo;
+			return pCreateinfo;
 
-		VkImageViewCreateInfo info{};
-		info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		m_ownedInfo = std::make_unique<VkImageViewCreateInfo>();
 
-		info.subresourceRange.levelCount = 1;
-		info.subresourceRange.layerCount = 1;
+		VkImageViewCreateInfo* _info = m_ownedInfo.get();
+		_info->sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		_info->viewType = VK_IMAGE_VIEW_TYPE_2D;
 
-		return info;
+		_info->subresourceRange.levelCount = 1;
+		_info->subresourceRange.layerCount = 1;
+
+		return _info;
 	}
 
 	void pcdImageViewCreate::aspect(VkImageAspectFlags aspect) noexcept {
-		_info.subresourceRange.aspectMask = aspect;
+		pInfo->subresourceRange.aspectMask = aspect;
 	}
 
-	void pcdImageViewCreate::mipRange(uint32_t baseLevel, uint32_t levelCount) noexcept {
-		_info.subresourceRange.baseMipLevel = baseLevel;
-		_info.subresourceRange.levelCount = levelCount;
+	void pcdImageViewCreate::mipLevel(uint32_t baseLevel, uint32_t levelCount) noexcept {
+		pInfo->subresourceRange.baseMipLevel = baseLevel;
+		pInfo->subresourceRange.levelCount = levelCount;
 	}
 
-	void pcdImageViewCreate::imageArray(uint32_t baseLayer, uint32_t layerCount) noexcept {
-		_info.subresourceRange.baseArrayLayer = baseLayer;
-		_info.subresourceRange.layerCount = layerCount;
+	void pcdImageViewCreate::arrayLayer(uint32_t baseLayer, uint32_t layerCount) noexcept {
+		pInfo->subresourceRange.baseArrayLayer = baseLayer;
+		pInfo->subresourceRange.layerCount = layerCount;
 	}
 
-	void pcdImageViewCreate::envelop_image(pmvImage& image) noexcept {
-		_info.format = image.format;
-		_info.subresourceRange.levelCount = image.mip_levels;
-		_info.subresourceRange.layerCount = image.array_layers;
+	void pcdImageViewCreate::components(VkComponentMapping mapping) noexcept {
+		pInfo->components = mapping;
 	}
 
-	VkResult pcdImageViewCreate::publish(pmvImage& target) {
-		_info.image = target.m_image;
+	void pcdImageViewCreate::target_image(const pmvImage& image) noexcept {
+		pInfo->image = image.m_image;
+		pInfo->format = image.format;
 
+		pInfo->subresourceRange.levelCount = image.mip_levels;
+		pInfo->subresourceRange.layerCount = image.array_layers;
+	}
+
+	VkResult pcdImageViewCreate::publish(pmvImage& target) const noexcept {
 		VkImageView _view;
-		VkResult result = vkCreateImageView(r_device, &_info, nullptr, &_view);
+		VkResult result = vkCreateImageView(r_device, pInfo, nullptr, &_view);
 		if (result != VK_SUCCESS)
 			return result;
 
-		if (target.m_view)
-			vkDestroyImageView(r_device, target.m_view, nullptr);
+		target.reset_view();
 
 		target.m_view = _view;
+		target.r_device = r_device;
 		
 		return VK_SUCCESS;
 	}

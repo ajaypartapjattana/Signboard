@@ -2,32 +2,33 @@
 
 #include <vulkan/vulkan.h>
 
-namespace rhi::access {
-	struct sampler_pAccess;
-}
-
 namespace rhi {
 
-	class pcdSamplerCreator;
+	struct _pAccess;
+
+	class pcdSamplerCreate;
 
 	class pmvSampler {
 	public:
 		pmvSampler() noexcept;
 
-		pmvSampler(const pmvSampler&) = delete;
-		pmvSampler& operator=(const pmvSampler&) = delete;
+		pmvSampler(const pmvSampler&) noexcept;
+		pmvSampler& operator=(const pmvSampler&) noexcept;
 
 		pmvSampler(pmvSampler&&) noexcept;
 		pmvSampler& operator=(pmvSampler&&) noexcept;
 
-		~pmvSampler();
+		~pmvSampler() noexcept;
+
+		void reset() noexcept;
 
 	private:
-		friend class pcdSamplerCreator;
-		friend struct rhi::access::sampler_pAccess;
+		friend class pcdSamplerCreate;
+		friend struct _pAccess;
 
 		VkSampler m_sampler;
-		VkDevice _dvc;
+
+		VkDevice r_device;
 
 	};
 

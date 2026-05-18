@@ -1,8 +1,8 @@
-#include "display_window.h"
+#include "Signboard/Platform/internal/plf_pAccess.h"
 
 #include <stdexcept>
 
-namespace platform::primitive {
+namespace plf {
 
 	displayWindow::displayWindow(const createInfo& createInfo) 
 		:
@@ -25,7 +25,7 @@ namespace platform::primitive {
 		m_window = glfwCreateWindow(a_extent.width, a_extent.height, (createInfo.title).c_str(), moniter, nullptr);
 
 		if (!m_window)
-			throw std::runtime_error("failed to create display window!");
+			throw std::runtime_error("FAILURE: display_window_creation!");
 	}
 
 	displayWindow::displayWindow(displayWindow&& other) noexcept 

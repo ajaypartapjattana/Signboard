@@ -2,11 +2,9 @@
 
 #include "Signboard/RHI/detail/vma/vma.h"
 
-namespace rhi::access{
-	struct image_pAccess;
-}
-
 namespace rhi {
+
+	struct _pAccess;
 
 	class pcdImageAllocate;
 	class pcdImageViewCreate;
@@ -16,8 +14,8 @@ namespace rhi {
 	public:
 		pmvImage() noexcept;
 
-		pmvImage(const pmvImage&) = delete;
-		pmvImage& operator=(const pmvImage&) = delete;
+		pmvImage(const pmvImage&) noexcept;
+		pmvImage& operator=(const pmvImage&) noexcept;
 
 		pmvImage(pmvImage&&) noexcept;
 		pmvImage& operator=(pmvImage&&) noexcept;
@@ -27,13 +25,14 @@ namespace rhi {
 		VkFormat native_format() const noexcept;
 		VkExtent3D native_extent() const noexcept;
 
+		void reset_view() noexcept;
 		void reset() noexcept;
 
 	private:
 		friend class pcdImageAllocate;
 		friend class pcdImageViewCreate;
 		friend class pcdSwapchainImageAllocate;
-		friend struct rhi::access::image_pAccess;
+		friend struct _pAccess;
 
 		VkImage m_image;
 		VmaAllocation m_allocation;

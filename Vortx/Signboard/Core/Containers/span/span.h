@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <type_traits>
 
-namespace ctnr {
+namespace sgb {
 
 	template <typename T>
 	class span {
@@ -67,7 +67,7 @@ namespace ctnr {
 		span(const std::vector<value_type, Alloc>& vec) noexcept
 			: 
 			m_data(vec.data()), 
-			m_size(vec.size()) 
+			m_size(vec.size())
 		{
 
 		}

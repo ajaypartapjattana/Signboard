@@ -2,11 +2,9 @@
 
 #include <vulkan/vulkan.h>
 	
-namespace rhi::access {
-	struct framebuffer_pAccess;
-}
-
 namespace rhi {
+
+	struct _pAccess;
 
 	class pcdFramebufferCreate;
 
@@ -22,9 +20,11 @@ namespace rhi {
 
 		~pmvFramebuffer() noexcept;
 
+		void reset() noexcept;
+
 	private:
 		friend class pcdFramebufferCreate;
-		friend struct rhi::access::framebuffer_pAccess;
+		friend struct _pAccess;
 
 		VkFramebuffer m_framebuffer;
 		VkExtent2D extent;

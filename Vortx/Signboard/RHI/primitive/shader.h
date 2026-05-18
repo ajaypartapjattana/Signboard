@@ -2,32 +2,34 @@
 
 #include <vulkan/vulkan.h>
 
-namespace rhi::access {
-	struct shader_pAccess;
-}
-
 namespace rhi {
 	
+	struct _pAccess;
+
 	class pcdShaderModuleCreate;
 
 	class pmvShader {
 	public:
 		pmvShader() noexcept;
 
-		pmvShader(const pmvShader&) = delete;
-		pmvShader& operator=(const pmvShader&) = delete;
+		pmvShader(const pmvShader&) noexcept;
+		pmvShader& operator=(const pmvShader&) noexcept;
 
 		pmvShader(pmvShader&&) noexcept;
 		pmvShader& operator=(pmvShader&&) noexcept;
 
 		~pmvShader() noexcept;
 
+		void reset() noexcept;
+
 	private:
 		friend class pcdShaderModuleCreate;
-		friend struct rhi::access::shader_pAccess;
+		friend struct _pAccess;
 
 		VkShaderModule m_shader;
-		VkDevice _dvc;
+		VkShaderStageFlagBits stage;
+
+		VkDevice r_device;
 
 	};
 

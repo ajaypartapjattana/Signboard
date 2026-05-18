@@ -2,6 +2,9 @@
 
 #include <vulkan/vulkan.h>
 #include <vector>
+#include <memory>
+
+#include "Signboard/Core/core.h"
 
 namespace rhi {
 
@@ -13,27 +16,21 @@ namespace rhi {
 	public:
 		pcdDescriptorSetLayoutCreate(const creDevice& device, VkDescriptorSetLayoutCreateInfo* pCreateInfo = nullptr) noexcept;
 
-		struct binding {
-			uint32_t index;
-			VkDescriptorType type;
-			uint32_t count;
-			VkPipelineStageFlags stage;
-		};
+		void target_bindings(sgb::span<const VkDescriptorSetLayoutBinding> bindings);
 
-		pcdDescriptorSetLayoutCreate& target_bindings(const std::vector<VkDescriptorSetLayoutBinding>& bindings);
-
-		VkResult publish(rhi::pmvDescriptorSetLayout& descriptorLayout) const noexcept;
+		VkResult publish(pmvDescriptorSetLayout& descriptorLayout) const noexcept;
 
 		void preset(VkDescriptorSetLayoutCreateInfo* pCreateInfo) noexcept;
 		void reset() noexcept;
 
 	private:
-		VkDescriptorSetLayoutCreateInfo fetch_basic(VkDescriptorSetLayoutCreateInfo* pCreateInfo) const noexcept;
+		VkDescriptorSetLayoutCreateInfo* allot_basic(VkDescriptorSetLayoutCreateInfo* pCreateInfo) noexcept;
 
 	private:
-		VkDevice r_device;
+		const VkDevice r_device;
 
-		VkDescriptorSetLayoutCreateInfo _info;
+		std::unique_ptr<VkDescriptorSetLayoutCreateInfo> m_ownedInfo;
+		VkDescriptorSetLayoutCreateInfo* pInfo;
 
 	};
 

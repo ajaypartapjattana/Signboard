@@ -2,13 +2,11 @@
 
 #include <vulkan/vulkan.h>
 
-namespace rhi::access {
-	struct pipeline_pAccess;
-}
-
 namespace rhi {
 
-	class pcdPipelineBuilder;
+	struct _pAccess;
+
+	class pcdGraphicPipelineCreate;
 
 	class pmvPipeline {
 	public:
@@ -22,14 +20,16 @@ namespace rhi {
 
 		~pmvPipeline() noexcept;
 
+		void reset() noexcept;
+
 	private:
-		friend class pcdPipelineBuilder;
-		friend struct rhi::access::pipeline_pAccess;
+		friend class pcdGraphicPipelineCreate;
+		friend struct _pAccess;
 
 		VkPipeline m_pipeline;
-		VkPipelineBindPoint m_type;
+		VkPipelineBindPoint type;
 
-		VkDevice _dvc;
+		VkDevice r_device;
 
 	};
 

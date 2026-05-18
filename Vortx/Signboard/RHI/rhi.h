@@ -13,7 +13,7 @@ namespace rhi {
 	class creAllocator;
 
 	class pmvCommandBuffer;
-	class pmvSwapchain;
+	class creSwapchain;
 	class pmvBuffer;
 	class pmvImage;
 	class pmvSampler;
@@ -27,21 +27,21 @@ namespace rhi {
 	class pmvShader;
 	class pmvPipeline;
 
-	class pcdCommandPoolCreator;
-	class pcdCommandBufferAllocator;
-	class pcdCommandBufferRecorder;
-	class pcdQueueSubmission;
+	class pcdCommandPoolCreate;
+	class pcdCommandBufferAllocate;
+	class pcdCommandBufferRecord;
+	class pcdQueueSubmit;
 	class pcdWatchdog;
 	class pcdImageAllocate;
 	class pcdBufferAllocate;
-	class pcdSamplerCreator;
+	class pcdSamplerCreate;
 	class pcdSwapchainCreate;
 	class pcdSwapchainImageAcquire;
 	class pcdQueuePresent;
 	class pcdRenderPassCreate;
 	class pcdPipelineLayoutCreate;
 	class pcdShaderModuleCreate;
-	class pcdPipelineBuilder;
+	class pcdGraphicPipelineCreate;
 	class pcdFramebufferCreate;
 
 }

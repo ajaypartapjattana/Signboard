@@ -1,9 +1,6 @@
-#include "allocator.h"
-
 #include <stdexcept>
 
-#include "instance_pAccess.h"
-#include "device_pAccess.h"
+#include "Signboard/RHI/Internal/rhi_pAccess.h"
 
 namespace rhi {
 
@@ -36,54 +33,50 @@ namespace rhi {
 
 	creAllocator::creAllocator(const creInstance& instance, const creDevice& device)
 		: 
-		_allctr(VK_NULL_HANDLE)
+		m_allocator(VK_NULL_HANDLE)
 	{
-		VkInstance a_instance = rhi::access::instance_pAccess::get(instance);
-		VkDevice a_device = rhi::access::device_pAccess::extract(device);
-		VkPhysicalDevice a_phys = rhi::access::device_pAccess::get_physicalDevice(device);
-
 		VmaAllocatorCreateInfo info{};
-		info.instance = a_instance;
-		info.device = a_device;
-		info.physicalDevice = a_phys;
+		info.instance = _pAccess::extract(instance);
+		info.device = _pAccess::extract(device);
+		info.physicalDevice = _pAccess::physicalDevice(device);
 		info.pVulkanFunctions = &m_vkfuncs;
 		info.flags |= VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
 		info.vulkanApiVersion = VK_API_VERSION_1_3;
 
-		VkResult result = vmaCreateAllocator(&info, &_allctr);
+		VkResult result = vmaCreateAllocator(&info, &m_allocator);
 		if (result != VK_SUCCESS)
 			throw std::runtime_error("FAILURE: allocator_creation!");
 
-		vkGetPhysicalDeviceMemoryProperties(a_phys, &_memProps);
+		vkGetPhysicalDeviceMemoryProperties(_pAccess::physicalDevice(device), &_memProps);
 
 	}
 
 	creAllocator::creAllocator(creAllocator&& other) noexcept 
 		:
-		_allctr(other._allctr),
+		m_allocator(other.m_allocator),
 		_memProps(other._memProps)
 	{
-		other._allctr = VK_NULL_HANDLE;
+		other.m_allocator = VK_NULL_HANDLE;
 	}
 
 	creAllocator& creAllocator::operator=(creAllocator&& other) noexcept {
 		if (this == &other)
 			return *this;
 
-		if (_allctr)
-			vmaDestroyAllocator(_allctr);
+		if (m_allocator)
+			vmaDestroyAllocator(m_allocator);
 
-		_allctr = other._allctr;
+		m_allocator = other.m_allocator;
 		_memProps = other._memProps;
 
-		other._allctr = VK_NULL_HANDLE;
+		other.m_allocator = VK_NULL_HANDLE;
 
 		return *this;
 	}
 
 	creAllocator::~creAllocator() noexcept {
-		if (_allctr)
-			vmaDestroyAllocator(_allctr);
+		if (m_allocator)
+			vmaDestroyAllocator(m_allocator);
 	}
 
 }

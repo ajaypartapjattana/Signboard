@@ -20,6 +20,50 @@ namespace rhi {
 
 	}
 
+	pmvImage::pmvImage(const pmvImage& other) noexcept 
+		:
+		m_image(other.m_image),
+		m_view(other.m_view),
+		m_allocation(other.m_allocation),
+
+		extent(other.extent),
+		format(other.format),
+
+		mip_levels(other.mip_levels),
+		array_layers(other.array_layers),
+
+		r_device(VK_NULL_HANDLE),
+		r_allocator(VK_NULL_HANDLE)
+	{
+
+	}
+
+	pmvImage& pmvImage::operator=(const pmvImage& other) noexcept {
+		if (this == &other)
+			return *this;
+
+		if (r_device)
+			vkDestroyImageView(r_device, m_view, nullptr);
+
+		if (r_allocator)
+			vmaDestroyImage(r_allocator, m_image, m_allocation);
+
+		m_image = other.m_image;
+		m_view = other.m_view;
+		m_allocation = other.m_allocation;
+
+		extent = other.extent;
+		format = other.format;
+
+		mip_levels = other.mip_levels;
+		array_layers = other.array_layers;
+
+		r_device = VK_NULL_HANDLE;
+		r_allocator = VK_NULL_HANDLE;
+
+		return *this;
+	}
+
 	pmvImage::pmvImage(pmvImage&& other) noexcept 
 		:
 		m_image(other.m_image),
@@ -35,18 +79,18 @@ namespace rhi {
 		r_device(other.r_device),
 		r_allocator(other.r_allocator)
 	{
-		other.m_image = VK_NULL_HANDLE;
-		other.m_view = VK_NULL_HANDLE;
+		other.r_device = VK_NULL_HANDLE;
+		other.r_allocator = VK_NULL_HANDLE;
 	}
 
 	pmvImage& pmvImage::operator=(pmvImage&& other) noexcept {
 		if (this == &other)
 			return *this;
 
-		if (m_view)
+		if (r_device)
 			vkDestroyImageView(r_device, m_view, nullptr);
 
-		if (r_allocator && m_allocation)
+		if (r_allocator)
 			vmaDestroyImage(r_allocator, m_image, m_allocation);
 
 		m_image = other.m_image;
@@ -62,17 +106,17 @@ namespace rhi {
 		r_device = other.r_device;
 		r_allocator = other.r_allocator;
 
-		other.m_image = VK_NULL_HANDLE;
-		other.m_view = VK_NULL_HANDLE;
+		other.r_device = VK_NULL_HANDLE;
+		other.r_allocator = VK_NULL_HANDLE;
 
 		return *this;
 	}
 
 	pmvImage::~pmvImage() noexcept {
-		if (m_view)
+		if (r_device)
 			vkDestroyImageView(r_device, m_view, nullptr);
 		
-		if (r_allocator && m_allocation)
+		if (r_allocator)
 			vmaDestroyImage(r_allocator, m_image, m_allocation);
 	}
 
@@ -84,17 +128,30 @@ namespace rhi {
 		return extent;
 	}
 
-	void pmvImage::reset() noexcept {
-		if (m_view) {
+	void pmvImage::reset_view() noexcept {
+		if (r_device) {
 			vkDestroyImageView(r_device, m_view, nullptr);
-			m_view = VK_NULL_HANDLE;
+			r_device = VK_NULL_HANDLE;
+		}
+		
+		m_view = VK_NULL_HANDLE;
+	}
+
+	void pmvImage::reset() noexcept {
+		if (r_device) {
+			vkDestroyImageView(r_device, m_view, nullptr);
+			r_device = VK_NULL_HANDLE;
 		}
 
-		if (r_allocator && m_allocation) {
+		m_view = VK_NULL_HANDLE;
+
+		if (r_allocator) {
 			vmaDestroyImage(r_allocator, m_image, m_allocation);
-			m_allocation = VK_NULL_HANDLE;
-			m_image = VK_NULL_HANDLE;
+			r_allocator = VK_NULL_HANDLE;
 		}
+
+		m_allocation = VK_NULL_HANDLE;
+		m_image = VK_NULL_HANDLE;
 	}
 
 

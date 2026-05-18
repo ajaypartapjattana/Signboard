@@ -1,21 +1,21 @@
 #pragma once
 
-#include "Signboard/Core/Containers/storage.h"
+#include "Signboard/Core/core.h"
 #include "Signboard/Assets/io/io.h"
 
-class Resources;
+class SGBResources;
 
 struct scnObj {
 	uint32_t mesh;
 };
 
 struct scnView {
-	ctnr::vltView<scnObj> objView;
+	sgb::vltView<scnObj> objView;
 };
 
-class Scene {
+class SGBScene {
 public:
-	Scene();
+	SGBScene();
 
 	_NODISCARD scnView read_scene() const noexcept;	
 	
@@ -25,6 +25,6 @@ public:
 	void createSceneObject(const sceneObjectCraeteInfo& createInfo);
 
 private:
-	ctnr::vault<scnObj> m_objects;
+	sgb::vault<scnObj> m_objects;
 
 };

@@ -3,29 +3,27 @@
 #include "InputResolve/InputResolver.h"
 #include "Signboard/Core/Interfaces/KeyMappingConfigType.h"
 
-struct GLFWwindow;
 struct FrameCommand;
 
-namespace platform::primitive {
-	class displayWindow;
+namespace plf {
+	class windowEventState;
 }
 
 class CommandDispatcher {
 public:
-	CommandDispatcher(const InputMapping& mapping, std::vector<FrameCommand>& appEventQueue, bool& targetVisibilty);
+	CommandDispatcher(const InputMapping&& mapping, std::vector<FrameCommand>& appEventQueue, plf::windowEventState& eventState) noexcept;
 	
-	void resolveSurfaceEvents(platform::primitive::windowEventState& eventState);
-	void resolveInputEvents(platform::primitive::windowEventState& eventState);
+	void resolveInputEvents() noexcept;
+	bool ensureWindowVisibility() noexcept;
 
 private:
-	bool verifyWindowVisibility(uint64_t resizeState) noexcept;
-
 	bool istriggered(const InputBinding&) const;
 
 private:
 	InputMapping m_mapping;
 	std::vector<FrameCommand>& targetCommandList;
-	bool& targetVisibility;
+	
+	plf::windowEventState* r_eventState;
 
 	InputResolver m_resolver;
 

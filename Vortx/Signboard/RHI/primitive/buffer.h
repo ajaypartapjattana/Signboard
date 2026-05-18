@@ -2,11 +2,9 @@
 
 #include "Signboard/RHI/detail/vma/vma.h"
 
-namespace rhi::access {
-	struct buffer_pAccess;
-}
-
 namespace rhi {
+
+	struct _pAccess;
 
 	class pcdBufferAllocate;
 
@@ -27,7 +25,7 @@ namespace rhi {
 
 	private:
 		friend class pcdBufferAllocate;
-		friend struct rhi::access::buffer_pAccess;
+		friend struct _pAccess;
 
 		VkBuffer m_buffer;
 		VmaAllocation allocation;

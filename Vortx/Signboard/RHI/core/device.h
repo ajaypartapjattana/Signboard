@@ -7,19 +7,17 @@
 
 namespace rhi {
 
-	namespace access {
-		struct device_pAccess;
-	}
+	struct _pAccess;
 
 	class creInstance;
 	class creSurface;
 
-	class pcdQueueSubmission;
+	class pcdQueueSubmit;
 
 	class creDevice {
 	public:
 		struct createInfo {
-			rhi::creSurface* present_surface = nullptr;
+			creSurface* present_surface = nullptr;
 			std::vector<const char*> requiredExtensions;
 			std::vector<VkBool32 VkPhysicalDeviceFeatures::*> requiredFeatures;
 		};
@@ -36,18 +34,23 @@ namespace rhi {
 
 		bool active_feature(const VkBool32 VkPhysicalDeviceFeatures::* feature) const noexcept;
 
+		VkQueue graphics() const noexcept { return m_queues.graphics; }
+		VkQueue compute() const noexcept { return m_queues.compute; }
+		VkQueue transfer() const noexcept { return m_queues.transfer; }
+		VkQueue preset() const noexcept { return m_queues.present; }
+
 	private:
 		void build(const createInfo& createInfo, const VkInstance instance);
 
 	private:
-		friend class pcdQueueSubmission;
-		friend struct access::device_pAccess;
+		friend class pcdQueueSubmit;
+		friend struct _pAccess;
 
 		VkDevice r_device;
 		VkPhysicalDevice m_physical;
 
-		standardQueues m_queues;
-		standardQueueFamilies m_families;
+		stdQueues m_queues;
+		stdQueueFamilies m_families;
 
 		std::vector<VkBool32 VkPhysicalDeviceFeatures::*> m_enabledFeatures;
 

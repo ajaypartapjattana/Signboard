@@ -17,28 +17,38 @@ namespace rhi {
 		extent(other.extent),
 		r_device(other.r_device)
 	{
-		other.m_framebuffer = VK_NULL_HANDLE;
+		other.r_device = VK_NULL_HANDLE;
 	}
 
 	pmvFramebuffer& pmvFramebuffer::operator=(pmvFramebuffer&& other) noexcept {
 		if (this == &other)
 			return *this;
 
-		if (m_framebuffer)
+		if (r_device)
 			vkDestroyFramebuffer(r_device, m_framebuffer, nullptr);
 
 		m_framebuffer = other.m_framebuffer;
 		extent = other.extent;
 		r_device = other.r_device;
 
-		other.m_framebuffer = VK_NULL_HANDLE;
+		other.r_device = VK_NULL_HANDLE;
 
 		return *this;
 	}
 
 	pmvFramebuffer::~pmvFramebuffer() noexcept {
-		if (m_framebuffer)
+		if (r_device)
 			vkDestroyFramebuffer(r_device, m_framebuffer, nullptr);
 	}
+
+	void pmvFramebuffer::reset() noexcept {
+		if (r_device) {
+			vkDestroyFramebuffer(r_device, m_framebuffer, nullptr);
+			m_framebuffer = VK_NULL_HANDLE;
+		}
+
+		r_device = VK_NULL_HANDLE;
+	}
+
 
 }

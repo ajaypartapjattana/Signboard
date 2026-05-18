@@ -1,12 +1,8 @@
-#include "device.h"
-
-#include <vulkan/vulkan.h>
 #include <stdexcept>
 #include <cstring>
 #include <set>
 
-#include "instance_pAccess.h"
-#include "surface_pAccess.h"
+#include "Signboard/RHI/Internal/rhi_pAccess.h"
 
 namespace rhi {
 
@@ -15,7 +11,7 @@ namespace rhi {
 		r_device(VK_NULL_HANDLE), 
 		m_physical(VK_NULL_HANDLE)
 	{
-		VkInstance vkInstance = rhi::access::instance_pAccess::get(instance);
+		VkInstance vkInstance = _pAccess::extract(instance);
 		build(createInfo, vkInstance);
 	}
 
@@ -62,7 +58,7 @@ namespace rhi {
 			uint32_t type_score = 0;
 			uint32_t queue_score = 0;
 
-			standardQueueFamilies assigned_indecies ;
+			stdQueueFamilies assigned_indecies ;
 
 			VkPhysicalDeviceFeatures enabledFeatures;
 		};
@@ -87,7 +83,7 @@ namespace rhi {
 			vkGetPhysicalDeviceQueueFamilyProperties(phys, &qCount, nullptr);
 			std::vector<VkQueueFamilyProperties> families{ qCount };
 			vkGetPhysicalDeviceQueueFamilyProperties(phys, &qCount, families.data());
-			standardQueueFamilies& idx = c.assigned_indecies;
+			stdQueueFamilies& idx = c.assigned_indecies;
 			for (uint32_t i = 0; i < qCount; ++i) {
 				const VkQueueFlags& q = families[i].queueFlags;
 
@@ -116,7 +112,7 @@ namespace rhi {
 			if (idx.transfer == UINT32_MAX) idx.transfer = idx.compute;
 
 			if (ci.present_surface) {
-				VkSurfaceKHR a_surface = rhi::access::surface_pAccess::extract(*ci.present_surface);
+				VkSurfaceKHR a_surface = _pAccess::extract(*ci.present_surface);
 				for (uint32_t i = 0; i < qCount; ++i) {
 					VkBool32 supported = false;
 					vkGetPhysicalDeviceSurfaceSupportKHR(phys, i, a_surface, &supported);
@@ -210,7 +206,7 @@ namespace rhi {
 		if (!suited_physical)
 			throw std::runtime_error("FAILURE: no_satisfactory_physicalDevice!");
 
-		const standardQueueFamilies& idx = suited_physical->assigned_indecies;
+		const stdQueueFamilies& idx = suited_physical->assigned_indecies;
 		std::set<uint32_t> uniqueFamilies = { idx.graphics, idx.compute, idx.transfer, idx.present };
 
 		std::vector<float> priority = { 1.0f };

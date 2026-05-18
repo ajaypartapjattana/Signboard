@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace platform::core {
+namespace plf {
 
 	class context {
 	public:
@@ -16,7 +16,7 @@ namespace platform::core {
 
 		~context();
 
-		static const char** native_extensions(uint32_t& count);
+		static const char** native_extensions(uint32_t& count) noexcept;
 
 	};
 

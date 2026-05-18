@@ -1,22 +1,20 @@
 #pragma once
 
-namespace platform::primitive {
+#include <vulkan/vulkan.h>
+
+namespace plf {
 	class displayWindow;
 }
 
-#include <vulkan/vulkan.h>
-
-namespace rhi::access {
-	struct surface_pAccess;
-}
-
 namespace rhi {
+
+	struct _pAccess;
 
 	class creInstance;
 
 	class creSurface {
 	public:
-		creSurface(const platform::primitive::displayWindow& window, const creInstance& instance);
+		creSurface(const plf::displayWindow& window, const creInstance& instance);
 
 		creSurface(const creSurface&) = delete;
 		creSurface& operator=(const creSurface&) = delete;
@@ -27,7 +25,7 @@ namespace rhi {
 		~creSurface() noexcept;
 
 	private:
-		friend struct rhi::access::surface_pAccess;
+		friend struct _pAccess;
 
 		VkSurfaceKHR m_surface;
 		VkInstance m_instance;

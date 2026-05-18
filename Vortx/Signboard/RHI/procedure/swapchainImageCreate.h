@@ -2,37 +2,40 @@
 
 #include <vulkan/vulkan.h>
 #include <vector>
+#include <memory>
 
-#include "Signboard/Core/Containers/storage.h"
+#include "Signboard/Core/core.h"
 
 namespace rhi {
 
 	class creDevice;
 
-	class pmvSwapchain;
+	class creSwapchain;
 	class pmvImage;
 
 	class pcdSwapchainImageAllocate {
 	public:
-		pcdSwapchainImageAllocate(const creDevice& device, const pmvSwapchain& swapchain, VkImageViewCreateInfo* pCreateInfo = nullptr) noexcept;
+		pcdSwapchainImageAllocate(const creDevice& device, VkImageViewCreateInfo* pCreateInfo = nullptr) noexcept;
 
-		uint32_t get_imageCount() const noexcept;
+		void target_swapchain(const creSwapchain& swapchain) noexcept;
 		
+		uint32_t get_imageCount() const noexcept;
 		VkResult publish(pmvImage& image, uint32_t index) noexcept;
 
+		void preset(VkImageViewCreateInfo* pCreateInfo) noexcept;
+		void reset() noexcept;
+
 	private:
-		VkImageViewCreateInfo fetch_basic(VkImageViewCreateInfo* pCreateInfo) const noexcept;
+		VkImageViewCreateInfo* allot_basic(VkImageViewCreateInfo* pCreateInfo) noexcept;
 
 	private:
 		const VkDevice r_device;
-		const VkSwapchainKHR r_swapchain;
 		
-		const VkFormat format;
-		const VkExtent2D extent;
-
+		const creSwapchain* pSwapchain;
 		std::vector<VkImage> images;
 
-		VkImageViewCreateInfo _info;
+		std::unique_ptr<VkImageViewCreateInfo> m_ownedInfo;
+		VkImageViewCreateInfo* pInfo;
 
 	};
 

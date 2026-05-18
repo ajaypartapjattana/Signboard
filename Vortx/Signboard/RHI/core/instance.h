@@ -3,11 +3,9 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 
-namespace rhi::access {
-	struct instance_pAccess;
-}
-
 namespace rhi {
+
+	struct _pAccess;
 
 	class creInstance {
 	public:
@@ -34,7 +32,7 @@ namespace rhi {
 		bool validateLayer(const char* layerName);
 
 	private:
-		friend struct rhi::access::instance_pAccess;
+		friend struct _pAccess;
 
 		VkInstance m_instance;
 

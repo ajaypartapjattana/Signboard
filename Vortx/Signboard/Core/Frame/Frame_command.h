@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 
 enum class CommandID : uint32_t {
 	CONFIG,

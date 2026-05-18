@@ -1,28 +1,38 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
-#include <external/SPIRV_cross/spirv_cross.hpp>
 #include <memory>
 #include <vector>
+#include <unordered_map>
 
-struct VertexAttribute {
-	uint32_t location;
-	VkFormat format;
+#include <external/SPIRV_cross/spirv_cross.hpp>
+
+constexpr bool config_Validate =
+#ifdef _VALIDATE
+	true;
+#else
+	false;
+#endif
+
+struct VertexLayoutDesc {
+	std::vector<VkVertexInputAttributeDescription> attributes;
+	std::vector<VkVertexInputBindingDescription> bindings;
 };
 
-struct DescriptorBinding {
+struct BindingKey {
 	uint32_t set;
 	uint32_t binding;
-	VkDescriptorType type;
-	uint32_t count;
-	VkShaderStageFlags stage;
-};
 
-struct PushConstantRangeInfo {
-	uint32_t size;
-	uint32_t offset;
-	VkShaderStageFlags stage;
+	bool operator==(const BindingKey& other) const noexcept {
+		return set == other.set && binding == other.binding;
+	}
 };
+struct BindingKeyHash {
+	size_t operator()(const BindingKey& k) const noexcept {
+		return (size_t(k.set) << 32) | k.binding;
+	}
+};
+using BindingMap = std::unordered_map<BindingKey, VkDescriptorSetLayoutBinding, BindingKeyHash>;
 
 class ShaderReflect {
 public:
@@ -34,12 +44,11 @@ public:
     ShaderReflect(ShaderReflect&&) = delete;
     ShaderReflect& operator=(ShaderReflect&&) = delete;
 
-	std::vector<VertexAttribute> reflectVertexLayout() const;
-	std::vector<DescriptorBinding> reflectDescriptorBindings(VkShaderStageFlags stage) const;
-	std::vector<PushConstantRangeInfo> reflectPushConstants(VkShaderStageFlags stage) const;
+	VertexLayoutDesc reflectVertexLayout() const noexcept(!config_Validate);
+	BindingMap reflectDescriptorBindings(VkShaderStageFlags stage) const noexcept(!config_Validate);
+	std::vector<VkPushConstantRange> reflectPushConstants(VkShaderStageFlags stage) const noexcept(!config_Validate);
 
 private:
-	static VkFormat mapTypeToFormat(const spirv_cross::SPIRType& type);
 	std::unique_ptr<spirv_cross::Compiler> createCompiler(const std::vector<uint32_t>& bin) const noexcept;
 
 private:

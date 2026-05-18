@@ -2,11 +2,9 @@
 
 #include "Signboard/RHI/detail/vma/vma.h"
 
-namespace rhi::access {
-	struct allocator_pAccess;
-}
-
 namespace rhi {
+
+	struct _pAccess;
 
 	class creInstance;
 	class creDevice;
@@ -24,9 +22,9 @@ namespace rhi {
 		~creAllocator() noexcept;
 
 	private:
-		friend struct rhi::access::allocator_pAccess;
+		friend struct _pAccess;
 
-		VmaAllocator _allctr;
+		VmaAllocator m_allocator;
 		VkPhysicalDeviceMemoryProperties _memProps;
 
 		static const VmaVulkanFunctions m_vkfuncs;

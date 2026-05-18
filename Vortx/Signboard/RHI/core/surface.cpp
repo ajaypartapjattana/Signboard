@@ -1,18 +1,16 @@
-#include "surface.h"
-
 #include <stdexcept>
 
-#include "instance_pAccess.h"
-#include "Signboard/Platform/primitive/display_window_glfwAccess.h"
+#include "Signboard/RHI/Internal/rhi_pAccess.h"
+#include "Signboard/Platform/internal/plf_pAccess.h"
 
 namespace rhi {
 
-	creSurface::creSurface(const platform::primitive::displayWindow& window, const creInstance& instance)
+	creSurface::creSurface(const plf::displayWindow& window, const creInstance& instance)
 		: 
 		m_surface(VK_NULL_HANDLE), 
-		m_instance(rhi::access::instance_pAccess::get(instance))
+		m_instance(_pAccess::extract(instance))
 	{
-		GLFWwindow* a_window = platform::primitive::displayWindow_pAccess::get(window);
+		GLFWwindow* a_window = plf::_pAccess::extract(window);
 
 		VkResult result = glfwCreateWindowSurface(m_instance, a_window, nullptr, &m_surface);
 		if (result != VK_SUCCESS)

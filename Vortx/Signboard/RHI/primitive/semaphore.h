@@ -3,10 +3,11 @@
 #include <vulkan/vulkan.h>
 
 namespace rhi::access {
-	struct semaphore_pAccess;
 }
 
 namespace rhi {
+
+	struct _pAccess;
 
 	class creDevice;
 
@@ -24,10 +25,10 @@ namespace rhi {
 		~pmvSemaphore() noexcept;
 
 	private:
-		friend struct rhi::access::semaphore_pAccess;
+		friend struct _pAccess;
 
 		VkSemaphore m_semaphore;
-		VkDevice _dvc;
+		VkDevice r_device;
 
 	};
 

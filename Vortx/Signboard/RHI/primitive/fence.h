@@ -2,18 +2,16 @@
 
 #include <vulkan/vulkan.h>
 
-namespace rhi::access {
-	struct fence_pAccess;
-}
-
 namespace rhi {
+	
+	struct _pAccess;
 
 	class creDevice;
 
 	class pmvFence {
 	public:
-		pmvFence(const rhi::creDevice& device) noexcept;
-		pmvFence(const rhi::creDevice& device, const bool signaled) noexcept;
+		pmvFence(const creDevice& device) noexcept;
+		pmvFence(const creDevice& device, const bool signaled) noexcept;
 
 		pmvFence(const pmvFence&) = delete;
 		pmvFence& operator=(const pmvFence&) = delete;
@@ -27,10 +25,10 @@ namespace rhi {
 		void create(const bool signaled);
 
 	private:
-		friend struct rhi::access::fence_pAccess;
+		friend struct _pAccess;
 
 		VkFence m_fence;
-		VkDevice _dvc;
+		VkDevice r_device;
 
 	};
 

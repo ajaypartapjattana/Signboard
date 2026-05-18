@@ -2,14 +2,12 @@
 
 #include <vulkan/vulkan.h>
 
-namespace rhi::access {
-	struct commandBuffer_pAccess;
-}
-
 namespace rhi {
 
-	class pcdCommandBufferAllocator;
-	class pcdQueueSubmission;
+	struct _pAccess;
+
+	class pcdCommandBufferAllocate;
+	class pcdQueueSubmit;
 
 	class pmvCommandBuffer {
 	public:
@@ -24,12 +22,13 @@ namespace rhi {
 		~pmvCommandBuffer() noexcept;
 
 	private:
-		friend class pcdCommandBufferAllocator;
-		friend class pcdQueueSubmission;
-		friend struct rhi::access::commandBuffer_pAccess;
+		friend class pcdCommandBufferAllocate;
+		friend class pcdQueueSubmit;
+		friend struct _pAccess;
 
 		VkCommandBuffer m_commandBuffer;
-		VkCommandPool m_commandPool;
+
+		VkCommandPool r_commandPool;
 
 	};
 

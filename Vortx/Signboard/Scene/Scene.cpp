@@ -3,15 +3,15 @@
 #include "Signboard/Resources/resources.h"
 #include "Signboard/Assets/io/io.h"
 
-Scene::Scene()
+SGBScene::SGBScene()
 {
 
 }
 
-scnView Scene::read_scene() const noexcept {
-	return { ctnr::vltView<scnObj>{ m_objects } };
+scnView SGBScene::read_scene() const noexcept {
+	return { sgb::vltView<scnObj>{ m_objects } };
 }
 
-void Scene::createSceneObject(const sceneObjectCraeteInfo& createInfo) {
+void SGBScene::createSceneObject(const sceneObjectCraeteInfo& createInfo) {
 	
 }

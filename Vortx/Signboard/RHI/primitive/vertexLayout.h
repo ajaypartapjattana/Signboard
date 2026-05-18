@@ -5,9 +5,7 @@
 
 namespace rhi {
 
-	namespace access {
-		struct vertexLayout_pAccess;
-	}
+	struct _pAccess;
 
 	class pmvVertexLayout {
 	public:
@@ -23,7 +21,7 @@ namespace rhi {
 		uint32_t formatSize(VkFormat format) const;
 
 	private:
-		friend struct rhi::access::vertexLayout_pAccess;
+		friend struct _pAccess;
 
 		struct VertexAttribute {
 			uint32_t location;

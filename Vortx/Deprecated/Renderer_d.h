@@ -31,7 +31,7 @@ private:
 	// --- EXTERNS ---
 
 	VulkanDevice& device;
-	RenderContext& RHIContext;
+	RenderContext& SGBContext;
 	Scene& scene;
 
 	// --- FRAMESYNC ---

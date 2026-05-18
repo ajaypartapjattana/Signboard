@@ -17,7 +17,7 @@ struct InputEvent {
 	}
 };
 
-namespace frame::event {
+namespace event {
 
 	enum class InputType : uint8_t {
 		KEY_BUTTON,
@@ -32,14 +32,14 @@ namespace frame::event {
 
 	// --- --- ---  --- --- ---  --- --- --- //
 
-	static uint64_t encodeKey(int key, int scancode, int action, int mods) {
+	static inline uint64_t encodeKey(int key, int scancode, int action, int mods) noexcept {
 		return (uint64_t(InputType::KEY_BUTTON) << 56)
 			| (uint64_t(action & 0xFF) << 48)
 			| (uint64_t(scancode & 0xFFFF) << 32)
 			| (uint64_t(key & 0xFFFFFFFF));
 	}
 
-	static uint64_t encodeMouse(int button, int action, int mods) {
+	static inline uint64_t encodeMouse(int button, int action, int mods) noexcept {
 		return (uint64_t(InputType::MOUSE_BUTTON) << 56)
 			| (uint64_t(action & 0xFF) << 48)
 			| (uint64_t(mods & 0xFFFF) << 32)
@@ -61,7 +61,7 @@ namespace frame::event {
 		uint32_t payload;
 	};
 
-	inline DigitalEvent decode_digital(uint64_t e) noexcept {
+	static inline DigitalEvent decode_digital(uint64_t e) noexcept {
 		return {
 			uint8_t(e >> 56),
 			uint8_t(e >> 48),
@@ -72,7 +72,7 @@ namespace frame::event {
 
 	// --- --- ---  --- --- ---  --- --- --- //
 
-	static uint64_t encodeCursor(float x, float y) {
+	static inline uint64_t encodeCursor(float x, float y) noexcept {
 		constexpr float SCALE = 1000.0f;
 
 		int32_t xi = static_cast<int32_t>(x * SCALE);
@@ -84,7 +84,7 @@ namespace frame::event {
 		return (uint64_t(InputType::CURSOR_MOVE) << 56) | xbits << 28 | ybits;
 	}
 
-	static uint64_t encodeScroll(float x, float y) {
+	static inline uint64_t encodeScroll(float x, float y) noexcept {
 		constexpr float SCALE = 1000.0f;
 
 		int32_t xi = static_cast<int32_t>(x * SCALE);
@@ -111,7 +111,7 @@ namespace frame::event {
 		float y;
 	};
 
-	static AnalogEvent decode_analog(uint64_t e) noexcept {
+	static inline AnalogEvent decode_analog(uint64_t e) noexcept {
 		constexpr float SCALE = 1000.0f;
 
 		uint32_t xbits = (e >> 28) & 0x0FFFFFFF;
@@ -129,10 +129,14 @@ namespace frame::event {
 
 	// --- --- ---  --- --- ---  --- --- --- //
 
-	static uint64_t encodeResize(bool dirty, uint32_t width, uint32_t height){
+	static inline uint64_t encodeResize(bool dirty, uint32_t width, uint32_t height) noexcept {
 		return (uint64_t(dirty & 0x1) << 63)
 			| (uint64_t(width & 0x0FFFFFFF) << 28)
 			| (uint64_t(height & 0x0FFFFFFF));
+	}
+
+	static inline uint64_t markClean(uint64_t data) noexcept {
+		return data & ~(uint64_t(0x1) << 63);
 	}
 
 	/*
@@ -149,7 +153,7 @@ namespace frame::event {
 		uint32_t height;
 	};
 
-	static ResizeData decode_resize(uint64_t e) noexcept{
+	static inline ResizeData decode_resize(uint64_t e) noexcept{
 		return{
 			bool((e >> 63) & 0x1),
 			uint32_t(e >> 28) & 0x0FFFFFFF,

@@ -2,11 +2,9 @@
 
 #include <vulkan/vulkan.h>
 
-namespace rhi::access {
-	struct descriptorSetLayout_pAccess;
-}
-
 namespace rhi {
+
+	struct _pAccess;
 
 	class pcdDescriptorSetLayoutCreate;
 
@@ -14,17 +12,19 @@ namespace rhi {
 	public:
 		pmvDescriptorSetLayout() noexcept;
 
-		pmvDescriptorSetLayout(const pmvDescriptorSetLayout&) = delete;
-		pmvDescriptorSetLayout& operator=(const pmvDescriptorSetLayout&) = delete;
+		pmvDescriptorSetLayout(const pmvDescriptorSetLayout&) noexcept;
+		pmvDescriptorSetLayout& operator=(const pmvDescriptorSetLayout&) noexcept;
 
 		pmvDescriptorSetLayout(pmvDescriptorSetLayout&&) noexcept;
 		pmvDescriptorSetLayout& operator=(pmvDescriptorSetLayout&&) noexcept;
 
 		~pmvDescriptorSetLayout() noexcept;
 
+		void reset() noexcept;
+
 	private:
 		friend class pcdDescriptorSetLayoutCreate;
-		friend struct rhi::access::descriptorSetLayout_pAccess;
+		friend struct _pAccess;
 
 		VkDescriptorSetLayout m_setLayout;
 

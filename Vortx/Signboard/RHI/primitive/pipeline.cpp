@@ -5,8 +5,8 @@ namespace rhi {
 	pmvPipeline::pmvPipeline() noexcept 
 		: 
 		m_pipeline(VK_NULL_HANDLE), 
-		m_type(VK_PIPELINE_BIND_POINT_GRAPHICS),
-		_dvc(VK_NULL_HANDLE)
+		type(VK_PIPELINE_BIND_POINT_GRAPHICS),
+		r_device(VK_NULL_HANDLE)
 	{
 
 	}
@@ -14,31 +14,43 @@ namespace rhi {
 	pmvPipeline::pmvPipeline(pmvPipeline&& other) noexcept
 		:
 		m_pipeline(other.m_pipeline),
-		m_type(other.m_type),
-		_dvc(other._dvc)
+		type(other.type),
+		r_device(other.r_device)
 	{
-		other.m_pipeline = VK_NULL_HANDLE;
+		other.r_device = VK_NULL_HANDLE;
 	}
 
 	pmvPipeline& pmvPipeline::operator=(pmvPipeline&& other) noexcept {
 		if (this == &other)
 			return *this;
 
-		if (m_pipeline)
-			vkDestroyPipeline(_dvc, m_pipeline, nullptr);
+		if (r_device)
+			vkDestroyPipeline(r_device, m_pipeline, nullptr);
 
 		m_pipeline = other.m_pipeline;
-		m_type = other.m_type;
-		_dvc = other._dvc;
+		type = other.type;
+		r_device = other.r_device;
 
-		other.m_pipeline = VK_NULL_HANDLE;
+		other.r_device = VK_NULL_HANDLE;
 
 		return *this;
 	}
 
 	pmvPipeline::~pmvPipeline() noexcept {
-		if (m_pipeline)
-			vkDestroyPipeline(_dvc, m_pipeline, nullptr);
+		if (!r_device)
+			return;
+
+		vkDestroyPipeline(r_device, m_pipeline, nullptr);
+	}
+
+	void pmvPipeline::reset() noexcept {
+		if (!r_device) {
+			m_pipeline = VK_NULL_HANDLE;
+			return;
+		}
+		
+		vkDestroyPipeline(r_device, m_pipeline, nullptr);
+		m_pipeline = VK_NULL_HANDLE;
 	}
 
 }

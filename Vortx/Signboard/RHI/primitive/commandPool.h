@@ -2,36 +2,34 @@
 
 #include <vulkan/vulkan.h>
 
-namespace rhi::access {
-	struct commandPool_pAccess;
-}
-
 namespace rhi {
 
-	class pcdCommandPoolCreator;
+	struct _pAccess;
+
+	class pcdCommandPoolCreate;
 
 	class pmvCommandPool {
 	public:
 		pmvCommandPool() noexcept;
 
-		pmvCommandPool(const pmvCommandPool&) = delete;
-		pmvCommandPool& operator=(const pmvCommandPool&) = delete;
+		pmvCommandPool(const pmvCommandPool&) noexcept;
+		pmvCommandPool& operator=(const pmvCommandPool&) noexcept;
 
 		pmvCommandPool(pmvCommandPool&&) noexcept;
 		pmvCommandPool& operator=(pmvCommandPool&&) noexcept;
 
 		~pmvCommandPool() noexcept;
 
-		VkCommandPool native_commandPool() const noexcept;
+		void reset() noexcept;
 
 	private:
-		friend class pcdCommandPoolCreator;
-		friend struct rhi::access::commandPool_pAccess;
+		friend class pcdCommandPoolCreate;
+		friend struct _pAccess;
 
-		VkCommandPool m_commandPool = VK_NULL_HANDLE;
-		uint32_t m_queueFamilyIndex = 0;
+		VkCommandPool m_commandPool;
+		uint32_t family;
 
-		VkDevice _dvc = VK_NULL_HANDLE;
+		VkDevice r_device;
 	};
 
 }

@@ -4,4 +4,4 @@
 #define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
 
 #include <vulkan/vulkan.h>
-#include "vk_mem_alloc.h"
+#include "external/VMA/vk_mem_alloc.h"

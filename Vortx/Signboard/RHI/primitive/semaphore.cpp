@@ -1,32 +1,30 @@
-#include "semaphore.h"
-
-#include "Signboard/RHI/core/device_pAccess.h"
+#include "Signboard/RHI/Internal/rhi_pAccess.h"
 
 namespace rhi {
 
 	pmvSemaphore::pmvSemaphore() noexcept 
 		:
 		m_semaphore(VK_NULL_HANDLE),
-		_dvc(VK_NULL_HANDLE)
+		r_device(VK_NULL_HANDLE)
 	{
 
 	}
 
-	pmvSemaphore::pmvSemaphore(const rhi::creDevice& device) noexcept
+	pmvSemaphore::pmvSemaphore(const creDevice& device) noexcept
 		:
 		m_semaphore(VK_NULL_HANDLE),
-		_dvc(rhi::access::device_pAccess::extract(device))
+		r_device(_pAccess::extract(device))
 	{
 		VkSemaphoreCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 		
-		vkCreateSemaphore(_dvc, &createInfo, nullptr, &m_semaphore);
+		vkCreateSemaphore(r_device, &createInfo, nullptr, &m_semaphore);
 	}
 
 	pmvSemaphore::pmvSemaphore(pmvSemaphore&& other) noexcept 
 		: 
 		m_semaphore(other.m_semaphore),
-		_dvc(other._dvc)
+		r_device(other.r_device)
 	{
 		other.m_semaphore = VK_NULL_HANDLE;
 	}
@@ -36,10 +34,10 @@ namespace rhi {
 			return *this;
 
 		if (m_semaphore)
-			vkDestroySemaphore(_dvc, m_semaphore, nullptr);
+			vkDestroySemaphore(r_device, m_semaphore, nullptr);
 
 		m_semaphore = other.m_semaphore;
-		_dvc = other._dvc;
+		r_device = other.r_device;
 
 		other.m_semaphore = VK_NULL_HANDLE;
 
@@ -48,7 +46,7 @@ namespace rhi {
 
 	pmvSemaphore::~pmvSemaphore() noexcept {
 		if (m_semaphore)
-			vkDestroySemaphore(_dvc, m_semaphore, nullptr);
+			vkDestroySemaphore(r_device, m_semaphore, nullptr);
 	}
 
 }

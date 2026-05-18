@@ -1,59 +1,58 @@
-#include "descriptorLayoutCreate.h"
-
-#include "Signboard/RHI/primitive/descriptorLayout.h"
-
-#include "Signboard/RHI/core/device_pAccess.h"
+#include "Signboard/RHI/Internal/rhi_pAccess.h"
 
 namespace rhi {
 
 	pcdDescriptorSetLayoutCreate::pcdDescriptorSetLayoutCreate(const creDevice& device, VkDescriptorSetLayoutCreateInfo* pCreateInfo) noexcept 
 		:
-		r_device(rhi::access::device_pAccess::extract(device)),
-		_info(fetch_basic(pCreateInfo))
+		r_device(_pAccess::extract(device)),
+		pInfo(allot_basic(pCreateInfo))
 	{
 
 	}
 
-	VkDescriptorSetLayoutCreateInfo pcdDescriptorSetLayoutCreate::fetch_basic(VkDescriptorSetLayoutCreateInfo* pCreateInfo) const noexcept {
+	VkDescriptorSetLayoutCreateInfo* pcdDescriptorSetLayoutCreate::allot_basic(VkDescriptorSetLayoutCreateInfo* pCreateInfo) noexcept {
 		if (pCreateInfo)
-			return *pCreateInfo;
+			return pCreateInfo;
 
-		VkDescriptorSetLayoutCreateInfo info{};
-		info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		m_ownedInfo = std::make_unique<VkDescriptorSetLayoutCreateInfo>();
 
-		return info;
+		VkDescriptorSetLayoutCreateInfo* _info = m_ownedInfo.get();
+		_info->sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+
+		return _info;
 	}
 
 
-	pcdDescriptorSetLayoutCreate& pcdDescriptorSetLayoutCreate::target_bindings(const std::vector<VkDescriptorSetLayoutBinding>& bindings) {
+	void pcdDescriptorSetLayoutCreate::target_bindings(sgb::span<const VkDescriptorSetLayoutBinding> bindings) {
 		if (bindings.empty())
-			return *this;
+			return;
 		
-		_info.pBindings = bindings.data();
-		_info.bindingCount = static_cast<uint32_t>(bindings.size());
-
-		return *this;
+		pInfo->pBindings = bindings.data();
+		pInfo->bindingCount = static_cast<uint32_t>(bindings.size());
 	}
 
-	VkResult pcdDescriptorSetLayoutCreate::publish(rhi::pmvDescriptorSetLayout& target) const noexcept {
-		if (_info.bindingCount <= 0)
-			return VK_INCOMPLETE;
-
-		VkResult result = vkCreateDescriptorSetLayout(r_device, &_info, nullptr, &target.m_setLayout);
+	VkResult pcdDescriptorSetLayoutCreate::publish(pmvDescriptorSetLayout& target) const noexcept {
+		VkDescriptorSetLayout _setLayout;
+		VkResult result = vkCreateDescriptorSetLayout(r_device, pInfo, nullptr, &_setLayout);
 		if (result != VK_SUCCESS)
 			return result;
 
+		target.reset();
+
+		target.m_setLayout = _setLayout;
 		target.r_device = r_device;
 
 		return VK_SUCCESS;
 	}
 
 	void pcdDescriptorSetLayoutCreate::preset(VkDescriptorSetLayoutCreateInfo* pCreateInfo) noexcept {
-		_info = fetch_basic(pCreateInfo);
+		m_ownedInfo.reset();
+		pInfo = allot_basic(pCreateInfo);
 	}
 
 	void pcdDescriptorSetLayoutCreate::reset() noexcept {
-		_info = fetch_basic(nullptr);
+		m_ownedInfo.reset();
+		pInfo = allot_basic(nullptr);
 	}
 
 }

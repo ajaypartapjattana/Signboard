@@ -2,7 +2,6 @@
 
 #include "commandPool.h"
 #include "commandBuffer.h"
-#include "swapchain.h"
 
 #include "buffer.h"
 #include "image.h"
@@ -23,7 +22,7 @@
 namespace rhi {
 
 	class pmvCommandBuffer;
-	class pmvSwapchain;
+	class creSwapchain;
 
 	class pmvBuffer;
 	class pmvImage;

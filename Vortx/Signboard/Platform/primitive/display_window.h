@@ -3,9 +3,9 @@
 #include <GLFW/glfw3.h>
 #include <string>
 
-namespace platform::primitive {
+namespace plf {
 
-    struct displayWindow_pAccess;
+    struct _pAccess;
 
     class displayWindow {
     public:
@@ -32,7 +32,7 @@ namespace platform::primitive {
         const GLFWwindow* native_window() const noexcept;
 
     private:
-        friend struct displayWindow_pAccess;
+        friend struct _pAccess;
 
         GLFWwindow* m_window;
     };
