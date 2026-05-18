@@ -16,19 +16,11 @@ namespace rndr {
 	public:
 		rndr_interface(const creContext& context, const crePresentation& presentation);
 
-		~rndr_interface() noexcept;
-
 		void validate_swapchainDependancy();
 
 		void pushRenderJob(const frame& frame);
-		void pushUploadJob(const frame& frame);
-		void pushPresentJob();
-
-		void advance_frame() noexcept;
-
-	private:
-		VkResult summon_commandPools();
-		void allocate_command_buffers();
+		void pushUploadJob(frame& frame);
+		void pushPresentJob(const frame& frame) noexcept;
 
 	private:
 		friend struct _pAccess;
@@ -37,12 +29,6 @@ namespace rndr {
 
 		rhi::pcdQueuePresent m_presenter;
 		rhi::pcdQueueSubmit m_queueSubmit;
-
-		uint32_t bufferedFrame_count;
-
-		 // [move frames owner-ship to renderer rather than the interface.
-		
-
 
 	};
 

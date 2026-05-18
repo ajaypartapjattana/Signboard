@@ -1,8 +1,8 @@
 #pragma once
 
-#include "context.h"
+#include "glfw_context.h"
 
-namespace platform::core {
+namespace plf {
 
 	class context;
 

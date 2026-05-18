@@ -25,13 +25,13 @@ namespace rndr {
 		void set_bufferedFrameCount(uint32_t count);
 		
 		void render();
-		void advance_frame() noexcept;
-
 		void queueUpload(const Model& model, uint32_t allocatedMesh);
 
 	private:
-		bool prepareFrame(const frame& frame) noexcept;
+		bool prepareFrame(uint32_t frameIndex) noexcept;
 		bool defferUploads();
+		
+		void advance_frame() noexcept;
 
 	private:
 		const creContext* r_context;
@@ -45,13 +45,10 @@ namespace rndr {
 		rhi::stdCommandPools m_commandPools;
 
 		std::vector<frame> frames;
-		std::vector<rhi::pmvSemaphore> imageRenderFinished;
-		std::vector<uint32_t> imagesInFlight;
-
-		uint32_t availableFrameCount = 2;
+		uint32_t availableFrameCount;
 		uint32_t activeFrameIndex = 0;
-		uint32_t imageIndex;
-		uint32_t acquiredImage = 0;
+
+		std::vector<uint32_t> imagesInFlight;
 
 		rhi::pcdWatchdog m_watchdog;
 

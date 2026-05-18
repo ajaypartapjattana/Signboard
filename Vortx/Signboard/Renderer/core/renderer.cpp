@@ -43,7 +43,6 @@ namespace rndr {
 		const uint32_t _shrd = std::min(count, _fSz);
 
 		frames.reserve(count);
-		imageRenderFinished.reserve(count);
 
 		const rhi::creDevice& r_device = _pAccess::device(*r_context);
 		rhi::pcdCommandBufferAllocate pcd{ r_device };
@@ -55,33 +54,52 @@ namespace rndr {
 
 			pcd.target_commandPool(m_commandPools.transferPool);
 			pcd.publish({ &frames[i].CMDTransfer, 1 });
-
-			imageRenderFinished.emplace_back(r_device);
 		}
 
 		frames.resize(count);
-		imageRenderFinished.resize(count);
 
 		availableFrameCount = count;
 	}
 
 	void Renderer::syncPresentation() {
 		m_interface.validate_swapchainDependancy();
-		imagesInFlight.resize(r_presentation->availableImageCount());
+		imagesInFlight.resize(r_presentation->availableImageCount(), -1);
+	}
+
+	bool Renderer::prepareFrame(uint32_t frameIndex) noexcept {
+		m_watchdog.watch_fence(frames[frameIndex].inFlight);
+
+		frame& frame = frames[frameIndex];
+
+		VkResult result = r_swapchain.acquireImage(frame.imageAvailable, &frame.assignedImage);
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR)
+			return false;
+
+		int32_t assignedFrame = imagesInFlight[frame.assignedImage];
+		if (assignedFrame != -1) {
+			m_watchdog.watch_fence(frames[assignedFrame].inFlight);
+		}
+
+		imagesInFlight[frame.assignedImage] = frameIndex;
+
+		return true;
 	}
 
 	void Renderer::render() {
-		if (!prepareFrame(frames[activeFrameIndex])) {
+		if (!prepareFrame(activeFrameIndex)) {
 			throw std::runtime_error("INCOMPATIBILITY: swapchain_out_of_date!");
 		}
 
 		bool waitUploads = defferUploads();
 
+		const frame& activeFrame = frames[activeFrameIndex];
+
 		{
 			m_CommandRecord.begin();
 			for (const renderTarget& target : targets) {
-				m_passRecord.target_commandBuffer(frames[activeFrameIndex].CMDGraphics);
-				m_passRecord.begin(*r_methods.renderPasses[target.renderPassIndex], *r_methods.framebuffers[target.framebufferIndices[imageIndex]]);
+				m_passRecord.target_commandBuffer(activeFrame.CMDGraphics);
+				m_passRecord.begin(*r_methods.renderPasses[target.renderPassIndex], *r_methods.framebuffers[target.framebufferIndices[activeFrame.assignedImage]]);
 
 				for (const uint32_t& pipeline : target.pipelineIndices) {
 					m_passRecord.bind_pipeline(*r_methods.pipelines[pipeline]);
@@ -104,33 +122,15 @@ namespace rndr {
 			m_CommandRecord.end();
 		}
 
-		m_watchdog.reset_fence(frames[activeFrameIndex].frameInFlight);
-		m_interface.pushRenderJob(frames[activeFrameIndex]);
-		m_interface.pushPresentJob();
+		m_watchdog.reset_fence(activeFrame.inFlight);
+		m_interface.pushRenderJob(activeFrame);
+		m_interface.pushPresentJob(activeFrame);
 
-		m_interface.advance_frame();
+		advance_frame();
 	}
 
 	void Renderer::advance_frame() noexcept {
 		activeFrameIndex = (activeFrameIndex + 1) % availableFrameCount;
-	}
-
-	bool Renderer::prepareFrame(const frame& frame) noexcept{
-		m_watchdog.watch_fence(frame.frameInFlight);
-
-		VkResult result = r_swapchain.acquireImage(frame.imageAvailable, &imageIndex);
-
-		if (result == VK_ERROR_OUT_OF_DATE_KHR)
-			return false;
-
-		int32_t frameIndex = imagesInFlight[imageIndex];
-		if (frameIndex != -1) {
-			m_watchdog.watch_fence(frames[frameIndex].frameInFlight);
-		}
-
-		imagesInFlight[imageIndex] = activeFrameIndex;
-
-		return true;
 	}
 
 	bool Renderer::defferUploads() {

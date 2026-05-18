@@ -37,19 +37,16 @@ namespace rhi {
 	}
 
 	pmvPipeline::~pmvPipeline() noexcept {
-		if (!r_device)
-			return;
-
-		vkDestroyPipeline(r_device, m_pipeline, nullptr);
+		if (r_device)
+			vkDestroyPipeline(r_device, m_pipeline, nullptr);
 	}
 
 	void pmvPipeline::reset() noexcept {
-		if (!r_device) {
-			m_pipeline = VK_NULL_HANDLE;
-			return;
+		if (r_device) {
+			vkDestroyPipeline(r_device, m_pipeline, nullptr);
+			r_device = VK_NULL_HANDLE;
 		}
 		
-		vkDestroyPipeline(r_device, m_pipeline, nullptr);
 		m_pipeline = VK_NULL_HANDLE;
 	}
 

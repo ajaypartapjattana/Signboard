@@ -230,7 +230,7 @@
     <ClCompile Include="Signboard\Core\Time\Time.cpp" />
     <ClCompile Include="Signboard\Input\AppCommandDispatch.cpp" />
     <ClCompile Include="Signboard\Input\InputResolve\InputResolver.cpp" />
-    <ClCompile Include="Signboard\Platform\core\context.cpp" />
+    <ClCompile Include="Signboard\Platform\core\glfw_context.cpp" />
     <ClCompile Include="Signboard\Core\Frame\Frame_event.h" />
     <ClCompile Include="Signboard\Platform\primitive\window_eventState.cpp" />
     <ClCompile Include="Signboard\Platform\primitive\display_window.cpp" />
@@ -358,7 +358,7 @@
     <ClInclude Include="Signboard\Platform\primitive\window_eventState.h" />
     <ClInclude Include="Signboard\Platform\platform.h" />
     <ClInclude Include="Signboard\Platform\core\platform_core.h" />
-    <ClInclude Include="Signboard\Platform\core\context.h" />
+    <ClInclude Include="Signboard\Platform\core\glfw_context.h" />
     <ClInclude Include="Signboard\Platform\primitive\platform_primitive.h" />
     <ClInclude Include="Signboard\Renderer\core\rndr_core.h" />
     <ClInclude Include="Signboard\Renderer\Internal\rndr_pAccess.h" />

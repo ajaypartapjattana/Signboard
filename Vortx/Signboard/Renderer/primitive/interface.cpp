@@ -14,19 +14,6 @@ namespace rndr {
 		m_queueSubmit()
 	{
 		m_presenter.target_swapchains({ &r_swapchain, 1 });
-
-		
-
-		configure_bufferedFrames(presentation.availableImageCount());
-	}
-
-	rndr_interface::~rndr_interface() noexcept {
-	}
-
-
-
-	VkResult rndr_interface::summon_commandPools() {
-		
 	}
 
 	void rndr_interface::validate_swapchainDependancy() {
@@ -36,28 +23,26 @@ namespace rndr {
 	void rndr_interface::pushRenderJob(const frame& frame) {
 		m_queueSubmit.target_commandBuffers({ &frame.CMDGraphics, 1 });
 
-		VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		m_queueSubmit.target_waitSemaphores({ &frame.imageAvailable, 1 }, { &waitStage, 1 });
+		m_queueSubmit.target_waitSemaphores(frame.waitSemaphores, frame.waitStages);
+		m_queueSubmit.target_signalSemaphores({ &frame.renderFinished, 1 });
 
-		if (waitTransfer)
-			m_queueSubmit.target_waitSemaphores(currentFrame.transferFinished, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT);
-
-		m_queueSubmit.target_signalSemaphores(imageRenderFinished[a_imageIndex]);
-
-		m_queueSubmit.submit( ,frame.frameInFlight);
+		m_queueSubmit.submit( ,frame.inFlight);
 	}
 
-	void rndr_interface::pushUploadJob(const frame& frame) {
+	void rndr_interface::pushUploadJob(frame& frame) {
 		m_queueSubmit.target_signalSemaphores({ &frame.transferFinished, 1 });
 		m_queueSubmit.target_commandBuffers({ &frame.CMDTransfer, 1 });
 
 		m_queueSubmit.submit();
 
+		frame.waitSemaphores.push_back(frame.transferFinished);
 	}
 
-	void rndr_interface::pushPresentJob() {
-		m_presenter.target_waitSemaphores(&imageRenderFinished[a_imageIndex], 1);
-		m_presenter.present(a_imageIndex);
+	// [create a syncPool managed by the submission interface, which just pushes 'to-wait' semaphores into the frame container]
+
+	void rndr_interface::pushPresentJob(const frame& frame) noexcept {
+		m_presenter.target_waitSemaphores({ &frame.renderFinished, 1 });
+		m_presenter.present(frame.assignedImage);
 	}
 
 }

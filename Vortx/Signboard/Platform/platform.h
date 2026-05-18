@@ -4,7 +4,7 @@
 #include "primitive/platform_primitive.h"
 #include "detail/platform_detail.h"
 
-namespace platform {
+namespace plf {
 
 	namespace core {
 

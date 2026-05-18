@@ -16,13 +16,15 @@ namespace rhi {
 		pmvSemaphore() noexcept;
 		pmvSemaphore(const rhi::creDevice& device) noexcept;
 
-		pmvSemaphore(const pmvSemaphore&) = delete;
-		pmvSemaphore& operator=(const pmvSemaphore&) = delete;
+		pmvSemaphore(const pmvSemaphore&) noexcept;
+		pmvSemaphore& operator=(const pmvSemaphore&) noexcept;
 
 		pmvSemaphore(pmvSemaphore&&) noexcept;
 		pmvSemaphore& operator=(pmvSemaphore&&) noexcept;
 
 		~pmvSemaphore() noexcept;
+
+		void reset() noexcept;
 
 	private:
 		friend struct _pAccess;
