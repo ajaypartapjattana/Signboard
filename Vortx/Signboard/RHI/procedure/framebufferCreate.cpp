@@ -23,8 +23,9 @@ namespace rhi {
 	}
 
 	VkResult pcdFramebufferCreate::target_renderPass(const pmvRenderPass& renderPass) noexcept {
-#ifdef _VALIDATE
 		uint32_t count = _pAccess::attachmentCount(renderPass);
+
+#ifdef _VALIDATE
 		if (!m_attachmentImageViews.empty() && m_attachmentImageViews.size() != count)
 			return VK_ERROR_INITIALIZATION_FAILED;
 #endif

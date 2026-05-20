@@ -18,13 +18,16 @@ namespace rndr {
 
 		void validate_swapchainDependancy();
 
-		void pushRenderJob(const frame& frame);
+		void acquireImageJob(frame& frame);
+
+		void pushRenderJob(frame& frame);
 		void pushUploadJob(frame& frame);
 		void pushPresentJob(const frame& frame) noexcept;
 
 	private:
 		friend struct _pAccess;
 
+		const rhi::creDevice& r_device;
 		const rhi::creSwapchain& r_swapchain;
 
 		rhi::pcdQueuePresent m_presenter;

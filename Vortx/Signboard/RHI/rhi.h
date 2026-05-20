@@ -19,7 +19,7 @@ namespace rhi {
 	class pmvSampler;
 	class pmvRenderPass;
 	class pmvFramebuffer;
-	class pmvSemaphore;
+	class pmvSemaphorePool;
 	class pmvFence;
 	class pmvDescriptorSetLayout;
 	class pmvPushConstantRange;

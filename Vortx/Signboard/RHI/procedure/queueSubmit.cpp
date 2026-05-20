@@ -23,31 +23,16 @@ namespace rhi {
 		return _info;
 	}
 
-	void pcdQueueSubmit::target_waitSemaphores(sgb::span<const pmvSemaphore> semaphores, sgb::span<const VkPipelineStageFlags> stages) noexcept {
-		size_t _sSz = semaphores.size();
+	void pcdQueueSubmit::waitSemaphores(sgb::span<VkSemaphore> semaphores, sgb::span<const VkPipelineStageFlags> stages) noexcept {
+		pInfo->waitSemaphoreCount = static_cast<uint32_t>(semaphores.size());
 
-		waitSemaphores.clear();
-		waitSemaphores.reserve(_sSz);
-		for (size_t i = 0; i < _sSz; ++i) {
-			waitSemaphores.emplace_back(_pAccess::extract(semaphores[i]));
-		}
-
-		pInfo->waitSemaphoreCount = static_cast<uint32_t>(_sSz);
-		pInfo->pWaitSemaphores = waitSemaphores.data();
+		pInfo->pWaitSemaphores = semaphores.data();
 		pInfo->pWaitDstStageMask = stages.data();
 	}
 
-	void pcdQueueSubmit::target_signalSemaphores(sgb::span<const pmvSemaphore> semaphores) noexcept {
-		size_t _sSz = semaphores.size();
-
-		signalSemaphores.clear();
-		signalSemaphores.reserve(_sSz);
-		for (size_t i = 0; i < _sSz; ++i) {
-			signalSemaphores.emplace_back(_pAccess::extract(semaphores[i]));
-		}
-
-		pInfo->signalSemaphoreCount = static_cast<uint32_t>(_sSz);
-		pInfo->pSignalSemaphores = signalSemaphores.data();
+	void pcdQueueSubmit::signalSemaphores(sgb::span<VkSemaphore> semaphores) noexcept {
+		pInfo->signalSemaphoreCount = static_cast<uint32_t>(semaphores.size());
+		pInfo->pSignalSemaphores = semaphores.data();
 	}
 
 	void pcdQueueSubmit::target_commandBuffers(sgb::span<const pmvCommandBuffer> commandBuffers) noexcept {
@@ -63,8 +48,8 @@ namespace rhi {
 		pInfo->pCommandBuffers = buffers.data();
 	}
 
-	VkResult pcdQueueSubmit::submit(VkQueue queue, const pmvFence& fence) const noexcept {
-		return vkQueueSubmit(queue, 1, pInfo, _pAccess::extract(fence));
+	VkResult pcdQueueSubmit::submit(VkQueue queue, const pmvFence* fence) const noexcept {
+		return vkQueueSubmit(queue, 1, pInfo, fence ? _pAccess::extract(*fence) : nullptr);
 	}
 
 	void pcdQueueSubmit::preset(VkSubmitInfo* pSubmitInfo) noexcept {

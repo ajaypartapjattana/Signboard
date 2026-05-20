@@ -10,7 +10,7 @@
 #include "renderPass.h"
 #include "framebuffer.h"
 
-#include "semaphore.h"
+#include "semaphorePool.h"
 #include "fence.h"
 
 #include "vertexLayout.h"
@@ -31,7 +31,7 @@ namespace rhi {
 	class pmvRenderPass;
 	class pmvFramebuffer;
 
-	class pmvSemaphore;
+	class pmvSemaphorePool;
 	class pmvFence;
 
 	class pmvDescriptorSetLayout;

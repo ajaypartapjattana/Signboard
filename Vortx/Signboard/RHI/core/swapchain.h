@@ -21,7 +21,7 @@ namespace rhi {
 
 		~creSwapchain() noexcept;
 
-		VkResult acquireImage(const pmvSemaphore& semaphore, uint32_t* imageIndex) const noexcept;
+		VkResult acquireImage(VkSemaphore semaphore, uint32_t* imageIndex) const noexcept;
 
 		void reset() noexcept;
 

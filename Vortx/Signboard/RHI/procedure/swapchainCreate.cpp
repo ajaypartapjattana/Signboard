@@ -21,15 +21,15 @@ namespace rhi {
 
 		m_ownedInfo = std::make_unique<VkSwapchainCreateInfoKHR>();
 		
-		VkSwapchainCreateInfoKHR* _info = m_ownedInfo.get();
-		_info->sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+		VkSwapchainCreateInfoKHR* info = m_ownedInfo.get();
+		info->sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 
-		_info->imageArrayLayers = 1;
-		_info->imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-		_info->clipped = VK_TRUE;
-		_info->compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+		info->imageArrayLayers = 1;
+		info->imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		info->clipped = VK_TRUE;
+		info->compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 
-		return _info;
+		return info;
 	}
 
 	void pcdSwapchainCreate::carry_surface() noexcept {

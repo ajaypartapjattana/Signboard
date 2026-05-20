@@ -35,17 +35,9 @@ namespace rhi {
 		pInfo->swapchainCount = static_cast<uint32_t>(_sSz);
 	}
 
-	void pcdQueuePresent::target_waitSemaphores(sgb::span<const pmvSemaphore> semaphores) noexcept {
-		size_t _sSz = semaphores.size();
-
-		waitSemaphores.clear();
-		waitSemaphores.reserve(_sSz);
-		for (size_t i = 0; i < _sSz; ++i) {
-			waitSemaphores.emplace_back(_pAccess::extract(semaphores[i]));
-		}
-
-		pInfo->pWaitSemaphores = waitSemaphores.data();
-		pInfo->waitSemaphoreCount = static_cast<uint32_t>(_sSz);
+	void pcdQueuePresent::target_waitSemaphores(sgb::span<const VkSemaphore> semaphores) noexcept {
+		pInfo->waitSemaphoreCount = static_cast<uint32_t>(semaphores.size());
+		pInfo->pWaitSemaphores = semaphores.data();
 	}
 
 	VkResult pcdQueuePresent::present(uint32_t index) noexcept {

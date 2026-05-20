@@ -18,7 +18,7 @@ namespace rhi {
 		pcdQueuePresent(const creDevice& device, VkPresentInfoKHR* pPresentInfo = nullptr) noexcept;
 
 		void target_swapchains(sgb::span<const creSwapchain> swapchains) noexcept;
-		void target_waitSemaphores(sgb::span<const pmvSemaphore> semaphores) noexcept;
+		void target_waitSemaphores(sgb::span<const VkSemaphore> semaphores) noexcept;
 
 		VkResult present(uint32_t imageIndex) noexcept;
 

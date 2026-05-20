@@ -48,8 +48,8 @@ namespace rhi {
 			vkDestroySwapchainKHR(r_device, m_swapchain, nullptr);
 	}
 
-	VkResult creSwapchain::acquireImage(const pmvSemaphore& semaphore, uint32_t* imageIndex) const noexcept {
-		return vkAcquireNextImageKHR(r_device, m_swapchain, UINT64_MAX, _pAccess::extract(semaphore), VK_NULL_HANDLE, imageIndex);
+	VkResult creSwapchain::acquireImage(VkSemaphore semaphore, uint32_t* imageIndex) const noexcept {
+		return vkAcquireNextImageKHR(r_device, m_swapchain, UINT64_MAX, semaphore, VK_NULL_HANDLE, imageIndex);
 	}
 
 	void creSwapchain::reset() noexcept {

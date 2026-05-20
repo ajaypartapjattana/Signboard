@@ -256,7 +256,6 @@
     <ClCompile Include="Signboard\RHI\core\surface.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\fence.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\framebuffer.cpp" />
-    <ClCompile Include="Signboard\RHI\primitive\semaphore.cpp" />
     <ClCompile Include="Signboard\RHI\core\swapchain.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\buffer.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\commandBuffer.cpp" />
@@ -266,6 +265,7 @@
     <ClCompile Include="Signboard\RHI\primitive\pipelineLayout.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\renderPass.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\sampler.cpp" />
+    <ClCompile Include="Signboard\RHI\primitive\semaphorePool.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\shader.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\vertexLayout.cpp" />
     <ClCompile Include="Signboard\RHI\procedure\bufferAllocate.cpp" />
@@ -380,6 +380,9 @@
     <ClInclude Include="Signboard\Renderer\core\resources.h" />
     <ClInclude Include="Signboard\Renderer\Resources\rsrc_images.h" />
     <ClInclude Include="Signboard\Renderer\Resources\rsrc_buffers.h" />
+    <ClInclude Include="Signboard\RHI\core_t\resource_pool_t.h" />
+    <ClInclude Include="Signboard\RHI\core_t\fungible_pool_t.h" />
+    <ClInclude Include="Signboard\RHI\core_t\static_pool_t.h" />
     <ClInclude Include="Signboard\RHI\detail\standardCommandPools.h" />
     <ClInclude Include="Signboard\RHI\detail\standardQueues.h" />
     <ClInclude Include="Signboard\RHI\Internal\rhi_pAccess.h" />
@@ -390,7 +393,6 @@
     <ClInclude Include="Signboard\RHI\core\surface.h" />
     <ClInclude Include="Signboard\RHI\primitive\fence.h" />
     <ClInclude Include="Signboard\RHI\primitive\framebuffer.h" />
-    <ClInclude Include="Signboard\RHI\primitive\semaphore.h" />
     <ClInclude Include="Signboard\RHI\core\swapchain.h" />
     <ClInclude Include="Signboard\RHI\detail\vkexcept.h" />
     <ClInclude Include="Signboard\RHI\detail\vma\vma.h" />
@@ -405,6 +407,7 @@
     <ClInclude Include="Signboard\RHI\primitive\renderPass.h" />
     <ClInclude Include="Signboard\RHI\primitive\rhi_primitive.h" />
     <ClInclude Include="Signboard\RHI\primitive\sampler.h" />
+    <ClInclude Include="Signboard\RHI\primitive\semaphorePool.h" />
     <ClInclude Include="Signboard\RHI\primitive\shader.h" />
     <ClInclude Include="Signboard\RHI\primitive\vertexLayout.h" />
     <ClInclude Include="Signboard\Core\Math\bitops.h" />

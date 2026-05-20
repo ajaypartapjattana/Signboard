@@ -25,25 +25,26 @@ namespace rndr {
 	};
 
 	struct frame {
+		uint32_t assignedImage = 0;
+
 		rhi::pmvFence inFlight;
-
-		std::vector<rhi::pmvSemaphore> waitSemaphores;
-		std::vector<VkPipelineStageFlags> waitStages;
-		rhi::pmvSemaphore transferFinished;
-		rhi::pmvSemaphore renderFinished;
-
+		
 		rhi::pmvCommandBuffer CMDGraphics;
 		rhi::pmvCommandBuffer CMDTransfer;
 
-		uint32_t assignedImage = 0;
+		std::vector<VkSemaphore> waitSemaphores;
+		std::vector<VkPipelineStageFlags> submissionWaitStages;
+
+		rhi::pmvSemaphorePool semaphorePool;
 
 		frame(const rhi::creDevice& device) noexcept
 			:
 			inFlight(device, true),
-			renderFinished(device)
+			semaphorePool(device, 4)
 		{
 
 		}
+
 	};
 
 }

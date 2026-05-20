@@ -59,8 +59,6 @@ namespace rhi {
 
 		static inline VkSampler extract(const pmvSampler& s) { return s.m_sampler; }
 
-		static inline VkSemaphore extract(const pmvSemaphore& s) noexcept { return s.m_semaphore; }
-
 		static inline VkShaderModule extract(const pmvShader& s) noexcept { return s.m_shader; }
 		static inline VkShaderStageFlagBits stage(const pmvShader& s) noexcept { return s.stage; }
 
