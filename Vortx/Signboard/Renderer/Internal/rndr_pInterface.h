@@ -24,27 +24,4 @@ namespace rndr {
 		sgb::vltView<rhi::pmvPipeline> pipelines;
 	};
 
-	struct frame {
-		uint32_t assignedImage = 0;
-
-		rhi::pmvFence inFlight;
-		
-		rhi::pmvCommandBuffer CMDGraphics;
-		rhi::pmvCommandBuffer CMDTransfer;
-
-		std::vector<VkSemaphore> waitSemaphores;
-		std::vector<VkPipelineStageFlags> submissionWaitStages;
-
-		rhi::pmvSemaphorePool semaphorePool;
-
-		frame(const rhi::creDevice& device) noexcept
-			:
-			inFlight(device, true),
-			semaphorePool(device, 4)
-		{
-
-		}
-
-	};
-
 }

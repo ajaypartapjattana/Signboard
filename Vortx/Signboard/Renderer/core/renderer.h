@@ -44,7 +44,7 @@ namespace rndr {
 
 		rhi::stdCommandPools m_commandPools;
 
-		std::vector<frame> frames;
+		std::vector<job> frames;
 		uint32_t availableFrameCount;
 		uint32_t activeFrameIndex = 0;
 
@@ -55,7 +55,7 @@ namespace rndr {
 		rhi::pcdCommandBufferRecord m_CommandRecord{};
 		rhi::pcdRenderPassRecord m_passRecord{};
 
-		rndr_interface m_interface;
+		Scheduler m_interface;
 		transferControl m_transfer;
 
 	};

@@ -6,6 +6,20 @@
 
 namespace rhi {
 
+	struct sempahore_traits {
+
+		using createInfo = VkSemaphoreCreateInfo;
+
+		VkResult create(VkDevice device, createInfo* pInfo, VkSemaphore* sempahore) noexcept {
+			return vkCreateSemaphore(device, pInfo, nullptr, sempahore);
+		}
+
+		void destroy(VkDevice device, VkSemaphore semaphore) noexcept {
+			vkDestroySemaphore(device, semaphore, nullptr);
+		}
+
+	};
+
 	struct _pAccess;
 
 	class creDevice;

@@ -69,7 +69,7 @@ namespace rndr {
 	bool Renderer::prepareFrame(uint32_t frameIndex) noexcept {
 		m_watchdog.watch_fence(frames[frameIndex].inFlight);
 
-		frame& frame = frames[frameIndex];
+		job& frame = frames[frameIndex];
 
 		VkResult result = r_swapchain.acquireImage(frame.imageAvailable, &frame.assignedImage);
 
@@ -93,7 +93,7 @@ namespace rndr {
 
 		bool waitUploads = defferUploads();
 
-		const frame& activeFrame = frames[activeFrameIndex];
+		const job& activeFrame = frames[activeFrameIndex];
 
 		{
 			m_CommandRecord.begin();

@@ -2,20 +2,12 @@
 
 #include <vulkan/vulkan.h>
 #include <vector>
-#include <unordered_map>
+#include <stdexcept>
 
-template <typename T, typename Meta>
-struct resource_record {
-	T handle = VK_NULL_HANDLE;
-	
-	Meta meta{};
-};
-
-template <typename T, typename Meta, typename Traits>
+template <typename T, typename Traits>
 class resource_pool {
 private:
-	std::vector<resource_record<T, Meta>> m_records;
-	std::unordered_map<T, size_t> mapping;
+	std::vector<T> m_records;
 
 	VkDevice r_device = VK_NULL_HANDLE;
 
@@ -44,7 +36,7 @@ public:
 		if (this == &other)
 			return *this;
 
-		clear();
+		reset();
 
 		m_records = std::move(other.m_records);
 		r_device = other.r_device;
@@ -55,42 +47,28 @@ public:
 	}
 
 	~resource_pool() noexcept {
-		clear();
+		reset();
 	}
 
-	void clear() noexcept {
+	void reset() noexcept {
 		const size_t _rSz = m_records.size();
-		
+
 		for (size_t i = 0; i < _rSz; ++i) {
-			Traits::destroy(r_device, m_records[i].handle);
+			Traits::destroy(r_device, m_records[i]);
 		}
 
-		m_records.clear()
+		m_records.clear();
 	}
 
-	using resource_id = uint32_t;
-
-	T create(const Meta& meta, VkResult* pResult = nullptr) {
-		resource_record<T, Meta> rec{};
-		rec.meta = meta;
-
-		VkResult result;
-		result = Traits::create(r_device, meta, &rec.handle);
-
-		if (pResult)
-			*pResult = result;
-
+	T create(Traits::createInfo* pCreateInfo) {
+		T handle;
+		VkResult result = Traits::create(r_device, pCreateInfo, &handle);
 		if (result != VK_SUCCESS)
-			return VK_NULL_HANDLE;
+			throw std::runtime_error("FAILURE: vulkan_type_create!");
 
-		m_records.push_back(rec);
+		m_records.push_back(handle);
 
-		return rec.handle;
+		return handle;
 	}
-
-	const Meta& meta(T handle) const noexcept {
-		return m_records[mapping.find(handle)->second].meta;
-	}
-	
 
 };

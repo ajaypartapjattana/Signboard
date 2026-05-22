@@ -17,7 +17,7 @@ namespace rhi {
 
 		static inline VkSurfaceKHR extract(const creSurface& s) noexcept { return s.m_surface; }
 
-		static inline VkDevice extract(const creDevice& d) noexcept { return d.r_device; }
+		static inline VkDevice extract(const creDevice& d) noexcept { return d.m_device; }
 		static inline VkPhysicalDevice physicalDevice(const creDevice& d) noexcept { return d.m_physical;}
 		static inline const stdQueues& queues(const creDevice& d) noexcept { return d.m_queues; }
 		static inline const stdQueueFamilies& queueFamilies(const creDevice& d) noexcept {return d.m_families; }
@@ -37,8 +37,6 @@ namespace rhi {
 		static inline VkDevice get_device(const pmvCommandPool& cp) noexcept { return cp.r_device; }
 
 		static inline VkDescriptorSetLayout extract(const pmvDescriptorSetLayout& dl) noexcept { return dl.m_setLayout; }
-
-		static inline VkFence extract(const pmvFence& f) noexcept { return f.m_fence; }
 
 		static inline VkFramebuffer extract(const pmvFramebuffer& fb) noexcept { return fb.m_framebuffer; }
 		static inline VkExtent2D extent(const pmvFramebuffer& fb) noexcept { return fb.extent; }

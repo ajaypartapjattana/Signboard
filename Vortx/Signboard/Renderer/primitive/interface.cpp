@@ -5,10 +5,12 @@
 
 namespace rndr {
 
-	rndr_interface::rndr_interface(const creContext& context, const crePresentation& presentation)
+	Scheduler::Scheduler(const creContext& context, const crePresentation& presentation)
 		:
 		r_device(_pAccess::device(context)),
 		r_swapchain(_pAccess::swapchain(presentation)),
+
+		m_fencePool(r_device.native(), 10, &m_config.fenceInfo),
 
 		m_presenter(_pAccess::device(context)),
 		m_queueSubmit()
@@ -16,15 +18,21 @@ namespace rndr {
 		m_presenter.target_swapchains({ &r_swapchain, 1 });
 	}
 
-	void rndr_interface::validate_swapchainDependancy() {
+	void Scheduler::validate_swapchainDependancy() {
 		m_presenter.target_swapchains({ &r_swapchain, 1 });
 	}
 
-	void acquireImageJob(frame& frame) {
+	void Scheduler::pushJob(sgb::span<VkCommandBuffer> commandBuffers, jobDesc desc) noexcept {
+		job newJob{};
+
+		newJob.inFlight = m_fencePool.grant();
+	}
+
+	void acquireImageJob(job& frame) {
 
 	}
 
-	void rndr_interface::pushRenderJob(frame& frame) {
+	void Scheduler::pushRenderJob(job& frame) {
 		m_queueSubmit.target_commandBuffers({ &frame.CMDGraphics, 1 });
 
 		m_queueSubmit.waitSemaphores(frame.waitSemaphores, frame.submissionWaitStages);
@@ -34,21 +42,21 @@ namespace rndr {
 
 		m_queueSubmit.submit(r_device.graphics(), &frame.inFlight);
 
-		frame.waitSemaphores.clear();
-		frame.waitSemaphores.push_back(signal);
+		frame.clearWait();
+		frame.pushWait(signal, VK_PIPELINE_STAGE_NONE);
 	}
 
-	void rndr_interface::pushUploadJob(frame& frame) {
+	void Scheduler::pushUploadJob(job& frame) {
 		VkSemaphore signal = frame.semaphorePool.grant();
 		m_queueSubmit.signalSemaphores({ &signal, 1 });
 		m_queueSubmit.target_commandBuffers({ &frame.CMDTransfer, 1 });
 
 		m_queueSubmit.submit(r_device.transfer(), nullptr);
 
-		frame.waitSemaphores.push_back(signal);
+		frame.pushWait(signal, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT);
 	}
 
-	void rndr_interface::pushPresentJob(const frame& frame) noexcept {
+	void Scheduler::pushPresentJob(const job& frame) noexcept {
 		m_presenter.target_waitSemaphores(frame.waitSemaphores);
 		m_presenter.present(frame.assignedImage);
 	}

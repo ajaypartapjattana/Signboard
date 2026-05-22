@@ -7,28 +7,84 @@
 
 namespace rndr {
 
+	struct config {
+		VkFenceCreateInfo fenceInfo;
+	};
+
+	struct job {
+		uint32_t assignedImage = 0;
+
+		uint32_t inFlight;
+
+		std::vector<VkCommandBuffer> cmd;
+
+		std::vector<uint32_t> waitSemaphores;
+		std::vector<VkPipelineStageFlags> submissionWaitStages;
+
+		inline void clearWait() noexcept {
+			waitSemaphores.clear();
+			submissionWaitStages.clear();
+		}
+
+		inline void pushWait(uint32_t semaphore, VkPipelineStageFlags stage) noexcept {
+			waitSemaphores.push_back(semaphore);
+			submissionWaitStages.push_back(stage);
+		}
+
+	};
+
 	class creContext;
 	class crePresentation;
 
 	struct _pAccess;
 
-	class rndr_interface {
+	enum class QueueFamily : uint8_t {
+		GRAPHICS,
+		TRANSFER,
+		COMPUTE,
+		PRESENT
+	};
+
+	enum JobFlags : uint32_t {
+		None			= 0,
+		Presentable		= 1 << 0,
+		Async			= 1 << 1,
+		HighPriority	= 1 << 2,
+		Background		= 1 << 3,
+		CpuWaitable		= 1 << 4,
+	};
+
+	struct jobDesc {
+		QueueFamily queue;
+		JobFlags flags;
+	};
+
+	class Scheduler {
 	public:
-		rndr_interface(const creContext& context, const crePresentation& presentation);
+		Scheduler(const creContext& context, const crePresentation& presentation);
 
 		void validate_swapchainDependancy();
 
-		void acquireImageJob(frame& frame);
+		void pushJob(sgb::span<VkCommandBuffer> commandBuffers, jobDesc desc) noexcept;
 
-		void pushRenderJob(frame& frame);
-		void pushUploadJob(frame& frame);
-		void pushPresentJob(const frame& frame) noexcept;
+		void acquireImageJob(job& frame);
+
+		void pushRenderJob(job& frame);
+		void pushUploadJob(job& frame);
+		void pushPresentJob(const job& frame) noexcept;
 
 	private:
 		friend struct _pAccess;
 
+		config m_config;
+
+		std::vector<job> pendingJobs;
+
 		const rhi::creDevice& r_device;
 		const rhi::creSwapchain& r_swapchain;
+
+		fungible_pool<VkFence, rhi::fence_traits> m_fencePool;
+		fungible_pool<VkSemaphore, rhi::sempahore_traits> m_semaphorePool;
 
 		rhi::pcdQueuePresent m_presenter;
 		rhi::pcdQueueSubmit m_queueSubmit;

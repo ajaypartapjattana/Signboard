@@ -39,6 +39,8 @@ namespace rhi {
 		VkQueue transfer() const noexcept { return m_queues.transfer; }
 		VkQueue preset() const noexcept { return m_queues.present; }
 
+		VkDevice native() const noexcept { return m_device; }
+
 	private:
 		void build(const createInfo& createInfo, const VkInstance instance);
 
@@ -46,7 +48,7 @@ namespace rhi {
 		friend class pcdQueueSubmit;
 		friend struct _pAccess;
 
-		VkDevice r_device;
+		VkDevice m_device;
 		VkPhysicalDevice m_physical;
 
 		stdQueues m_queues;

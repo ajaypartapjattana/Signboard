@@ -254,7 +254,6 @@
     <ClCompile Include="Signboard\RHI\core\instance.cpp" />
     <ClCompile Include="Signboard\RHI\core\allocator.cpp" />
     <ClCompile Include="Signboard\RHI\core\surface.cpp" />
-    <ClCompile Include="Signboard\RHI\primitive\fence.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\framebuffer.cpp" />
     <ClCompile Include="Signboard\RHI\core\swapchain.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\buffer.cpp" />
@@ -380,9 +379,11 @@
     <ClInclude Include="Signboard\Renderer\core\resources.h" />
     <ClInclude Include="Signboard\Renderer\Resources\rsrc_images.h" />
     <ClInclude Include="Signboard\Renderer\Resources\rsrc_buffers.h" />
-    <ClInclude Include="Signboard\RHI\core_t\resource_pool_t.h" />
-    <ClInclude Include="Signboard\RHI\core_t\fungible_pool_t.h" />
-    <ClInclude Include="Signboard\RHI\core_t\static_pool_t.h" />
+    <ClInclude Include="Signboard\RHI\core_t.hh" />
+    <ClInclude Include="Signboard\RHI\core_t\contextual_pool_t.hh" />
+    <ClInclude Include="Signboard\RHI\core_t\fungible_pool_t.hh" />
+    <ClInclude Include="Signboard\RHI\core_t\resource_pool_t.hh" />
+    <ClInclude Include="Signboard\RHI\core_t\static_registry_t.hh" />
     <ClInclude Include="Signboard\RHI\detail\standardCommandPools.h" />
     <ClInclude Include="Signboard\RHI\detail\standardQueues.h" />
     <ClInclude Include="Signboard\RHI\Internal\rhi_pAccess.h" />

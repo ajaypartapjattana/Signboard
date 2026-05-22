@@ -3,33 +3,20 @@
 #include <vulkan/vulkan.h>
 
 namespace rhi {
-	
-	struct _pAccess;
 
-	class creDevice;
+	struct fence_traits {
+		using createInfo = VkFenceCreateInfo;
 
-	class pmvFence {
-	public:
-		pmvFence(const creDevice& device) noexcept;
-		pmvFence(const creDevice& device, const bool signaled) noexcept;
+		static VkResult create(VkDevice device, createInfo* pInfo, VkFence* pFence) noexcept {
+			return vkCreateFence(device, pInfo, nullptr, pFence);
+		}
 
-		pmvFence(const pmvFence&) = delete;
-		pmvFence& operator=(const pmvFence&) = delete;
+		static void destroy(VkDevice device, VkFence fence) noexcept {
+			if (!fence)
+				return;
 
-		pmvFence(pmvFence&&) noexcept;
-		pmvFence& operator=(pmvFence&&) noexcept;
-
-		~pmvFence() noexcept;
-
-	private:
-		void create(const bool signaled);
-
-	private:
-		friend struct _pAccess;
-
-		VkFence m_fence;
-		VkDevice r_device;
-
+			vkDestroyFence(device, fence, nullptr);
+		}
 	};
 
 }

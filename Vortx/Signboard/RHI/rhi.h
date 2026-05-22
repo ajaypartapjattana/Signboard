@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core_t.hh"
 #include "core/rhi_core.h"
 #include "primitive/rhi_primitive.h"
 #include "procedure/rhi_procedure.h"
@@ -20,7 +21,6 @@ namespace rhi {
 	class pmvRenderPass;
 	class pmvFramebuffer;
 	class pmvSemaphorePool;
-	class pmvFence;
 	class pmvDescriptorSetLayout;
 	class pmvPushConstantRange;
 	class pmvPipelineLayout;
