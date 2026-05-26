@@ -1,49 +1,24 @@
-#include <stdexcept>
-
-#include "Signboard/RHI/Internal/rhi_pAccess.h"
-#include "Signboard/Platform/internal/plf_pAccess.h"
+#include "surface.h"
 
 namespace rhi {
 
-	creSurface::creSurface(const plf::displayWindow& window, const creInstance& instance)
-		: 
-		m_surface(VK_NULL_HANDLE), 
-		m_instance(_pAccess::extract(instance))
-	{
-		GLFWwindow* a_window = plf::_pAccess::extract(window);
-
-		VkResult result = glfwCreateWindowSurface(m_instance, a_window, nullptr, &m_surface);
+	VkResult surface::create(VkInstance instance, GLFWwindow* window) noexcept {
+		VkSurfaceKHR surface;
+		VkResult result = glfwCreateWindowSurface(instance, window, nullptr, &surface);
 		if (result != VK_SUCCESS)
-			throw std::runtime_error("FAILURE: surface_creation!");
+			return result;
 
+		m_surface = surface;
+		r_instance = instance;
+
+		return VK_SUCCESS;
 	}
 
-	creSurface::creSurface(creSurface&& other) noexcept 
-		:
-		m_surface(other.m_surface),
-		m_instance(other.m_instance)
-	{
-		other.m_surface = VK_NULL_HANDLE;
-	}
+	void surface::reset() noexcept {
+		if (m_surface)
+			vkDestroySurfaceKHR(r_instance, m_surface, nullptr);
 
-	creSurface& creSurface::operator=(creSurface&& other) noexcept {
-		if (this == &other)
-			return *this;
-		
-		if(m_surface)
-			vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
-
-		m_surface = other.m_surface;
-		m_instance = other.m_instance;
-
-		other.m_surface = VK_NULL_HANDLE;
-
-		return *this;
-	}
-
-	creSurface::~creSurface() noexcept {
-		if(m_surface)
-			vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
+		m_surface = VK_NULL_HANDLE;
 	}
 
 }

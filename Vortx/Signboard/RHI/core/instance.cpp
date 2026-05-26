@@ -1,129 +1,103 @@
-#include "Signboard/RHI/Internal/rhi_pAccess.h"
-
-#include <stdexcept>
+#include "instance.hh"
 
 namespace rhi {
 
-	creInstance::creInstance(const createInfo& createInfo) noexcept
-		: 
-		m_instance(VK_NULL_HANDLE)
-	{
-		build(createInfo);
+	VkResult instance::create(const VkInstanceCreateInfo* pCreateInfo) {
+
+#ifdef _VALIDATE
+		
+		{
+			VkResult result;
+
+			uint32_t extensionCount = 0;
+			result = vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+
+			std::vector<VkExtensionProperties> extensions(extensionCount);
+			result = vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
+
+			if (result != VK_SUCCESS)
+				return result;
+
+			for (uint32_t i = 0; i < pCreateInfo->enabledExtensionCount; ++i) {
+				const char* requested = pCreateInfo->ppEnabledExtensionNames[i];
+
+				bool found = false;
+				for (uint32_t j = 0; j < extensionCount; ++j) {
+					if (strcmp(requested, extensions[j].extensionName))
+						continue;
+					
+					found = true;
+					break;
+				}
+
+				if (found)
+					continue;
+
+				return VK_ERROR_EXTENSION_NOT_PRESENT;
+			}
+		}
+
+		{
+			VkResult result;
+
+			uint32_t layerCount = 0;
+			result = vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+			std::vector<VkLayerProperties> layers(layerCount);
+			result = vkEnumerateInstanceLayerProperties(&layerCount, layers.data());
+
+			if (result != VK_SUCCESS)
+				return result;
+
+			for (uint32_t i = 0; i < pCreateInfo->enabledLayerCount; ++i) {
+				const char* requested = pCreateInfo->ppEnabledLayerNames[i];
+
+				bool found = false;
+				for (uint32_t j = 0; j < layerCount; ++j) {
+					if (strcmp(requested, layers[j].layerName))
+						continue;
+
+					found = true;
+					break;
+				}
+
+				if (found)
+					continue;
+
+				return VK_ERROR_LAYER_NOT_PRESENT;
+			}
+		}
+
+#endif
+
+		VkInstance instance;
+		VkResult result = vkCreateInstance(pCreateInfo, nullptr, &instance);
+		if (result != VK_SUCCESS)
+			return result;
+
+		reset();
+		m_instance = instance;
+
+		return VK_SUCCESS;
 	}
 
-	creInstance::creInstance(creInstance&& other) noexcept 
-		: 
-		m_instance(other.m_instance)
-	{
-		other.m_instance = VK_NULL_HANDLE;
-	}
-
-	creInstance& creInstance::operator=(creInstance&& other) noexcept {
-		if (this == &other)
-			return *this;
-
+	void instance::reset() noexcept {
 		if (m_instance)
 			vkDestroyInstance(m_instance, nullptr);
 
-		m_instance = other.m_instance;
-
-		other.m_instance = VK_NULL_HANDLE;
-
-		return *this;
+		m_instance = VK_NULL_HANDLE;
 	}
 
-	creInstance::~creInstance() noexcept {
-		if (m_instance != VK_NULL_HANDLE)
-			vkDestroyInstance(m_instance, nullptr);
-	}
+	std::vector<VkPhysicalDevice> instance::enumeratePhysicalDevices() const {
+		uint32_t physicalDeviceCount = 0;
+		vkEnumeratePhysicalDevices(m_instance, &physicalDeviceCount, nullptr);
 
-	void creInstance::build(const createInfo& ci) {
-		std::vector<const char*> l_extensions = ci.extensions;
-		std::vector<const char*> l_layers = ci.layers;
-
-		if (ci.enable_validation) {
-			l_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-			l_layers.push_back("VK_LAYER_KHRONOS_validation");
-		}
-
-		for (const char* ext : l_extensions)
-			if (!validateExtension(ext))
-				throw std::runtime_error(std::string("INCOMPLETE: extension_invalid::") + ext);
-
-		for (const char* layer : l_layers)
-			if (!validateLayer(layer))
-				throw std::runtime_error(std::string("INCOMPLETE: layer_invalid::") + layer);
-
-		VkApplicationInfo appInfo{};
-		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-		appInfo.pApplicationName = "MyEngine";
-		appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-		appInfo.pEngineName = "MyEngine";
-		appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-		appInfo.apiVersion = VK_API_VERSION_1_3;
-
-		VkInstanceCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-		createInfo.pApplicationInfo = &appInfo;
-		createInfo.enabledExtensionCount = static_cast<uint32_t>(l_extensions.size());
-		createInfo.ppEnabledExtensionNames = l_extensions.data();
-		createInfo.enabledLayerCount = static_cast<uint32_t>(l_layers.size());
-		createInfo.ppEnabledLayerNames = l_layers.data();
-		createInfo.pNext = nullptr;
-		createInfo.flags = 0;
-
-		VkResult result = vkCreateInstance(&createInfo, nullptr, &m_instance);
+		std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
+		VkResult result = vkEnumeratePhysicalDevices(m_instance, &physicalDeviceCount, physicalDevices.data());
 		if (result != VK_SUCCESS)
-			throw std::runtime_error("FAILURE: instance_creation!");
+			throw std::runtime_error("FAILURE: physical_device_enumeration!");
 
-	}
-
-	const std::vector<VkExtensionProperties>& availableExtensions() {
-		static const std::vector<VkExtensionProperties> extensions = [] {
-
-			uint32_t count = 0;
-			vkEnumerateInstanceExtensionProperties(nullptr, &count, nullptr);
-
-			std::vector<VkExtensionProperties> v(count);
-			vkEnumerateInstanceExtensionProperties(nullptr, &count, v.data());
-			return v;
-			}();
-
-		return extensions;
-	}
-
-	bool creInstance::validateExtension(const char* extName) {
-
-		for (const auto& extension : availableExtensions()) {
-			if (strcmp(extName, extension.extensionName) == 0)
-				return true;
-		}
-
-		return false;
-	}
-
-	const std::vector<VkLayerProperties>& availableLayers() {
-		static const std::vector<VkLayerProperties> layers = [] {
-
-			uint32_t count = 0;
-			vkEnumerateInstanceLayerProperties(&count, nullptr);
-
-			std::vector<VkLayerProperties> v(count);
-			vkEnumerateInstanceLayerProperties(&count, v.data());
-			return v;
-			}();
-
-		return layers;
-	}
-
-	bool creInstance::validateLayer(const char* layerName) {
-
-		for (const auto& layer : availableLayers()) {
-			if (strcmp(layerName, layer.layerName) == 0)
-				return true;
-		}
-
-		return false;
+		return physicalDevices;
 	}
 
 }

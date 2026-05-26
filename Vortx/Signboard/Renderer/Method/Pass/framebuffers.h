@@ -7,7 +7,7 @@ namespace rndr {
 
 	class framebuffers {
 	public:
-		framebuffers(const rhi::creDevice& device, sgb::vltWrite<rhi::pmvFramebuffer> framebufferWrite, const sgb::vltView<rhi::pmvImage>& images) noexcept;
+		framebuffers(const rhi::device& device, sgb::vltWrite<rhi::pmvFramebuffer> framebufferWrite, const sgb::vltView<rhi::pmvImage>& images) noexcept;
 
 		uint32_t createFramebuffers(const rhi::pmvRenderPass& renderPass, sgb::span<const uint32_t> imageIndices);
 

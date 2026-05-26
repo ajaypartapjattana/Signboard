@@ -7,14 +7,14 @@ constexpr uint32_t DEFAULT_BUFFERED_FRAME_COUNT = 2;
 
 namespace rndr {
 
-	class creContext;
+	class context;
 	class creResources;
 	class crePresentation;
 	class creMethods;
 
 	class Renderer {
 	public:
-		Renderer(const creContext& context, const crePresentation& presentation, const creMethods& methods) noexcept;
+		Renderer(const context& context, const crePresentation& presentation, const creMethods& methods) noexcept;
 
 		~Renderer() noexcept;
 
@@ -34,7 +34,7 @@ namespace rndr {
 		void advance_frame() noexcept;
 
 	private:
-		const creContext* r_context;
+		const context* r_context;
 		const crePresentation* r_presentation;
 		const rhi::creSwapchain& r_swapchain;
 

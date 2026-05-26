@@ -6,13 +6,13 @@
 
 namespace rndr {
 
-	class creContext;
+	class context;
 
 	struct _pAccess;
 
 	class creResources {
 	public:
-		creResources(const creContext& context) noexcept;
+		creResources(const context& context) noexcept;
 
 		uint32_t allocateMesh(const Model& model);
 		uint32_t allocateImage();

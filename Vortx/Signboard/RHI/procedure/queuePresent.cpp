@@ -2,7 +2,7 @@
 
 namespace rhi {
 
-	pcdQueuePresent::pcdQueuePresent(const creDevice& device, VkPresentInfoKHR* pCreateInfo) noexcept
+	pcdQueuePresent::pcdQueuePresent(const device& device, VkPresentInfoKHR* pCreateInfo) noexcept
 		:
 		r_presentQueue(_pAccess::queues(device).present),
 		pInfo(allot_basic(pCreateInfo))

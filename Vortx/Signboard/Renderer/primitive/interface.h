@@ -33,7 +33,7 @@ namespace rndr {
 
 	};
 
-	class creContext;
+	class context;
 	class crePresentation;
 
 	struct _pAccess;
@@ -61,7 +61,7 @@ namespace rndr {
 
 	class Scheduler {
 	public:
-		Scheduler(const creContext& context, const crePresentation& presentation);
+		Scheduler(const context& context, const crePresentation& presentation);
 
 		void validate_swapchainDependancy();
 
@@ -80,7 +80,7 @@ namespace rndr {
 
 		std::vector<job> pendingJobs;
 
-		const rhi::creDevice& r_device;
+		const rhi::device& r_device;
 		const rhi::creSwapchain& r_swapchain;
 
 		fungible_pool<VkFence, rhi::fence_traits> m_fencePool;

@@ -2,7 +2,7 @@
 
 namespace rndr {
 
-	transferControl::transferControl(const rhi::creAllocator& allocator) noexcept 
+	transferControl::transferControl(const rhi::allocator& allocator) noexcept 
 	{
 		regions.reserve(10);
 

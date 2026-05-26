@@ -9,7 +9,7 @@
 
 namespace rhi {
 
-	class creDevice;
+	class device;
 
 	class pmvCommandBuffer;
 	class pmvSemaphorePool;

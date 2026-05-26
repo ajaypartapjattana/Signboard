@@ -8,13 +8,13 @@
 
 namespace rhi {
 
-	class creDevice;
+	class device;
 
 	class pmvShader;
 
 	class pcdShaderModuleCreate {
 	public:
-		pcdShaderModuleCreate(const creDevice& device, VkShaderModuleCreateInfo* pCreateInfo = nullptr) noexcept;
+		pcdShaderModuleCreate(const device& device, VkShaderModuleCreateInfo* pCreateInfo = nullptr) noexcept;
 
 		void target_source(sgb::span<const uint32_t> bin) noexcept;
 		VkResult publish(pmvShader& shader, VkShaderStageFlagBits stage) const noexcept;

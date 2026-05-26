@@ -8,7 +8,7 @@
 
 namespace rhi {
 
-	class creDevice;
+	class device;
 
 	class pmvPipelineLayout;
 
@@ -17,7 +17,7 @@ namespace rhi {
 
 	class pcdPipelineLayoutCreate {
 	public:
-		pcdPipelineLayoutCreate(const creDevice& device, VkPipelineLayoutCreateInfo* pCreateInfo = nullptr);
+		pcdPipelineLayoutCreate(const device& device, VkPipelineLayoutCreateInfo* pCreateInfo = nullptr);
 
 		void target_descriptorSetLayouts(sgb::span<const pmvDescriptorSetLayout*> layouts) noexcept;
 		void target_pushConstantRanges(sgb::span<const VkPushConstantRange> pushConstantRanges) noexcept;

@@ -41,15 +41,15 @@ static bool routine_escape(CommandContext& context, glm::vec2 data) {
 int main() {
     plf::context displayContext;
 
-    plf::displayWindow::createInfo windowInfo{};
+    plf::window::createInfo windowInfo{};
     windowInfo.extent = { 600, 800 };
     windowInfo.fullscreen = false;
     windowInfo.title = "My window";
 
-    plf::displayWindow window{ windowInfo };
+    plf::window window{ windowInfo };
     plf::windowEventState windowState{ window };
 
-    rndr::creContext context{ window };
+    rndr::context context{ window };
     rndr::creResources resource{ context };
 
     rndr::crePresentation present{ context, resource };

@@ -7,7 +7,7 @@ namespace rndr {
 
 	class passes {
 	public:
-		passes(const rhi::creDevice& device, sgb::vltWrite<rhi::pmvRenderPass> renderPassWrite) noexcept;
+		passes(const rhi::device& device, sgb::vltWrite<rhi::pmvRenderPass> renderPassWrite) noexcept;
 
 		uint32_t createSwapchainRenderPass(const rhi::creSwapchain& swapchain);
 		uint32_t createRenderPass(sgb::span<const VkAttachmentDescription> attachments);

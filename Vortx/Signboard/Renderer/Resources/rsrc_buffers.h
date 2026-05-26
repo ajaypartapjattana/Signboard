@@ -5,7 +5,7 @@
 
 class rsrc_buffers {
 public:
-	rsrc_buffers(const rhi::creAllocator& allocator, sgb::vltWrite<rhi::pmvBuffer>&& buffer_write);
+	rsrc_buffers(const rhi::allocator& allocator, sgb::vltWrite<rhi::pmvBuffer>&& buffer_write);
 
 	struct createInfo {
 		VkBufferUsageFlags usage;

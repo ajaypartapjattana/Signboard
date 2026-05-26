@@ -5,13 +5,13 @@
 
 namespace rhi {
 
-	class creDevice;
+	class device;
 
 	class pmvImage;
 
 	class pcdImageViewCreate {
 	public:
-		pcdImageViewCreate(const creDevice& device, VkImageViewCreateInfo* pCreateInfo = nullptr) noexcept;
+		pcdImageViewCreate(const device& device, VkImageViewCreateInfo* pCreateInfo = nullptr) noexcept;
 
 		void aspect(VkImageAspectFlags aspect) noexcept;
 		void mipLevel(uint32_t baseLevel, uint32_t levelCount) noexcept;

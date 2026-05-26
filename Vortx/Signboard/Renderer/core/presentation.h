@@ -7,14 +7,14 @@ constexpr uint32_t DEFAULT_SWAPCHAIN_IMAGE_COUNT = 2;
 
 namespace rndr {
 
-	class creContext;
+	class context;
 	class creResources;
 
 	struct _pAccess;
 
 	class crePresentation {
 	public:
-		crePresentation(const creContext& context, creResources& resources) noexcept;
+		crePresentation(const context& context, creResources& resources) noexcept;
 
 		crePresentation(const crePresentation&) = delete;
 		crePresentation& operator=(const crePresentation&) = delete;

@@ -5,7 +5,7 @@
 
 namespace plf {
 
-	class displayWindow;
+	class window;
 	class windowEventState;
 
 }

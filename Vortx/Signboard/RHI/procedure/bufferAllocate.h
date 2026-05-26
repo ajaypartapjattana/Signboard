@@ -6,13 +6,13 @@
 
 namespace rhi {
 
-	class creAllocator;
+	class allocator;
 
 	class pmvBuffer;
 
 	class pcdBufferAllocate {
 	public:
-		pcdBufferAllocate(const creAllocator& allocator, VkBufferCreateInfo* pCreateInfo = nullptr, VmaAllocationCreateInfo* pAllocInfo = nullptr) noexcept;
+		pcdBufferAllocate(const allocator& allocator, VkBufferCreateInfo* pCreateInfo = nullptr, VmaAllocationCreateInfo* pAllocInfo = nullptr) noexcept;
 
 		pcdBufferAllocate(const pcdBufferAllocate&) = delete;
 		pcdBufferAllocate& operator=(const pcdBufferAllocate&) = delete;

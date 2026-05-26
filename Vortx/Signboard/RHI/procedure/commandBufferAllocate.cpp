@@ -2,7 +2,7 @@
 
 namespace rhi {
 
-	pcdCommandBufferAllocate::pcdCommandBufferAllocate(const creDevice& device, VkCommandBufferAllocateInfo* pAllocInfo) noexcept
+	pcdCommandBufferAllocate::pcdCommandBufferAllocate(const device& device, VkCommandBufferAllocateInfo* pAllocInfo) noexcept
 		: 
 		r_device(_pAccess::extract(device)),
 		pInfo(allot_basic(pAllocInfo))

@@ -7,7 +7,7 @@
 
 namespace rhi {
 
-	class creDevice;
+	class device;
 
 	class pmvFramebuffer;
 
@@ -16,7 +16,7 @@ namespace rhi {
 
 	class pcdFramebufferCreate {
 	public:
-		pcdFramebufferCreate(const creDevice& device, VkFramebufferCreateInfo* pCreateInfo = nullptr) noexcept;
+		pcdFramebufferCreate(const device& device, VkFramebufferCreateInfo* pCreateInfo = nullptr) noexcept;
 
 		pcdFramebufferCreate(const pcdFramebufferCreate&) = delete;
 		pcdFramebufferCreate& operator=(const pcdFramebufferCreate&) = delete;

@@ -4,7 +4,7 @@
 
 namespace rhi {
 
-	pcdImageViewCreate::pcdImageViewCreate(const creDevice& device, VkImageViewCreateInfo* pCreateInfo) noexcept
+	pcdImageViewCreate::pcdImageViewCreate(const device& device, VkImageViewCreateInfo* pCreateInfo) noexcept
 		:
 		r_device(_pAccess::extract(device)),
 		pInfo(allot_basic(pCreateInfo))

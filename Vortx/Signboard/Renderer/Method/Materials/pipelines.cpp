@@ -4,7 +4,7 @@
 
 namespace rndr {
 
-	pipelines::pipelines(const rhi::creDevice& device, sgb::vltWrite<rhi::pmvPipeline> pipelineWrite)
+	pipelines::pipelines(const rhi::device& device, sgb::vltWrite<rhi::pmvPipeline> pipelineWrite)
 		:
 		_wrt(pipelineWrite),
 

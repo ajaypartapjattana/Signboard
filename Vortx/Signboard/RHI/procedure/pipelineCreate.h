@@ -8,7 +8,7 @@
 
 namespace rhi {
 
-	class creDevice;
+	class device;
 
 	class pmvRenderPass;
 	class pmvPipelineLayout;
@@ -31,7 +31,7 @@ namespace rhi {
 
 	class pcdGraphicPipelineCreate {
 	public:
-		pcdGraphicPipelineCreate(const creDevice& device, graphicPipelineCreateArena* pCreateArena = nullptr, VkGraphicsPipelineCreateInfo* pCreateInfo = nullptr) noexcept;
+		pcdGraphicPipelineCreate(const device& device, graphicPipelineCreateArena* pCreateArena = nullptr, VkGraphicsPipelineCreateInfo* pCreateInfo = nullptr) noexcept;
 
 		void bind_shaders(sgb::span<const pmvShader> shaders) noexcept;
 

@@ -6,9 +6,9 @@ namespace rndr {
 
 	struct _pAccess {
 
-		static inline const rhi::creDevice& device(const creContext& context) noexcept { return context.m_device; }
-		static inline const rhi::creAllocator& allocator(const creContext& context) noexcept { return context.m_allocator; }
-		static inline const rhi::creSurface& surface(const creContext& context) noexcept { return context.m_surface; }
+		static inline const rhi::device& device(const context& context) noexcept { return context.device; }
+		static inline const rhi::allocator& allocator(const context& context) noexcept { return context.allocator; }
+		static inline const rhi::surface& surface(const context& context) noexcept { return context.surface; }
 
 		static inline const resourceView view(const creResources& resource) noexcept { return { resource.m_buffers, resource.m_images, resource.m_meshes }; }
 		static inline sgb::vltWrite<rhi::pmvBuffer> bufferWrite(creResources& resources) noexcept { return resources.m_buffers; }

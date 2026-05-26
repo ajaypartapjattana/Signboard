@@ -8,13 +8,13 @@
 
 namespace rhi {
 
-	class creDevice;
+	class device;
 
 	class pmvDescriptorSetLayout;
 
 	class pcdDescriptorSetLayoutCreate {
 	public:
-		pcdDescriptorSetLayoutCreate(const creDevice& device, VkDescriptorSetLayoutCreateInfo* pCreateInfo = nullptr) noexcept;
+		pcdDescriptorSetLayoutCreate(const device& device, VkDescriptorSetLayoutCreateInfo* pCreateInfo = nullptr) noexcept;
 
 		void target_bindings(sgb::span<const VkDescriptorSetLayoutBinding> bindings);
 

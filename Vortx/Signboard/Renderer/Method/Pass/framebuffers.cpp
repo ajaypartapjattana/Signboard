@@ -4,7 +4,7 @@
 
 namespace rndr {
 
-	framebuffers::framebuffers(const rhi::creDevice& device, sgb::vltWrite<rhi::pmvFramebuffer> framebufferWrite, const sgb::vltView<rhi::pmvImage>& images) noexcept
+	framebuffers::framebuffers(const rhi::device& device, sgb::vltWrite<rhi::pmvFramebuffer> framebufferWrite, const sgb::vltView<rhi::pmvImage>& images) noexcept
 		:
 		r_images(images),
 		m_framebufferCreate(device),

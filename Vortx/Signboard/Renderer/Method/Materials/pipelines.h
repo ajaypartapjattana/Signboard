@@ -9,7 +9,7 @@ namespace rndr {
 
 	class pipelines {
 	public:
-		pipelines(const rhi::creDevice& device, sgb::vltWrite<rhi::pmvPipeline> pipelineWrite);
+		pipelines(const rhi::device& device, sgb::vltWrite<rhi::pmvPipeline> pipelineWrite);
 
 		uint32_t createPipeline(
 			const rhi::pmvRenderPass& renderPass,

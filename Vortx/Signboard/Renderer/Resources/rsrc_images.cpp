@@ -1,6 +1,6 @@
 #include "rsrc_images.h"
 
-rsrc_images::rsrc_images(const rhi::creDevice& device, const rhi::creAllocator& allocator, sgb::vltWrite<rhi::pmvImage> imageWrite)
+rsrc_images::rsrc_images(const rhi::device& device, const rhi::allocator& allocator, sgb::vltWrite<rhi::pmvImage> imageWrite)
 	:
 	m_allocator(allocator),
 	_wrt(imageWrite)

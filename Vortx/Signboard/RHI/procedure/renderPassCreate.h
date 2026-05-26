@@ -7,14 +7,14 @@
 
 namespace rhi {
 
-	class creDevice;
+	class device;
 
 	class pmvRenderPass;
 	class pmvImage;
 
 	class pcdRenderPassCreate {
 	public:
-		pcdRenderPassCreate(const rhi::creDevice& device, VkRenderPassCreateInfo* pCreateInfo = nullptr) noexcept;
+		pcdRenderPassCreate(const rhi::device& device, VkRenderPassCreateInfo* pCreateInfo = nullptr) noexcept;
 
 		pcdRenderPassCreate(const pcdRenderPassCreate&) = delete;
 		pcdRenderPassCreate& operator=(const pcdRenderPassCreate&) = delete;

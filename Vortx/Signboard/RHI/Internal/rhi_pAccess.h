@@ -13,17 +13,17 @@ namespace rhi {
 
 		// --- CRE ---
 
-		static inline VkInstance extract(const creInstance& i) noexcept { return i.m_instance; }
+		static inline VkInstance extract(const instance& i) noexcept { return i.m_instance; }
 
-		static inline VkSurfaceKHR extract(const creSurface& s) noexcept { return s.m_surface; }
+		static inline VkSurfaceKHR extract(const surface& s) noexcept { return s.m_surface; }
 
-		static inline VkDevice extract(const creDevice& d) noexcept { return d.m_device; }
-		static inline VkPhysicalDevice physicalDevice(const creDevice& d) noexcept { return d.m_physical;}
-		static inline const stdQueues& queues(const creDevice& d) noexcept { return d.m_queues; }
-		static inline const stdQueueFamilies& queueFamilies(const creDevice& d) noexcept {return d.m_families; }
+		static inline VkDevice extract(const device& d) noexcept { return d.m_device; }
+		static inline VkPhysicalDevice physicalDevice(const device& d) noexcept { return d.m_physical;}
+		static inline const stdQueues& queues(const device& d) noexcept { return d.m_queues; }
+		static inline const stdQueueFamilies& queueFamilies(const device& d) noexcept {return d.m_families; }
 
-		static inline VmaAllocator extract(const creAllocator& a) noexcept { return a.m_allocator; }
-		static inline const VkPhysicalDeviceMemoryProperties& get_memProps(const creAllocator& a) noexcept { return a._memProps; }
+		static inline VmaAllocator extract(const allocator& a) noexcept { return a.m_allocator; }
+		static inline const VkPhysicalDeviceMemoryProperties& get_memProps(const allocator& a) noexcept { return a._memProps; }
 
 		// --- PMV ---
 

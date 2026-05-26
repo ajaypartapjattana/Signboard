@@ -5,7 +5,7 @@
 
 namespace rndr {
 
-	descriptorSetLayouts::descriptorSetLayouts(const rhi::creDevice& device, sgb::vltWrite<rhi::pmvDescriptorSetLayout> descriptorSetLayoutWrite) noexcept
+	descriptorSetLayouts::descriptorSetLayouts(const rhi::device& device, sgb::vltWrite<rhi::pmvDescriptorSetLayout> descriptorSetLayoutWrite) noexcept
 		:
 		_wrt(descriptorSetLayoutWrite),
 		m_create(device)

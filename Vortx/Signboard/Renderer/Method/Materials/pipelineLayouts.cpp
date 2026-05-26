@@ -4,7 +4,7 @@
 
 namespace rndr {
 
-	pipelineLayouts::pipelineLayouts(const rhi::creDevice& device, sgb::vltWrite<rhi::pmvPipelineLayout> pipelineLayoutWrite) noexcept
+	pipelineLayouts::pipelineLayouts(const rhi::device& device, sgb::vltWrite<rhi::pmvPipelineLayout> pipelineLayoutWrite) noexcept
 		:
 		_wrt(pipelineLayoutWrite),
 		m_create(device)

@@ -5,7 +5,7 @@
 
 class rsrc_images {
 public:
-	rsrc_images(const rhi::creDevice& device, const rhi::creAllocator& allocator, sgb::vltWrite<rhi::pmvImage> imageWrite);
+	rsrc_images(const rhi::device& device, const rhi::allocator& allocator, sgb::vltWrite<rhi::pmvImage> imageWrite);
 
 	struct createInfo {
 		VkFormat format;

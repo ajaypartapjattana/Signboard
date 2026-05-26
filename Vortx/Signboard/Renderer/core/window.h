@@ -13,18 +13,18 @@ namespace rndr {
 		bool isAvailable() const noexcept;
 		void waitForEvents() const noexcept;
 
-		const plf::displayWindow& native_target() const noexcept;
+		const plf::window& native_target() const noexcept;
 		plf::windowEventState& get_eventState() noexcept;
 
 	private:
-		plf::displayWindow::createInfo describe_window();
+		plf::window::createInfo describe_window();
 
 	private:
 		friend struct _pAccess;
 
 		plf::context m_ctx;
 
-		plf::displayWindow m_primaryWindow;
+		plf::window m_primaryWindow;
 		plf::windowEventState m_eventState;
 
 	};

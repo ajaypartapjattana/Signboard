@@ -11,7 +11,7 @@ namespace rndr {
 
 	class transferControl {
 	public:
-		transferControl(const rhi::creAllocator& allocator) noexcept;
+		transferControl(const rhi::allocator& allocator) noexcept;
 
 		void bindResources(const resourceView& resources) noexcept;
 

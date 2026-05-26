@@ -4,7 +4,7 @@
 
 namespace rhi {
 
-	pmvSemaphorePool::pmvSemaphorePool(const creDevice& device, uint32_t capacity, VkSemaphoreCreateInfo* pCreateInfo) noexcept
+	pmvSemaphorePool::pmvSemaphorePool(const device& device, uint32_t capacity, VkSemaphoreCreateInfo* pCreateInfo) noexcept
 		:
 		pInfo(allot_basic(pCreateInfo)),
 		r_device(_pAccess::extract(device))
@@ -12,7 +12,7 @@ namespace rhi {
 		resize(capacity);
 	}
 
-	pmvSemaphorePool::pmvSemaphorePool(const creDevice& device, VkSemaphoreCreateInfo* pCreateInfo) noexcept 
+	pmvSemaphorePool::pmvSemaphorePool(const device& device, VkSemaphoreCreateInfo* pCreateInfo) noexcept 
 		:
 		pInfo(allot_basic(pCreateInfo)),
 		r_device(_pAccess::extract(device))
@@ -68,7 +68,7 @@ namespace rhi {
 		}
 	}
 
-	void pmvSemaphorePool::root(const creDevice& device) {
+	void pmvSemaphorePool::root(const device& device) {
 		VkDevice _device = _pAccess::extract(device);
 
 		uint32_t _sSz = static_cast<uint32_t>(m_semaphores.size());

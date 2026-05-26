@@ -4,7 +4,7 @@
 
 namespace rhi {
 
-	pcdSwapchainCreate::pcdSwapchainCreate(const creDevice& device, const creSurface& surface, VkSwapchainCreateInfoKHR* pCreateInfo) noexcept
+	pcdSwapchainCreate::pcdSwapchainCreate(const device& device, const surface& surface, VkSwapchainCreateInfoKHR* pCreateInfo) noexcept
 		: 
 		r_device(_pAccess::extract(device)), 
 		m_phys(_pAccess::physicalDevice(device)), 

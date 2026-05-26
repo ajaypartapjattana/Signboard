@@ -2,7 +2,7 @@
 
 namespace rhi {
 
-	pcdWatchdog::pcdWatchdog(const creDevice& device) noexcept
+	pcdWatchdog::pcdWatchdog(const device& device) noexcept
 		:
 		r_device(_pAccess::extract(device))
 	{

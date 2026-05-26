@@ -6,7 +6,7 @@ namespace plf {
 
 	struct _pAccess {
 
-		static GLFWwindow* extract(const displayWindow& w) {
+		static GLFWwindow* extract(const window& w) {
 			return w.m_window;
 		}
 

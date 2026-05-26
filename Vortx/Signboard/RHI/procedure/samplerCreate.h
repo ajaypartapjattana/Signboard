@@ -5,13 +5,13 @@
 
 namespace rhi {
 	
-	class creDevice;
+	class device;
 
 	class pmvSampler;
 
 	class pcdSamplerCreate {
 	public:
-		pcdSamplerCreate(const creDevice& device, VkSamplerCreateInfo* pCreateinfo = nullptr) noexcept;
+		pcdSamplerCreate(const device& device, VkSamplerCreateInfo* pCreateinfo = nullptr) noexcept;
 
 		pcdSamplerCreate(const pcdSamplerCreate&) = delete;
 		pcdSamplerCreate& operator=(const pcdSamplerCreate&) = delete;

@@ -4,13 +4,13 @@
 
 namespace rhi {
 	
-	class creDevice;
+	class device;
 
 	class pmvFence;
 
 	class pcdWatchdog {
 	public:
-		pcdWatchdog(const creDevice& device) noexcept;
+		pcdWatchdog(const device& device) noexcept;
 
 		void watch_fence(const pmvFence& fence) const noexcept;
 		void reset_fence(const pmvFence& fence) const noexcept;

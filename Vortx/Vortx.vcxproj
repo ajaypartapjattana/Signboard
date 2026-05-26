@@ -249,6 +249,7 @@
     <ClCompile Include="Signboard\Renderer\Resources\rsrc_buffers.cpp" />
     <ClCompile Include="Signboard\Renderer\primitive\transfer.cpp" />
     <ClCompile Include="Signboard\Renderer\core\resources.cpp" />
+    <ClCompile Include="Signboard\RHI\core\physicalDevice.cpp" />
     <ClCompile Include="Signboard\RHI\primitive\commandPool.cpp" />
     <ClCompile Include="Signboard\RHI\core\device.cpp" />
     <ClCompile Include="Signboard\RHI\core\instance.cpp" />
@@ -379,8 +380,9 @@
     <ClInclude Include="Signboard\Renderer\core\resources.h" />
     <ClInclude Include="Signboard\Renderer\Resources\rsrc_images.h" />
     <ClInclude Include="Signboard\Renderer\Resources\rsrc_buffers.h" />
+    <ClInclude Include="Signboard\RHI\core\physicalDevice.hh" />
+    <ClInclude Include="Signboard\RHI\core\vulkan_trait_base.hh" />
     <ClInclude Include="Signboard\RHI\core_t.hh" />
-    <ClInclude Include="Signboard\RHI\core_t\contextual_pool_t.hh" />
     <ClInclude Include="Signboard\RHI\core_t\fungible_pool_t.hh" />
     <ClInclude Include="Signboard\RHI\core_t\resource_pool_t.hh" />
     <ClInclude Include="Signboard\RHI\core_t\static_registry_t.hh" />
@@ -388,10 +390,10 @@
     <ClInclude Include="Signboard\RHI\detail\standardQueues.h" />
     <ClInclude Include="Signboard\RHI\Internal\rhi_pAccess.h" />
     <ClInclude Include="Signboard\RHI\primitive\commandPool.h" />
-    <ClInclude Include="Signboard\RHI\core\device.h" />
-    <ClInclude Include="Signboard\RHI\core\allocator.h" />
+    <ClInclude Include="Signboard\RHI\core\device.hh" />
+    <ClInclude Include="Signboard\RHI\core\allocator.hh" />
     <ClInclude Include="Signboard\RHI\core\rhi_core.h" />
-    <ClInclude Include="Signboard\RHI\core\surface.h" />
+    <ClInclude Include="Signboard\RHI\core\surface.hh" />
     <ClInclude Include="Signboard\RHI\primitive\fence.h" />
     <ClInclude Include="Signboard\RHI\primitive\framebuffer.h" />
     <ClInclude Include="Signboard\RHI\core\swapchain.h" />
@@ -412,6 +414,7 @@
     <ClInclude Include="Signboard\RHI\primitive\shader.h" />
     <ClInclude Include="Signboard\RHI\primitive\vertexLayout.h" />
     <ClInclude Include="Signboard\Core\Math\bitops.h" />
+    <ClInclude Include="Signboard\RHI\primitive\vulkan_trait_base.hh" />
     <ClInclude Include="Signboard\RHI\procedure\bufferAllocate.h" />
     <ClInclude Include="Signboard\RHI\procedure\commandBufferRecord.h" />
     <ClInclude Include="Signboard\RHI\procedure\commandBufferAllocate.h" />
@@ -433,7 +436,7 @@
     <ClInclude Include="external\VMA\vk_mem_alloc.h" />
     <ClInclude Include="Signboard\RHI\procedure\queuePresent.h" />
     <ClInclude Include="Signboard\RHI\rhi.h" />
-    <ClInclude Include="Signboard\RHI\core\instance.h" />
+    <ClInclude Include="Signboard\RHI\core\instance.hh" />
     <ClInclude Include="Signboard\Core\Containers\threadSafe\queue.h" />
     <ClInclude Include="external\FastNoiseLite.h" />
     <ClInclude Include="Signboard\Assets\io\ResourceLoaders\ModelLoader.h" />

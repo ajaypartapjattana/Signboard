@@ -11,7 +11,7 @@ struct PipelineStageShaders {
 
 namespace rndr {
 
-	class creContext;
+	class context;
 	class crePresentation;
 	class creResources;
 
@@ -19,7 +19,7 @@ namespace rndr {
 
 	class creMethods {
 	public:
-		creMethods(const creContext& context, const crePresentation& presentation, const creResources& resources) noexcept;
+		creMethods(const context& context, const crePresentation& presentation, const creResources& resources) noexcept;
 
 		creMethods(const creMethods&) = delete;
 		creMethods& operator=(const creMethods&) = delete;

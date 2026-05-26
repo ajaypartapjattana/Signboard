@@ -12,8 +12,8 @@ namespace rndr {
 
 	}
 
-	plf::displayWindow::createInfo creWindow::describe_window() {
-		plf::displayWindow::createInfo info{};
+	plf::window::createInfo creWindow::describe_window() {
+		plf::window::createInfo info{};
 
 		info.title = "Signboard";
 		info.fullscreen = false;
@@ -31,7 +31,7 @@ namespace rndr {
 		m_eventState.waitWindowEvents();
 	}
 
-	const plf::displayWindow& creWindow::native_target() const noexcept {
+	const plf::window& creWindow::native_target() const noexcept {
 		return m_primaryWindow;
 	}
 

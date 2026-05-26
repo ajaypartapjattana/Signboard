@@ -2,7 +2,7 @@
 
 namespace rhi {
 
-	pcdSwapchainImageAllocate::pcdSwapchainImageAllocate(const creDevice& device, VkImageViewCreateInfo* pCreateInfo) noexcept
+	pcdSwapchainImageAllocate::pcdSwapchainImageAllocate(const device& device, VkImageViewCreateInfo* pCreateInfo) noexcept
 		:
 		r_device(_pAccess::extract(device)),
 		pInfo(allot_basic(pCreateInfo))

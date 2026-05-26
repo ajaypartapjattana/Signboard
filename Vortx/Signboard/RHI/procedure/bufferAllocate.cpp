@@ -2,7 +2,7 @@
 
 namespace rhi {
 
-	pcdBufferAllocate::pcdBufferAllocate(const rhi::creAllocator& allocator, VkBufferCreateInfo* pCreateInfo, VmaAllocationCreateInfo* pAllocInfo) noexcept
+	pcdBufferAllocate::pcdBufferAllocate(const rhi::allocator& allocator, VkBufferCreateInfo* pCreateInfo, VmaAllocationCreateInfo* pAllocInfo) noexcept
 		: 
 		r_allocator(_pAccess::extract(allocator)),
 		memProps(_pAccess::get_memProps(allocator)),

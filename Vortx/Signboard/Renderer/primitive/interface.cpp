@@ -5,7 +5,7 @@
 
 namespace rndr {
 
-	Scheduler::Scheduler(const creContext& context, const crePresentation& presentation)
+	Scheduler::Scheduler(const context& context, const crePresentation& presentation)
 		:
 		r_device(_pAccess::device(context)),
 		r_swapchain(_pAccess::swapchain(presentation)),

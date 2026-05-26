@@ -4,7 +4,7 @@
 
 namespace rhi {
 
-	pcdCommandPoolCreate::pcdCommandPoolCreate(const creDevice& device, VkCommandPoolCreateInfo* pCreateInfo) noexcept
+	pcdCommandPoolCreate::pcdCommandPoolCreate(const device& device, VkCommandPoolCreateInfo* pCreateInfo) noexcept
 		: 
 		r_device(_pAccess::extract(device)),
 		families(_pAccess::queueFamilies(device)),

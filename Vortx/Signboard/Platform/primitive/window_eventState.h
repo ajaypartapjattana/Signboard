@@ -7,19 +7,19 @@
 
 namespace plf {
 
-	class displayWindow;
+	class window;
 	class displayWindowHandler;
 
 	struct glfw_callbacks;
 
 	class windowEventState {
 	public:
-		windowEventState(const displayWindow& window) noexcept;
+		windowEventState(const window& window) noexcept;
 
 		windowEventState(const windowEventState&) = delete;
 		windowEventState& operator=(const windowEventState&) = delete;
 
-		void attachWindow(const displayWindow& window) noexcept;
+		void attachWindow(const window& window) noexcept;
 
 		bool isWindowAlive() const noexcept;
 		void waitWindowEvents() const noexcept;

@@ -6,14 +6,14 @@
 
 namespace rhi {
 
-	class creDevice;
-	class creSurface;
+	class device;
+	class surface;
 
 	class creSwapchain;
 
 	class pcdSwapchainCreate {
 	public:
-		pcdSwapchainCreate(const creDevice& device, const creSurface& surface, VkSwapchainCreateInfoKHR* pCreateInfo = nullptr) noexcept;
+		pcdSwapchainCreate(const device& device, const surface& surface, VkSwapchainCreateInfoKHR* pCreateInfo = nullptr) noexcept;
 
 		VkResult imageFormat(VkFormat format, VkColorSpaceKHR colorSpace) noexcept;
 		VkResult imageCount(uint32_t count) noexcept;

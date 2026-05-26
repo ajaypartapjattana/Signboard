@@ -8,14 +8,14 @@
 
 namespace rhi {
 
-	class creDevice;
+	class device;
 
 	class creSwapchain;
 	class pmvImage;
 
 	class pcdSwapchainImageAllocate {
 	public:
-		pcdSwapchainImageAllocate(const creDevice& device, VkImageViewCreateInfo* pCreateInfo = nullptr) noexcept;
+		pcdSwapchainImageAllocate(const device& device, VkImageViewCreateInfo* pCreateInfo = nullptr) noexcept;
 
 		void target_swapchain(const creSwapchain& swapchain) noexcept;
 		

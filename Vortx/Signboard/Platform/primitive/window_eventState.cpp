@@ -2,11 +2,11 @@
 
 namespace plf {
 
-	windowEventState::windowEventState(const displayWindow& window) noexcept {
+	windowEventState::windowEventState(const window& window) noexcept {
 		attachWindow(window);
 	}
 
-	void windowEventState::attachWindow(const displayWindow& window) noexcept {
+	void windowEventState::attachWindow(const window& window) noexcept {
 		pWindow = _pAccess::extract(window);
 
 		glfwSetWindowUserPointer(pWindow, this);

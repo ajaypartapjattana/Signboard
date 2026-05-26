@@ -2,7 +2,7 @@
 
 namespace rhi {
 
-	pcdShaderModuleCreate::pcdShaderModuleCreate(const creDevice& device, VkShaderModuleCreateInfo* pCreateInfo) noexcept
+	pcdShaderModuleCreate::pcdShaderModuleCreate(const device& device, VkShaderModuleCreateInfo* pCreateInfo) noexcept
 		: 
 		r_device(_pAccess::extract(device)),
 		pInfo(fetch_basic(pCreateInfo))

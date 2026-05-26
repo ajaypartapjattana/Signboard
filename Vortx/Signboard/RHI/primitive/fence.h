@@ -1,17 +1,20 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
+#include "vulkan_trait_base.hh"
 
 namespace rhi {
 
-	struct fence_traits {
-		using createInfo = VkFenceCreateInfo;
+	struct fence : vulkan_trait_base<fence> {
+		using handle_type = VkFence;
+		using parent_type = VkDevice;
+		using createInfo_type = VkFenceCreateInfo;
+		using result_type = VkResult;
 
-		static VkResult create(VkDevice device, createInfo* pInfo, VkFence* pFence) noexcept {
+		static result_type create(parent_type device, const createInfo_type* pInfo, handle_type* pFence) noexcept {
 			return vkCreateFence(device, pInfo, nullptr, pFence);
 		}
 
-		static void destroy(VkDevice device, VkFence fence) noexcept {
+		static void destroy(parent_type device, handle_type fence) noexcept {
 			if (!fence)
 				return;
 

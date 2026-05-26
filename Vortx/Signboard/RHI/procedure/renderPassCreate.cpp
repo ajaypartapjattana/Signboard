@@ -4,7 +4,7 @@
 
 namespace rhi {
 
-	pcdRenderPassCreate::pcdRenderPassCreate(const creDevice& device, VkRenderPassCreateInfo* pCreateInfo) noexcept
+	pcdRenderPassCreate::pcdRenderPassCreate(const device& device, VkRenderPassCreateInfo* pCreateInfo) noexcept
 		: 
 		r_device(_pAccess::extract(device)),
 		pInfo(allot_basic(pCreateInfo))

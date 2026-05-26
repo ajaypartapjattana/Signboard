@@ -2,7 +2,7 @@
 
 namespace rhi {
 
-	pcdGraphicPipelineCreate::pcdGraphicPipelineCreate(const rhi::creDevice& device, graphicPipelineCreateArena* pCreateArena, VkGraphicsPipelineCreateInfo* pCreateInfo) noexcept
+	pcdGraphicPipelineCreate::pcdGraphicPipelineCreate(const rhi::device& device, graphicPipelineCreateArena* pCreateArena, VkGraphicsPipelineCreateInfo* pCreateInfo) noexcept
 		: 
 		r_device(_pAccess::extract(device)),
 		pArena(allot_arena(pCreateArena)),

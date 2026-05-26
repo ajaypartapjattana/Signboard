@@ -6,11 +6,11 @@
 
 namespace rhi {
 
-	class creDevice;
+	class device;
 
 	class pcdCommandPoolCreate {
 	public:
-		pcdCommandPoolCreate(const creDevice& device, VkCommandPoolCreateInfo* pCreateInfo = nullptr) noexcept;
+		pcdCommandPoolCreate(const device& device, VkCommandPoolCreateInfo* pCreateInfo = nullptr) noexcept;
 
 		void flag(VkCommandPoolCreateFlags flags) noexcept;
 

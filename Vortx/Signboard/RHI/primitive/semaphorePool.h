@@ -22,15 +22,15 @@ namespace rhi {
 
 	struct _pAccess;
 
-	class creDevice;
+	class device;
 	class pcdQueueSubmit;
 
 	class pmvSemaphorePool {
 	public:
 		pmvSemaphorePool() noexcept = default;
 
-		pmvSemaphorePool(const creDevice& device, uint32_t capacity, VkSemaphoreCreateInfo* pCreateInfo = nullptr) noexcept;
-		pmvSemaphorePool(const creDevice& device, VkSemaphoreCreateInfo* pCreateInfo = nullptr) noexcept;
+		pmvSemaphorePool(const device& device, uint32_t capacity, VkSemaphoreCreateInfo* pCreateInfo = nullptr) noexcept;
+		pmvSemaphorePool(const device& device, VkSemaphoreCreateInfo* pCreateInfo = nullptr) noexcept;
 
 		pmvSemaphorePool(const pmvSemaphorePool&) = delete;
 		pmvSemaphorePool& operator=(const pmvSemaphorePool&) = delete;
@@ -38,7 +38,7 @@ namespace rhi {
 		pmvSemaphorePool(pmvSemaphorePool&&) noexcept;
 		pmvSemaphorePool& operator=(pmvSemaphorePool&&) noexcept;
 
-		void root(const creDevice& device);
+		void root(const device& device);
 		void resize(uint32_t size);
 
 		VkSemaphore grant() noexcept;

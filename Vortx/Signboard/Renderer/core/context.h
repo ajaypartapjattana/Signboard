@@ -1,36 +1,30 @@
 #pragma once
 
 #include "Signboard/RHI/rhi.h"
-#include "Signboard/Platform/platform.h"
-
-namespace plf {
-	class displayWindow;
-}
 
 namespace rndr {
 
 	struct _pAccess;
 
-	class creContext {
-	public:
-		creContext(const plf::displayWindow& window);
-
-		creContext(const creContext&) = delete;
-		creContext& operator=(const creContext&) = delete;
-
-	private:
-		rhi::creInstance::createInfo describe_instance() noexcept;
-		rhi::creDevice::createInfo describe_device() noexcept;
-
+	class context {
 	private:
 		friend struct _pAccess;
 
-		rhi::creInstance m_instance;
-		rhi::creSurface m_surface;
+		rhi::instance instance;
+		std::vector<rhi::physicalDevice> physicalDevices;
 
-		rhi::creDevice m_device;
+		rhi::surface surface;
 
-		rhi::creAllocator m_allocator;
+		rhi::device device;
+		rhi::allocator allocator;
+
+	public:
+		context();
+
+		context(const context&) = delete;
+		context& operator=(const context&) = delete;
+
+		float createDevice(GLFWwindow* window, uint32_t physicalDeviceIndex);
 
 	};
 

@@ -2,7 +2,7 @@
 
 namespace rndr {
 
-	crePresentation::crePresentation(const creContext& context, creResources& resources) noexcept
+	crePresentation::crePresentation(const context& context, creResources& resources) noexcept
 		:
 		r_images(_pAccess::imageWrite(resources)),
 		m_swapchainCreate(_pAccess::device(context), _pAccess::surface(context)),

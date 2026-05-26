@@ -2,7 +2,7 @@
 
 namespace rndr {
 
-	passes::passes(const rhi::creDevice& device, sgb::vltWrite<rhi::pmvRenderPass> renderPassWrite) noexcept
+	passes::passes(const rhi::device& device, sgb::vltWrite<rhi::pmvRenderPass> renderPassWrite) noexcept
 		:
 		m_renderPassCreate(device),
 		_wrt(renderPassWrite)

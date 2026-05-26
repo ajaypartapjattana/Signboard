@@ -6,14 +6,14 @@
 
 namespace rhi {
 
-	class creDevice;
-	class creAllocator;
+	class device;
+	class allocator;
 
 	class pmvImage;
 
 	class pcdImageAllocate {
 	public:
-		pcdImageAllocate(const creAllocator& allocator, VkImageCreateInfo* pCreateInfo = nullptr, VmaAllocationCreateInfo* pAllocInfo = nullptr) noexcept;
+		pcdImageAllocate(const allocator& allocator, VkImageCreateInfo* pCreateInfo = nullptr, VmaAllocationCreateInfo* pAllocInfo = nullptr) noexcept;
 
 		pcdImageAllocate(const pcdImageAllocate&) = delete;
 		pcdImageAllocate& operator=(const pcdImageAllocate&) = delete;

@@ -2,7 +2,7 @@
 
 namespace rhi {
 
-	pcdDescriptorSetLayoutCreate::pcdDescriptorSetLayoutCreate(const creDevice& device, VkDescriptorSetLayoutCreateInfo* pCreateInfo) noexcept 
+	pcdDescriptorSetLayoutCreate::pcdDescriptorSetLayoutCreate(const device& device, VkDescriptorSetLayoutCreateInfo* pCreateInfo) noexcept 
 		:
 		r_device(_pAccess::extract(device)),
 		pInfo(allot_basic(pCreateInfo))

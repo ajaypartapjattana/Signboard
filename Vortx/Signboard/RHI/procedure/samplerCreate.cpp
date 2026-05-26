@@ -2,7 +2,7 @@
 
 namespace rhi{
 
-	pcdSamplerCreate::pcdSamplerCreate(const creDevice& device, VkSamplerCreateInfo* pCreateInfo) noexcept
+	pcdSamplerCreate::pcdSamplerCreate(const device& device, VkSamplerCreateInfo* pCreateInfo) noexcept
 		: 
 		r_device(_pAccess::extract(device)),
 		pInfo(allot_basic(pCreateInfo))

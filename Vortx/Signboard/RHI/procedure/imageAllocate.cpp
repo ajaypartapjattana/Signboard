@@ -2,7 +2,7 @@
 
 namespace rhi {
 
-	pcdImageAllocate::pcdImageAllocate(const creAllocator& allocator,VkImageCreateInfo* pCreateInfo, VmaAllocationCreateInfo* pAllocInfo) noexcept
+	pcdImageAllocate::pcdImageAllocate(const allocator& allocator,VkImageCreateInfo* pCreateInfo, VmaAllocationCreateInfo* pAllocInfo) noexcept
 		: 
 		r_allocator(_pAccess::extract(allocator)),
 

@@ -9,7 +9,7 @@ namespace rndr {
 
 	class descriptorSetLayouts {
 	public:
-		descriptorSetLayouts(const rhi::creDevice& device, sgb::vltWrite<rhi::pmvDescriptorSetLayout> descriptorSetLayoutWrite) noexcept;
+		descriptorSetLayouts(const rhi::device& device, sgb::vltWrite<rhi::pmvDescriptorSetLayout> descriptorSetLayoutWrite) noexcept;
 
 		uint32_t create(sgb::span<const VkDescriptorSetLayoutBinding> bindings);
 		std::vector<uint32_t> create(sgb::span<const shaderBinary*> shaders);

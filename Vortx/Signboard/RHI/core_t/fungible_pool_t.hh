@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
 #include <vector>
 #include <memory>
 
@@ -8,42 +7,42 @@ template <typename Traits>
 class fungible_pool {
 private:
 
-	using _Ty = typename Traits::type;
-	using _rootTy = typename Traits::root;
+	using _Ty = typename Traits::handle_type;
+	using _parentTy = typename Traits::parent_type;
+	using _resultTy = typename Traits::result_type;
+	using _infoTy = typename Traits::createInfo_type;
 
 	std::vector<_Ty> m_resources;
 	std::vector<uint64_t> available;
 	uint32_t m_size;
 	uint32_t nextFree= 0;
 
-	std::unique_ptr<typename Traits::createInfo> m_ownedInfo;
-	typename Traits::createInfo* pInfo = nullptr;
+	std::unique_ptr<_infoTy> m_ownedInfo;
+	_infoTy* pInfo = nullptr;
 	
-	_rootTy r_root{};
+	_parentTy r_parent{};
 
-	typename Traits::createInfo* allot_basic(typename Traits::createInfo* pCreateInfo) noexcept {
+	_infoTy* allot_basic(_infoTy* pCreateInfo) noexcept {
 		if (pCreateInfo)
 			return pCreateInfo;
 
-		m_ownedInfo = std::make_unique<typename Traits::createInfo>();
+		m_ownedInfo = std::make_unique<_infoTy>();
 		return m_ownedInfo.get();
 	}
 
 public:
 
-	fungible_pool(_rootTy root, uint32_t capacity = 0, typename Traits::createInfo* pCreateInfo = nullptr) 
+	fungible_pool(_parentTy parent, _infoTy* pCreateInfo = nullptr)
 		:
-		r_root(root),
+		r_parent(parent),
 		pInfo(allot_basic(pCreateInfo))
 	{
-		resize(capacity);
+
 	}
 
 	~fungible_pool() noexcept {
-		const size_t _rSz = m_resources.size();
-
-		for (size_t i = 0; i < _rSz; ++i) {
-			Traits::destroy(r_root, m_resources[i]);
+		for (uint32_t i = 0; i < m_size; ++i) {
+			Traits::destroy(r_parent, m_resources[i]);
 		}
 	}
 
@@ -51,11 +50,11 @@ public:
 		return m_resources[index];
 	}
 
-	Traits::createInfo& createInfo() noexcept {
+	inline Traits::createInfo& createInfo() noexcept {
 		return *pInfo;
 	}
 
-	uint32_t size() const noexcept {
+	inline uint32_t size() const noexcept {
 		return static_cast<uint32_t>(m_resources.size());
 	}
 
@@ -64,7 +63,7 @@ public:
 
 		uint32_t startBlock = nextFree >> 6;
 
-		for (uint32_t blockIndex = startBlock, count = 0; blockIndex < blockCount; ++count, blockIndex = (blockIndex + 1 == blockCount) ? 0 : blockIndex + 1) {
+		for (uint32_t count = 0, blockIndex = startBlock; count < blockCount; ++count, blockIndex = (blockIndex + 1 == blockCount) ? 0 : blockIndex + 1) {
 			uint64_t bits = available[blockIndex];
 
 			if (!bits)
@@ -107,51 +106,48 @@ public:
 			nextFree = index;
 	}
 
-	VkResult root(_rootTy root) {
-		const size_t _rSz = m_resources.size();
-		std::vector<_Ty> resources(_rSz);
+	_resultTy root(_parentTy parent) {
+		std::vector<_Ty> resources(m_size);
 
-		VkResult result;
-		for (size_t i = 0; i < _rSz; ++i) {
-			result = Traits::create(root, pInfo, &resources[i]);
-			if (result == VK_SUCCESS)
+		_resultTy result;
+		for (size_t i = 0; i < m_size; ++i) {
+			result = Traits::create(parent, pInfo, &resources[i]);
+			if (result == Traits::success())
 				continue;
 
 			for (size_t j = 0; j < i; ++j) {
-				Traits::destroy(root, resources[j]);
+				Traits::destroy(parent, resources[j]);
 			}
 
 			return result;
 		}
 
-		for (size_t i = 0; i < _rSz; ++i) {
-			Traits::destroy(r_root, m_resources[i]);
+		for (size_t i = 0; i < m_size; ++i) {
+			Traits::destroy(r_parent, m_resources[i]);
 		}
 
 		m_resources.swap(resources);
-		r_root = root;
+		r_parent = parent;
 
-		return VK_SUCCESS;
+		return Traits::success();
 	}
 
-	VkResult resize(uint32_t size) {
-		const uint32_t _cSz = static_cast<uint32_t>(m_resources.size());
+	_resultTy resize(uint32_t size) {
+		if (size == m_size)
+			return Traits::success();
 
-		if (size == _cSz)
-			return VK_SUCCESS;
+		const uint32_t blockSz_64 = (size + 63u) >> 6;
 
-		const uint32_t _blSz = (size + 63u) >> 6;
-
-		if (size < _cSz) {
-			for (uint32_t i = size; i < _cSz; ++i) {
-				Traits::destroy(r_root, m_resources[i]);
+		if (size < m_size) {
+			for (uint32_t i = size; i < m_size; ++i) {
+				Traits::destroy(r_parent, m_resources[i]);
 			}
 
 			m_resources.resize(size);
-			available.resize(_blSz);
+			available.resize(blockSz_64);
 
 			if (available.empty()) {
-				return VK_SUCCESS;
+				return Traits::success();
 			}
 
 			const uint32_t rem = size & 63u;
@@ -162,31 +158,31 @@ public:
 
 			m_size = size;
 
-			return VK_SUCCESS;
+			return Traits::success();
 		}
 
 		m_resources.resize(size);
 
-		VkResult result;
-		for (uint32_t i = _cSz; i < size; ++i) {
-			result = Traits::create(r_root, pInfo, &m_resources[i]);
-			if (result == VK_SUCCESS) {
+		_resultTy result;
+		for (uint32_t i = m_size; i < size; ++i) {
+			result = Traits::create(r_parent, pInfo, &m_resources[i]);
+			if (result == Traits::success()) {
 				continue;
 			}
 
-			for (uint32_t j = _cSz; j < i; ++j) {
-				Traits::destroy(r_root, m_resources[j]);
+			for (uint32_t j = m_size; j < i; ++j) {
+				Traits::destroy(r_parent, m_resources[j]);
 			}
 
-			m_resources.resize(_cSz);
+			m_resources.resize(m_size);
 
 			return result;
 		}
 
-		available.resize(_blSz, ~0ull);
+		available.resize(blockSz_64, ~0ull);
 
-		const uint32_t startBlock = _cSz >> 6;
-		const uint32_t startBit = _cSz & 63u;
+		const uint32_t startBlock = m_size >> 6;
+		const uint32_t startBit = m_size & 63u;
 
 		if (startBit) {
 			available[startBlock] |= (~0ull << startBit);
@@ -200,7 +196,7 @@ public:
 
 		m_size = size;
 
-		return VK_SUCCESS;
+		return Traits::success();
 	}
 
 };

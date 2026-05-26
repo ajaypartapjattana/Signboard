@@ -8,10 +8,10 @@
 
 namespace rhi {
 	
-	class creInstance;
-	class creSurface;
-	class creDevice;
-	class creAllocator;
+	class instance;
+	class surface;
+	class device;
+	class allocator;
 
 	class pmvCommandBuffer;
 	class creSwapchain;

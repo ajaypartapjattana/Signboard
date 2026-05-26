@@ -1,17 +1,18 @@
 #pragma once
 
-#include "instance.h"
-#include "surface.h"
-#include "device.h"
-#include "allocator.h"
+#include "instance.hh"
+#include "surface.hh"
+#include "physicalDevice.hh"
+#include "device.hh"
+#include "allocator.hh"
 #include "swapchain.h"
 
 namespace rhi {
 
-	class creInstance;
-	class creSurface;
-	class creDevice;
-	class creAllocator;
+	class instance;
+	class surface;
+	class device;
+	class allocator;
 	class creSwapchain;
 
 }

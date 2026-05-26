@@ -2,7 +2,7 @@
 
 namespace rhi{
 
-	pcdPipelineLayoutCreate::pcdPipelineLayoutCreate(const creDevice& device, VkPipelineLayoutCreateInfo* pCreateInfo)
+	pcdPipelineLayoutCreate::pcdPipelineLayoutCreate(const device& device, VkPipelineLayoutCreateInfo* pCreateInfo)
 		: 
 		r_device(_pAccess::extract(device)),
 		pInfo(allot_basic(pCreateInfo))

@@ -1,22 +1,27 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
 #include <vector>
 #include <stdexcept>
 
-template <typename T, typename Traits>
+template <typename Traits>
 class resource_pool {
 private:
-	std::vector<T> m_records;
 
-	VkDevice r_device = VK_NULL_HANDLE;
+	using _Ty = typename Traits::handle_type;
+	using _rootTy = typename Traits::root_type;
+	using _resultTy = typename Traits::result_type;
+	using _infoTy = typename Traits::createInfo_type;
+
+	std::vector<_Ty> m_records;
+
+	_rootTy r_root = VK_NULL_HANDLE;
 
 public:
 	resource_pool() noexcept = default;
 
-	resource_pool(VkDevice device) noexcept
+	resource_pool(_rootTy root) noexcept
 		:
-		r_device(device)
+		r_root(root)
 	{
 
 	}
@@ -27,9 +32,9 @@ public:
 	resource_pool(resource_pool&& other) noexcept
 		:
 		m_records(std::move(other.m_records)),
-		r_device(other.r_device)
+		r_root(other.r_device)
 	{
-		other.r_device = VK_NULL_HANDLE;
+		other.r_root = VK_NULL_HANDLE;
 	}
 
 	resource_pool& operator=(resource_pool&& other) noexcept {
@@ -39,9 +44,9 @@ public:
 		reset();
 
 		m_records = std::move(other.m_records);
-		r_device = other.r_device;
+		r_root = other.r_root;
 
-		other.r_device = VK_NULL_HANDLE;
+		other.r_root = VK_NULL_HANDLE;
 
 		return *this;
 	}
@@ -51,24 +56,23 @@ public:
 	}
 
 	void reset() noexcept {
-		const size_t _rSz = m_records.size();
+		const size_t size = m_records.size();
 
-		for (size_t i = 0; i < _rSz; ++i) {
-			Traits::destroy(r_device, m_records[i]);
+		for (size_t i = 0; i < size; ++i) {
+			Traits::destroy(r_root, m_records[i]);
 		}
 
 		m_records.clear();
 	}
 
-	T create(Traits::createInfo* pCreateInfo) {
-		T handle;
-		VkResult result = Traits::create(r_device, pCreateInfo, &handle);
-		if (result != VK_SUCCESS)
-			throw std::runtime_error("FAILURE: vulkan_type_create!");
+	_resultTy create(Traits::createInfo* pInfo, _Ty& target) {
+		_resultTy result = Traits::create(r_root, pInfo, &target);
+		if (result != _resultTy{})
+			return result;
 
-		m_records.push_back(handle);
+		m_records.push_back(target);
 
-		return handle;
+		return _resultTy{};
 	}
 
 };

@@ -8,7 +8,7 @@ namespace rndr {
 
 	class pipelineLayouts {
 	public:
-		pipelineLayouts(const rhi::creDevice& device, sgb::vltWrite<rhi::pmvPipelineLayout> pipelineLayoutWrite) noexcept;
+		pipelineLayouts(const rhi::device& device, sgb::vltWrite<rhi::pmvPipelineLayout> pipelineLayoutWrite) noexcept;
 
 		uint32_t create(sgb::span<const rhi::pmvDescriptorSetLayout*> descriptorLayouts, sgb::span<const VkPushConstantRange> pushConstantRanges);
 

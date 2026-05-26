@@ -4,7 +4,7 @@
 
 namespace rndr {
 
-	Renderer::Renderer(const creContext& context, const crePresentation& presentation, const creMethods& methods) noexcept
+	Renderer::Renderer(const context& context, const crePresentation& presentation, const creMethods& methods) noexcept
 		:
 		r_context(&context),
 		r_presentation(&presentation),
@@ -44,7 +44,7 @@ namespace rndr {
 
 		frames.reserve(count);
 
-		const rhi::creDevice& r_device = _pAccess::device(*r_context);
+		const rhi::device& r_device = _pAccess::device(*r_context);
 		rhi::pcdCommandBufferAllocate pcd{ r_device };
 		for (uint32_t i = _shrd; i < count; ++i) {
 			frames.emplace_back(r_device);

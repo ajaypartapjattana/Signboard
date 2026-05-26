@@ -7,14 +7,14 @@
 
 namespace rhi {
 
-	class creDevice;
+	class device;
 
 	class pmvCommandPool;
 	class pmvCommandBuffer;
 
 	class pcdCommandBufferAllocate {
 	public:
-		pcdCommandBufferAllocate(const creDevice& device, VkCommandBufferAllocateInfo* pAllocInfo = nullptr) noexcept;
+		pcdCommandBufferAllocate(const device& device, VkCommandBufferAllocateInfo* pAllocInfo = nullptr) noexcept;
 
 		VkResult target_commandPool(const pmvCommandPool& commandPool) noexcept;
 		void secondryBuffers(bool enable = true) noexcept;

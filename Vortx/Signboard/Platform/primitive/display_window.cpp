@@ -4,58 +4,26 @@
 
 namespace plf {
 
-	displayWindow::displayWindow(const createInfo& createInfo) 
-		:
-		m_window(nullptr)
-	{
+	int window::create(uint32_t width, uint32_t height, const char* title = nullptr) noexcept {
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-		GLFWmonitor* moniter = nullptr;
+		GLFWwindow* window = glfwCreateWindow(width, height, title, nullptr, nullptr);
+		if (!window)
+			return 0;
 
-		createInfo::Extent2D a_extent = createInfo.extent;
+		reset();
 
-		if (createInfo.fullscreen) {
-			moniter = glfwGetPrimaryMonitor();
-			const GLFWvidmode* mode = glfwGetVideoMode(moniter);
+		m_window = window;
 
-			a_extent.width = mode->width;
-			a_extent.height = mode->height;
-		}
-
-		m_window = glfwCreateWindow(a_extent.width, a_extent.height, (createInfo.title).c_str(), moniter, nullptr);
-
-		if (!m_window)
-			throw std::runtime_error("FAILURE: display_window_creation!");
+		return 1;
 	}
 
-	displayWindow::displayWindow(displayWindow&& other) noexcept 
-		:
-		m_window(other.m_window)
-	{
-		other.m_window = nullptr;
-	}
-
-	displayWindow& displayWindow::operator=(displayWindow&& other) noexcept {
-		if (this == &other)
-			return *this;
-
-		if (m_window)
-			glfwDestroyWindow(m_window);
-
-		m_window = other.m_window;
-		other.m_window = nullptr;
-
-		return *this;
-	}
-
-	displayWindow::~displayWindow() noexcept {
+	void window::reset() noexcept {
 		if (m_window) {
 			glfwDestroyWindow(m_window);
 		}
-	}
 
-	const GLFWwindow* displayWindow::native_window() const noexcept {
-		return m_window;
+		m_window = nullptr;
 	}
 
 }

@@ -2,7 +2,7 @@
 
 namespace rhi {
 
-	pcdFramebufferCreate::pcdFramebufferCreate(const creDevice& device, VkFramebufferCreateInfo* pCreateInfo) noexcept
+	pcdFramebufferCreate::pcdFramebufferCreate(const device& device, VkFramebufferCreateInfo* pCreateInfo) noexcept
 		: 
 		r_device(_pAccess::extract(device)),
 		pInfo(fetch_basic(pCreateInfo))

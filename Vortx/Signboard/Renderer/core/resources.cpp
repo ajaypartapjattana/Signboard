@@ -2,7 +2,7 @@
 
 namespace rndr {
 
-	creResources::creResources(const creContext& context) noexcept
+	creResources::creResources(const context& context) noexcept
 		:
 		m_bufferControl(_pAccess::allocator(context), sgb::vltWrite<rhi::pmvBuffer>{ m_buffers }),
 		m_imageControl(_pAccess::device(context), _pAccess::allocator(context), sgb::vltWrite<rhi::pmvImage>{m_images})
