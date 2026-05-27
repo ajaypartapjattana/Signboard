@@ -3,24 +3,21 @@
 namespace rhi {
 
 	VkResult device::create(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo) noexcept {
-
 		VkDevice device;
 		VkResult result = vkCreateDevice(physicalDevice, pCreateInfo, nullptr, &device);
 		if (result != VK_SUCCESS)
 			return result;
 
+		reset();
+
 		if (pCreateInfo->pEnabledFeatures)
 			enabledFeatures = std::make_unique<VkPhysicalDeviceFeatures>(*pCreateInfo->pEnabledFeatures);
 
 		{
-			uint32_t maxFamily = 0;
+			uint32_t familyCount = 0;
+			vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &familyCount, nullptr);
 
-			for (uint32_t i = 0; i < pCreateInfo->queueCreateInfoCount; ++i) {
-				maxFamily = std::max(maxFamily, pCreateInfo->pQueueCreateInfos[i].queueFamilyIndex);
-			}
-
-			familyQueueCount.clear();
-			familyQueueCount.resize(maxFamily + 1, 0);
+			familyQueueCount.resize(familyCount, 0);
 		}
 
 		for (uint32_t i = 0; i < pCreateInfo->queueCreateInfoCount; ++i) {

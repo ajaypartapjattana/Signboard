@@ -6,6 +6,14 @@ namespace rndr {
 
 	struct _pAccess;
 
+	enum QueueFamilyType : uint32_t {
+		FAMILY_INDEX_GRAPHICS,
+		FAMILY_INDEX_COMPUTE,
+		FAMILY_INDEX_TRANSFER,
+
+		FAMILY_INDEX_MAX_ENUM
+	};
+
 	class context {
 	private:
 		friend struct _pAccess;
@@ -15,7 +23,12 @@ namespace rndr {
 
 		rhi::surface surface;
 
+		uint32_t selectedPhysicalDeviceIndex;
+
 		rhi::device device;
+		std::array<uint32_t, FAMILY_INDEX_MAX_ENUM> assignedQueueFamilies{};
+		uint32_t assignedPresentFamily;
+
 		rhi::allocator allocator;
 
 	public:
@@ -24,7 +37,7 @@ namespace rndr {
 		context(const context&) = delete;
 		context& operator=(const context&) = delete;
 
-		float createDevice(GLFWwindow* window, uint32_t physicalDeviceIndex);
+		void createDevice(GLFWwindow* window, uint32_t physicalDeviceIndex);
 
 	};
 

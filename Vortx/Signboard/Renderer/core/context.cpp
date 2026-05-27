@@ -1,7 +1,5 @@
 #include "context.h"
 
-constexpr const char* validationLayer = "VK_LAYER_KHRONOS_validation";
-
 namespace rndr {
 
 	context::context() {
@@ -28,7 +26,7 @@ namespace rndr {
 
 #ifdef _VALIDATE
 			instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-			instanceLayers.push_back(validationLayer);
+			instanceLayers.push_back("VK_LAYER_KHRONOS_validation");
 #endif
 
 			VkInstanceCreateInfo createInfo{};
@@ -51,41 +49,91 @@ namespace rndr {
 		}
 	}
 
-	float context::createDevice(GLFWwindow* window, uint32_t physicalDeviceIndex) {
-		surface.create(instance, window);
-		
+	void context::createDevice(GLFWwindow* window, uint32_t physicalDeviceIndex) {
 		rhi::physicalDevice& r_selectedDevice = physicalDevices[physicalDeviceIndex];
 
-		uint8_t presentationFamilyIndex = r_selectedDevice.presentationFamily(surface);
-		if (presentationFamilyIndex == UINT8_MAX)
-			throw std::runtime_error("INCAPABILITY: physical_device_does_not_support_presentation!");
-
-		float devicePotentialFactor;
 		{
-			std::vector<float> queueSchedulingPriorities(1, 1.0f);
-			std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+			rhi::surface l_surface{ instance, window };
+
+			sgb::span<const VkBool32> presentationSupport = r_selectedDevice.queueFamilyPresentationSupport(l_surface);
+			uint32_t familyCount = static_cast<uint32_t>(presentationSupport.size());
 
 			{
-				uint32_t physicalDeviceFamilyCount = r_selectedDevice.maxQueueFamilies();
-				std::vector<uint32_t> familyQueueCounts(physicalDeviceFamilyCount, 0);
-
-				for (uint8_t i = 0; i < FAMILY_INDEX_MAX_ENUM; ++i) {
-					uint8_t familyIndex = r_selectedDevice.queueFamilyIndex((QueueFamilyType)i);
-					++familyQueueCounts[familyIndex];
-				}
-
-				uint32_t maxQueueLoad = 1;
-				for (uint32_t i = 0; i < physicalDeviceFamilyCount; ++i) {
-					uint32_t queueLoad = familyQueueCounts[i];
-					if (queueLoad == 0)
+				bool offscreenDevice = true;
+				for (uint32_t i = 0; i < familyCount; ++i) {
+					if (!presentationSupport[i])
 						continue;
 
-					maxQueueLoad = std::max(maxQueueLoad, queueLoad);
+					offscreenDevice = false;
+					break;
 				}
 
-				devicePotentialFactor = (1.0f / maxQueueLoad);
+				if (offscreenDevice)
+					throw std::runtime_error("INCAPABILITY: physical_device_does_not_support_presentation!");
+			}
 
-				queueCreateInfos.reserve(physicalDeviceFamilyCount);
+			std::array<uint32_t, FAMILY_INDEX_MAX_ENUM> l_assignedFamilies{};
+			l_assignedFamilies.fill(UINT32_MAX);
+
+			{
+				sgb::span<const VkQueueFamilyProperties> queueFamilyProperties = r_selectedDevice.queueFamilyProperties();
+
+				std::array<uint32_t, FAMILY_INDEX_MAX_ENUM> familyCapabilities{};
+				familyCapabilities.fill(UINT32_MAX);
+
+				constexpr VkQueueFlags familyFlags[] = { VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_TRANSFER_BIT };
+
+				for (uint32_t i = 0; i < familyCount; ++i) {
+					const VkQueueFamilyProperties& familyProperty = queueFamilyProperties[i];
+
+					uint32_t relevantFlags = 0;
+
+					for (uint32_t j = 0; j < FAMILY_INDEX_MAX_ENUM; ++j) {
+						uint32_t flag = familyFlags[j];
+						relevantFlags |= (familyProperty.queueFlags & flag) ? flag : 0;
+					}
+
+					uint32_t queueFamilyCapabilityCount = __popcnt(relevantFlags);
+
+					for (uint32_t j = 0; j < FAMILY_INDEX_MAX_ENUM; ++j) {
+						if ((familyProperty.queueFlags & familyFlags[j]) && queueFamilyCapabilityCount < familyCapabilities[j]) {
+							l_assignedFamilies[j] = i;
+							familyCapabilities[j] = queueFamilyCapabilityCount;
+						}
+					}
+				}
+
+				for (uint32_t i = 0; i < FAMILY_INDEX_MAX_ENUM; ++i) {
+					if (l_assignedFamilies[i] == UINT32_MAX)
+						throw std::runtime_error("INCAPABILITY: physical_device_has_insufficient_traits!");
+				}
+			}
+
+			float queueSchedulingPriorities = 1.0f;
+			std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+
+			uint32_t l_assignedPresentFamily = UINT32_MAX;
+
+			{
+				std::vector<uint8_t> requiredFamilies(familyCount, false);
+
+				for (uint32_t i = 0; i < FAMILY_INDEX_MAX_ENUM; ++i) {
+					uint32_t familyIndex = l_assignedFamilies[(QueueFamilyType)i];
+					requiredFamilies[familyIndex] = true;
+				}
+
+				if (presentationSupport[l_assignedFamilies[FAMILY_INDEX_GRAPHICS]]) {
+					l_assignedPresentFamily = l_assignedFamilies[FAMILY_INDEX_GRAPHICS];
+				} else {
+					for (uint32_t i = 0; i < familyCount; ++i) {
+						if (!presentationSupport[i])
+							continue;
+
+						requiredFamilies[i] = true;
+						l_assignedPresentFamily = i;
+						break;
+					}
+				}
 
 				VkDeviceQueueCreateInfo queueInfo{};
 				queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -93,16 +141,14 @@ namespace rndr {
 				queueInfo.flags = 0;
 				queueInfo.queueCount = 1;
 
-				for (uint32_t i = 0; i < physicalDeviceFamilyCount; ++i) {
-					uint32_t requiredQueueCount = familyQueueCounts[i];
-					if (requiredQueueCount == 0)
+				queueCreateInfos.reserve(FAMILY_INDEX_MAX_ENUM);
+
+				for (uint32_t i = 0; i < familyCount; ++i) {
+					if (requiredFamilies[i] == false)
 						continue;
 
-					if (requiredQueueCount > r_selectedDevice.queueFamilyCount(i))
-						throw std::runtime_error("INCAPABILITY: physical_device_queue_exhausted!");
-
 					queueInfo.queueFamilyIndex = i;
-					queueInfo.pQueuePriorities = queueSchedulingPriorities.data();
+					queueInfo.pQueuePriorities = &queueSchedulingPriorities;
 
 					queueCreateInfos.emplace_back(queueInfo);
 				}
@@ -125,19 +171,24 @@ namespace rndr {
 			createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 			createInfo.pEnabledFeatures = &enabledFeatures;
 
-			device.create(physicalDevices[physicalDeviceIndex], &createInfo);
+			VkResult result = device.create(physicalDevices[physicalDeviceIndex], &createInfo);
+
+			if (result != VK_SUCCESS)
+				throw std::runtime_error("FAILURE: device_creation");
+
+			surface = std::move(l_surface);
+			assignedQueueFamilies = std::move(l_assignedFamilies);
+			assignedPresentFamily = l_assignedPresentFamily;
 		}
 
 		VmaAllocatorCreateInfo createInfo{};
 		createInfo.flags = VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
-		createInfo.physicalDevice = physicalDevices[physicalDeviceIndex];
+		createInfo.physicalDevice = r_selectedDevice;
 		createInfo.device = device;
 		createInfo.instance = instance;
 		createInfo.vulkanApiVersion = VK_API_VERSION_1_3;
 
 		allocator.create(&createInfo);
-
-		return devicePotentialFactor;
 	}
 		
 }

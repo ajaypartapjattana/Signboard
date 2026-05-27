@@ -12,7 +12,6 @@ namespace rhi {
 	private:
 		std::unique_ptr<VkPhysicalDeviceFeatures> enabledFeatures;
 		std::vector<uint32_t> familyQueueCount;
-		uint32_t presentFamily = 0;
 
 		VkDevice m_device = VK_NULL_HANDLE;
 
@@ -28,7 +27,6 @@ namespace rhi {
 			:
 			enabledFeatures(std::move(other.enabledFeatures)),
 			familyQueueCount(std::move(other.familyQueueCount)),
-			presentFamily(other.presentFamily),
 			m_device(std::exchange(other.m_device, VK_NULL_HANDLE))
 		{
 
@@ -43,7 +41,6 @@ namespace rhi {
 
 			enabledFeatures = std::move(other.enabledFeatures);
 			familyQueueCount = std::move(other.familyQueueCount);
-			presentFamily = other.presentFamily;
 			m_device = std::exchange(other.m_device, VK_NULL_HANDLE);
 
 			return *this;

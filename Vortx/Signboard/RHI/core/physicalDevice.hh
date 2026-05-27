@@ -4,14 +4,7 @@
 #include <vector>
 #include <string>
 #include <array>
-
-enum QueueFamilyType : uint8_t {
-	FAMILY_INDEX_GRAPHICS,
-	FAMILY_INDEX_COMPUTE,
-	FAMILY_INDEX_TRANSFER,
-
-	FAMILY_INDEX_MAX_ENUM
-};
+#include "Signboard/Core/Containers/span/span.h"
 
 namespace rhi {
 
@@ -20,9 +13,10 @@ namespace rhi {
 		VkPhysicalDeviceProperties properties{};
 		VkPhysicalDeviceMemoryProperties memory{};
 		VkPhysicalDeviceFeatures features{};
-		std::vector<uint32_t> queueCounts;
+		std::vector<VkQueueFamilyProperties> queueFamilies;
 
-		std::array<uint8_t, FAMILY_INDEX_MAX_ENUM> assignedQueueFamilies{};
+		std::vector<VkBool32> queuePresentationSupport;
+		VkSurfaceKHR presentationCapabilityCandidate;
 
 		VkPhysicalDevice r_physicalDevice = VK_NULL_HANDLE;
 
@@ -47,20 +41,12 @@ namespace rhi {
 			return properties.deviceName;
 		}
 
-		uint8_t maxQueueFamilies() const noexcept {
-			return queueCounts.size();
-		}
-
-		uint8_t queueFamilyIndex(QueueFamilyType type) const noexcept {
-			return assignedQueueFamilies[type];
-		}
-
-		uint32_t queueFamilyCount(uint32_t familyIndex) const noexcept {
-			return queueCounts[familyIndex];
+		sgb::span<const VkQueueFamilyProperties> queueFamilyProperties() const noexcept {
+			return queueFamilies;
 		}
 
 		void enumerateProperties(VkPhysicalDevice physicalDevice) noexcept;
-		uint8_t presentationFamily(VkSurfaceKHR surface) const noexcept;
+		sgb::span<const VkBool32> queueFamilyPresentationSupport(VkSurfaceKHR surface) noexcept;
 
 	};
 
