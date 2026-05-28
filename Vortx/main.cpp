@@ -1,9 +1,9 @@
 #include "Signboard/Signboard.h"
 
 struct CommandContext {
-    rndr::creResources* pResources;
+    rndr::resources* pResources;
     rndr::creMethods* pMethods;
-    rndr::crePresentation* pPresentation;
+    rndr::presentation* pPresentation;
     rndr::Renderer* pRenderer;
 };
 
@@ -50,9 +50,9 @@ int main() {
     plf::windowEventState windowState{ window };
 
     rndr::context context{ window };
-    rndr::creResources resource{ context };
+    rndr::resources resource{ context };
 
-    rndr::crePresentation present{ context, resource };
+    rndr::presentation present{ context, resource };
 
     rndr::creMethods methods{ context, present, resource };
 

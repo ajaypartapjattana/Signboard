@@ -2,7 +2,7 @@
 
 namespace rndr {
 
-	creResources::creResources(const context& context) noexcept
+	resources::resources(const context& context) noexcept
 		:
 		m_bufferControl(_pAccess::allocator(context), sgb::vltWrite<rhi::pmvBuffer>{ m_buffers }),
 		m_imageControl(_pAccess::device(context), _pAccess::allocator(context), sgb::vltWrite<rhi::pmvImage>{m_images})
@@ -10,7 +10,7 @@ namespace rndr {
 
 	}
 
-	uint32_t creResources::allocateMesh(const Model& model) {
+	uint32_t resources::allocateMesh(const Model& model) {
 		size_t vertCount = model.vertices.size();
 		size_t indexCount = model.indices.size();
 
@@ -28,7 +28,7 @@ namespace rndr {
 		return l_writer.construct(builder);
 	}
 
-	uint32_t creResources::allocateImage() {
+	uint32_t resources::allocateImage() {
 		return -1;
 	}
 

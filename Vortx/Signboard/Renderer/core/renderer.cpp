@@ -4,7 +4,7 @@
 
 namespace rndr {
 
-	Renderer::Renderer(const context& context, const crePresentation& presentation, const creMethods& methods) noexcept
+	Renderer::Renderer(const context& context, const presentation& presentation, const creMethods& methods) noexcept
 		:
 		r_context(&context),
 		r_presentation(&presentation),
@@ -22,7 +22,7 @@ namespace rndr {
 		m_watchdog.wait_device();
 	}
 
-	void Renderer::bindResources(const creResources& resources) {
+	void Renderer::bindResources(const resources& resources) {
 		r_resources = _pAccess::view(resources);
 		m_transfer.bindResources(r_resources);
 	}

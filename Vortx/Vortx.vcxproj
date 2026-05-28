@@ -396,7 +396,7 @@
     <ClInclude Include="Signboard\RHI\core\surface.hh" />
     <ClInclude Include="Signboard\RHI\primitive\fence.h" />
     <ClInclude Include="Signboard\RHI\primitive\framebuffer.h" />
-    <ClInclude Include="Signboard\RHI\core\swapchain.h" />
+    <ClInclude Include="Signboard\RHI\core\swapchain.hh" />
     <ClInclude Include="Signboard\RHI\detail\vkexcept.h" />
     <ClInclude Include="Signboard\RHI\detail\vma\vma.h" />
     <ClInclude Include="Signboard\RHI\primitives\image.h" />

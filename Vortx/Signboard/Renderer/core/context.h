@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Signboard/RHI/rhi.h"
+#include "Signboard/RHI/core/rhi_core.h"
 
 namespace rndr {
 
@@ -36,6 +36,14 @@ namespace rndr {
 
 		context(const context&) = delete;
 		context& operator=(const context&) = delete;
+
+		uint32_t familyIndex(QueueFamilyType type) const noexcept {
+			return assignedQueueFamilies[type];
+		}
+
+		uint32_t presentationFamily() const noexcept {
+			return assignedPresentFamily;
+		}
 
 		void createDevice(GLFWwindow* window, uint32_t physicalDeviceIndex);
 

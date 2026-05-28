@@ -12,14 +12,14 @@ struct PipelineStageShaders {
 namespace rndr {
 
 	class context;
-	class crePresentation;
-	class creResources;
+	class presentation;
+	class resources;
 
 	struct _pAccess;
 
 	class creMethods {
 	public:
-		creMethods(const context& context, const crePresentation& presentation, const creResources& resources) noexcept;
+		creMethods(const context& context, const presentation& presentation, const resources& resources) noexcept;
 
 		creMethods(const creMethods&) = delete;
 		creMethods& operator=(const creMethods&) = delete;
@@ -32,7 +32,7 @@ namespace rndr {
 	private:
 		friend struct _pAccess;
 
-		const rhi::creSwapchain& r_swapchain;
+		const rhi::swapchain& r_swapchain;
 		const std::vector<uint32_t>& r_swapchainImageHandles;
 
 		uint32_t primaryTarget_idx;

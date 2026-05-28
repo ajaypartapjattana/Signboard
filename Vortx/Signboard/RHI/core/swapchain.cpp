@@ -1,72 +1,26 @@
-#include "Signboard/RHI/Internal/rhi_pAccess.h"
+#include "swapchain.hh"
 
 namespace rhi {
 
-	creSwapchain::creSwapchain() noexcept
-		: 
-		m_swapchain(VK_NULL_HANDLE),
-		extent({ 0, 0 }),
-		arrayLayers(0),
-		format(VK_FORMAT_UNDEFINED),
+	VkResult swapchain::create(VkDevice device, VkSwapchainCreateInfoKHR* pCreateInfo) noexcept {
+		VkSwapchainKHR swapchain;
+		VkResult result = vkCreateSwapchainKHR(device, pCreateInfo, nullptr, &swapchain);
+		if (result != VK_SUCCESS)
+			return result;
 
-		r_device(VK_NULL_HANDLE)
-	{
+		r_device = device;
+		m_swapchain = swapchain;
 
+		return VK_SUCCESS;
 	}
 
-	creSwapchain::creSwapchain(creSwapchain&& other) noexcept
-		:
-		m_swapchain(other.m_swapchain),
-		extent(other.extent),
-		arrayLayers(other.arrayLayers),
-		format(other.format),
-
-		r_device(other.r_device)
-	{
-		other.r_device = VK_NULL_HANDLE;
-	}
-
-	creSwapchain& creSwapchain::operator=(creSwapchain&& other) noexcept {
-		if (this == &other)
-			return *this;
-
-		if (r_device)
-			vkDestroySwapchainKHR(r_device, m_swapchain, nullptr);
-
-		m_swapchain = other.m_swapchain;
-		extent = other.extent;
-		format = other.format;
-		r_device = other.r_device;
-
-		other.r_device = VK_NULL_HANDLE;
-
-		return *this;
-	}
-
-	creSwapchain::~creSwapchain() noexcept {
-		if (r_device)
-			vkDestroySwapchainKHR(r_device, m_swapchain, nullptr);
-	}
-
-	VkResult creSwapchain::acquireImage(VkSemaphore semaphore, uint32_t* imageIndex) const noexcept {
-		return vkAcquireNextImageKHR(r_device, m_swapchain, UINT64_MAX, semaphore, VK_NULL_HANDLE, imageIndex);
-	}
-
-	void creSwapchain::reset() noexcept {
+	void swapchain::reset() noexcept {
 		if (r_device) {
 			vkDestroySwapchainKHR(r_device, m_swapchain, nullptr);
 			r_device = VK_NULL_HANDLE;
 		}
 
 		m_swapchain = VK_NULL_HANDLE;
-	}
-
-	VkFormat creSwapchain::native_format() const noexcept {
-		return format;
-	}
-
-	VkExtent2D creSwapchain::native_extent() const noexcept {
-		return extent;
 	}
 
 }

@@ -60,9 +60,9 @@ namespace rhi {
 		static inline VkShaderModule extract(const pmvShader& s) noexcept { return s.m_shader; }
 		static inline VkShaderStageFlagBits stage(const pmvShader& s) noexcept { return s.stage; }
 
-		static inline VkSwapchainKHR extract(const creSwapchain& s) noexcept { return s.m_swapchain; }
-		static inline VkFormat format(const creSwapchain& s) noexcept { return s.format; }
-		static inline VkExtent2D extent(const creSwapchain& s) noexcept { return s.extent; }
+		static inline VkSwapchainKHR extract(const swapchain& s) noexcept { return s.m_swapchain; }
+		static inline VkFormat format(const swapchain& s) noexcept { return s.format; }
+		static inline VkExtent2D extent(const swapchain& s) noexcept { return s.extent; }
 
 		static VertexInputDescription generate_description(const pmvVertexLayout& vl) {
 			VertexInputDescription desc{};

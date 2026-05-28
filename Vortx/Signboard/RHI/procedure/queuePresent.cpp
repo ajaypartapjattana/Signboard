@@ -22,7 +22,7 @@ namespace rhi {
 		return _info;
 	}
 
-	void pcdQueuePresent::target_swapchains(sgb::span<const creSwapchain> swapchains) noexcept {
+	void pcdQueuePresent::target_swapchains(sgb::span<const swapchain> swapchains) noexcept {
 		size_t _sSz = swapchains.size();
 
 		r_swapchains.clear();

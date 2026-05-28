@@ -10,14 +10,14 @@ namespace rhi {
 
 	class device;
 
-	class creSwapchain;
+	class swapchain;
 	class pmvSemaphore;
 
 	class pcdQueuePresent {
 	public:
 		pcdQueuePresent(const device& device, VkPresentInfoKHR* pPresentInfo = nullptr) noexcept;
 
-		void target_swapchains(sgb::span<const creSwapchain> swapchains) noexcept;
+		void target_swapchains(sgb::span<const swapchain> swapchains) noexcept;
 		void target_waitSemaphores(sgb::span<const VkSemaphore> semaphores) noexcept;
 
 		VkResult present(uint32_t imageIndex) noexcept;

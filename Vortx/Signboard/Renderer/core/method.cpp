@@ -4,7 +4,7 @@
 
 namespace rndr {
 
-	creMethods::creMethods(const context& context, const crePresentation& presentation, const creResources& resources) noexcept
+	creMethods::creMethods(const context& context, const presentation& presentation, const resources& resources) noexcept
 		:
 		r_swapchain(_pAccess::swapchain(presentation)),
 		r_swapchainImageHandles(_pAccess::imageHandles(presentation)),

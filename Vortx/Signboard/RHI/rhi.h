@@ -14,7 +14,7 @@ namespace rhi {
 	class allocator;
 
 	class pmvCommandBuffer;
-	class creSwapchain;
+	class swapchain;
 	class pmvBuffer;
 	class pmvImage;
 	class pmvSampler;

@@ -10,14 +10,14 @@ namespace rhi {
 
 	class device;
 
-	class creSwapchain;
+	class swapchain;
 	class pmvImage;
 
 	class pcdSwapchainImageAllocate {
 	public:
 		pcdSwapchainImageAllocate(const device& device, VkImageViewCreateInfo* pCreateInfo = nullptr) noexcept;
 
-		void target_swapchain(const creSwapchain& swapchain) noexcept;
+		void target_swapchain(const swapchain& swapchain) noexcept;
 		
 		uint32_t get_imageCount() const noexcept;
 		VkResult publish(pmvImage& image, uint32_t index) noexcept;
@@ -31,7 +31,7 @@ namespace rhi {
 	private:
 		const VkDevice r_device;
 		
-		const creSwapchain* pSwapchain;
+		const swapchain* pSwapchain;
 		std::vector<VkImage> images;
 
 		std::unique_ptr<VkImageViewCreateInfo> m_ownedInfo;

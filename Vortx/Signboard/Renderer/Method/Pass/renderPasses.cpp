@@ -10,7 +10,7 @@ namespace rndr {
 
 	}
 
-	uint32_t passes::createSwapchainRenderPass(const rhi::creSwapchain& swapchain) {
+	uint32_t passes::createSwapchainRenderPass(const rhi::swapchain& swapchain) {
 		std::vector<VkAttachmentDescription> attachments(1);
 
 		attachments[0].flags = 0;

@@ -29,7 +29,7 @@ namespace rhi {
 		return info;
 	}
 
-	void pcdSwapchainImageAllocate::target_swapchain(const creSwapchain& swapchain) noexcept {
+	void pcdSwapchainImageAllocate::target_swapchain(const swapchain& swapchain) noexcept {
 		if (swapchain.m_swapchain == VK_NULL_HANDLE)
 			return;
 

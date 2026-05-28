@@ -9,7 +9,7 @@ namespace rhi {
 	class device;
 	class surface;
 
-	class creSwapchain;
+	class swapchain;
 
 	class pcdSwapchainCreate {
 	public:
@@ -28,9 +28,9 @@ namespace rhi {
 		void arraylayers(uint32_t layerCount) noexcept;
 		void enablePreserve(bool enable) noexcept;
 
-		void recycle_swapchain(const creSwapchain& swapchain) noexcept;
+		void recycle_swapchain(const swapchain& swapchain) noexcept;
 
-		VkResult publish(creSwapchain& swapchain) const noexcept;
+		VkResult publish(swapchain& swapchain) const noexcept;
 
 		void preset(VkSwapchainCreateInfoKHR* pCreateInfo) noexcept;
 		void reset() noexcept;

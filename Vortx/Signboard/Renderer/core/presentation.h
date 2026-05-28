@@ -1,23 +1,51 @@
 #pragma once
 
 #include "Signboard/Core/core.h"
-#include "Signboard/RHI/rhi.h"
-
-constexpr uint32_t DEFAULT_SWAPCHAIN_IMAGE_COUNT = 2;
+#include "Signboard/RHI/core/swapchain.hh"
 
 namespace rndr {
 
 	class context;
-	class creResources;
 
 	struct _pAccess;
 
-	class crePresentation {
-	public:
-		crePresentation(const context& context, creResources& resources) noexcept;
+	class presentation {
+	private:
+		VkPhysicalDevice physicalDeviceCandidate = VK_NULL_HANDLE;
+		VkSurfaceKHR surfaceCandidate = VK_NULL_HANDLE;
 
-		crePresentation(const crePresentation&) = delete;
-		crePresentation& operator=(const crePresentation&) = delete;
+		VkSurfaceFormatKHR surfaceFormat;
+		VkPresentModeKHR presentMode;
+
+		uint32_t bufferedImageCount;
+		VkExtent2D extent;
+		VkSurfaceTransformFlagBitsKHR transform;
+
+		rhi::swapchain m_swapchain;
+
+
+	public:
+		presentation() = default;
+		presentation(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) noexcept {
+
+		}
+		presentation(const presentation&) = delete;
+		presentation(presentation&& other) noexcept 
+			:
+			m_swapchain(std::move(other.m_swapchain))
+		{
+
+		}
+
+		presentation& operator=(const presentation&) = delete;
+		presentation& operator=(presentation&& other) noexcept {
+
+		}
+
+		void targetPresentationDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) noexcept;
+
+		void createSwapchain(VkDevice device) noexcept;
+		void reset() noexcept;
 
 		void swapchainImageCount(uint32_t count) noexcept;
 		void constructSwapchain(const rhi::pcdWatchdog& watchdog);
@@ -25,20 +53,6 @@ namespace rndr {
 		void validateSwapchain() noexcept;
 
 		uint32_t availableImageCount() const noexcept;
-
-	private:
-		void defaultSwapchainParameters() noexcept;
-
-	private:
-		friend struct _pAccess;
-
-		sgb::vltWrite<rhi::pmvImage> r_images;
-
-		rhi::pcdSwapchainCreate m_swapchainCreate;
-		rhi::pcdSwapchainImageAllocate m_swpachainImageAllocate;
-
-		rhi::creSwapchain m_swapchain;
-		std::vector<uint32_t> swapchainImageHandles;
 
 	};
 

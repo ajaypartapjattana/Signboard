@@ -8,17 +8,17 @@ constexpr uint32_t DEFAULT_BUFFERED_FRAME_COUNT = 2;
 namespace rndr {
 
 	class context;
-	class creResources;
-	class crePresentation;
+	class resources;
+	class presentation;
 	class creMethods;
 
 	class Renderer {
 	public:
-		Renderer(const context& context, const crePresentation& presentation, const creMethods& methods) noexcept;
+		Renderer(const context& context, const presentation& presentation, const creMethods& methods) noexcept;
 
 		~Renderer() noexcept;
 
-		void bindResources(const creResources& resources);
+		void bindResources(const resources& resources);
 		void bindMehtods(const creMethods& methods);
 
 		void syncPresentation();
@@ -35,8 +35,8 @@ namespace rndr {
 
 	private:
 		const context* r_context;
-		const crePresentation* r_presentation;
-		const rhi::creSwapchain& r_swapchain;
+		const presentation* r_presentation;
+		const rhi::swapchain& r_swapchain;
 
 		resourceView r_resources;
 		methodView r_methods;

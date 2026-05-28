@@ -139,11 +139,11 @@ namespace rhi {
 		return VK_SUCCESS;
 	}
 
-	void pcdSwapchainCreate::recycle_swapchain(const creSwapchain& swapchain) noexcept {
+	void pcdSwapchainCreate::recycle_swapchain(const swapchain& swapchain) noexcept {
 		pInfo->oldSwapchain = swapchain.m_swapchain;
 	}
 
-	VkResult pcdSwapchainCreate::publish(creSwapchain& target) const noexcept {
+	VkResult pcdSwapchainCreate::publish(swapchain& target) const noexcept {
 		VkSwapchainKHR _swapchain;
 		VkResult result = vkCreateSwapchainKHR(r_device, pInfo, nullptr, &_swapchain);
 		if (result != VK_SUCCESS)

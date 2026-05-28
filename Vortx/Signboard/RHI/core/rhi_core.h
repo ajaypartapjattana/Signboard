@@ -13,6 +13,6 @@ namespace rhi {
 	class surface;
 	class device;
 	class allocator;
-	class creSwapchain;
+	class swapchain;
 
 }

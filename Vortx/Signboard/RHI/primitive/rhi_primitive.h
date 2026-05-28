@@ -22,7 +22,7 @@
 namespace rhi {
 
 	class pmvCommandBuffer;
-	class creSwapchain;
+	class swapchain;
 
 	class pmvBuffer;
 	class pmvImage;
