@@ -17,8 +17,8 @@ namespace rndr {
 		static inline const rhi::swapchain& swapchain(const presentation& presentation) noexcept { return presentation.m_swapchain; }
 		static inline const std::vector<uint32_t>& imageHandles(const presentation& presentation) noexcept { return presentation.swapchainImageHandles; }
 
-		static inline const methodView view(const creMethods& methods) noexcept { return { methods.m_renderPasses, methods.m_framebuffers, methods.m_pipelines }; }
-		static inline sgb::vltQuery<renderTarget> targets(const creMethods& method) noexcept { return method.m_renderTargets; }
+		static inline const methodView view(const renderConfig& methods) noexcept { return { methods.m_renderPasses, methods.m_framebuffers, methods.m_pipelines }; }
+		static inline sgb::vltQuery<renderTarget> targets(const renderConfig& method) noexcept { return method.m_renderTargets; }
 
 	};
 

@@ -12,11 +12,7 @@ namespace rndr {
 		sgb::vltView<Mesh> meshes;
 	};
 
-	struct renderTarget {
-		uint32_t renderPassIndex;
-		std::vector<uint32_t> framebufferIndices;
-		std::vector<uint32_t> pipelineIndices;
-	};
+	
 
 	struct methodView {
 		sgb::vltView<rhi::pmvRenderPass> renderPasses;

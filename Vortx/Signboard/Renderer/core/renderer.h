@@ -10,16 +10,16 @@ namespace rndr {
 	class context;
 	class resources;
 	class presentation;
-	class creMethods;
+	class renderConfig;
 
 	class Renderer {
 	public:
-		Renderer(const context& context, const presentation& presentation, const creMethods& methods) noexcept;
+		Renderer(const context& context, const presentation& presentation, const renderConfig& methods) noexcept;
 
 		~Renderer() noexcept;
 
 		void bindResources(const resources& resources);
-		void bindMehtods(const creMethods& methods);
+		void bindMehtods(const renderConfig& methods);
 
 		void syncPresentation();
 		void set_bufferedFrameCount(uint32_t count);

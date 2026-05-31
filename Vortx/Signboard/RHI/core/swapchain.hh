@@ -47,7 +47,6 @@ namespace rhi {
 
 		VkResult acquireImage(VkSemaphore semaphore, uint32_t* imageIndex) const noexcept {
 			return vkAcquireNextImageKHR(r_device, m_swapchain, UINT64_MAX, semaphore, VK_NULL_HANDLE, imageIndex);
-
 		}
 
 		VkResult create(VkDevice device, VkSwapchainCreateInfoKHR* pCreateInfo) noexcept;

@@ -9,8 +9,13 @@ namespace rhi {
 		
 		using _Ty = typename Derived::handle_type;
 		using _resultTy = typename Derived::result_type;
+		using _parentTy = typename Derived::parent_type;
 
 		static constexpr _Ty null() noexcept {
+			return VK_NULL_HANDLE;
+		}
+
+		static constexpr _parentTy null_root() noexcept {
 			return VK_NULL_HANDLE;
 		}
 

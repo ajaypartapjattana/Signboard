@@ -1,37 +1,25 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
-#include <vector>
+#include "vulkan_trait_base.hh"
 
 namespace rhi {
 
-	struct _pAccess;
+	struct renderPass : vulkan_trait_base<renderPass> {
+		using handle_type = VkRenderPass;
+		using parent_type = VkDevice;
+		using createInfo_type = VkRenderPassCreateInfo;
+		using result_type = VkResult;
 
-	class pcdRenderPassCreate;
+		static result_type create(parent_type device, const createInfo_type* pInfo, handle_type* pRenderPass) noexcept {
+			return vkCreateRenderPass(device, pInfo, nullptr, pRenderPass);
+		}
 
-	class pmvRenderPass {
-	public:
-		pmvRenderPass() noexcept;
+		static void destroy(parent_type device, handle_type renderPass) noexcept {
+			if (renderPass)
+				return;
 
-		pmvRenderPass(const pmvRenderPass&) = delete;
-		pmvRenderPass& operator=(const pmvRenderPass&) = delete;
-
-		pmvRenderPass(pmvRenderPass&&) noexcept;
-		pmvRenderPass& operator=(pmvRenderPass&&) noexcept;
-
-		~pmvRenderPass() noexcept;
-
-		void reset() noexcept;
-
-	private:
-		friend class pcdRenderPassCreate;
-		friend struct _pAccess;
-
-		VkRenderPass m_renderPass;
-		uint32_t attachmentCount;
-
-		VkDevice r_device;
-
+			vkDestroyRenderPass(device, renderPass, nullptr);
+		}
 	};
 
 }

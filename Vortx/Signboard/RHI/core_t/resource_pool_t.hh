@@ -8,18 +8,18 @@ class resource_pool {
 private:
 
 	using _Ty = typename Traits::handle_type;
-	using _rootTy = typename Traits::root_type;
+	using _parentTy = typename Traits::parent_type;
 	using _resultTy = typename Traits::result_type;
 	using _infoTy = typename Traits::createInfo_type;
 
 	std::vector<_Ty> m_records;
 
-	_rootTy r_root = VK_NULL_HANDLE;
+	_parentTy r_root = Traits::null_root();
 
 public:
 	resource_pool() noexcept = default;
 
-	resource_pool(_rootTy root) noexcept
+	resource_pool(_parentTy root) noexcept
 		:
 		r_root(root)
 	{
@@ -32,9 +32,9 @@ public:
 	resource_pool(resource_pool&& other) noexcept
 		:
 		m_records(std::move(other.m_records)),
-		r_root(other.r_device)
+		r_root(other.r_root)
 	{
-		other.r_root = VK_NULL_HANDLE;
+		other.r_root = Traits::null_root();
 	}
 
 	resource_pool& operator=(resource_pool&& other) noexcept {
@@ -46,7 +46,7 @@ public:
 		m_records = std::move(other.m_records);
 		r_root = other.r_root;
 
-		other.r_root = VK_NULL_HANDLE;
+		other.r_root = Traits::null_root();
 
 		return *this;
 	}
@@ -65,14 +65,14 @@ public:
 		m_records.clear();
 	}
 
-	_resultTy create(Traits::createInfo* pInfo, _Ty& target) {
-		_resultTy result = Traits::create(r_root, pInfo, &target);
-		if (result != _resultTy{})
+	_resultTy create(const _infoTy* pInfo, _Ty* target) noexcept {
+		_resultTy result = Traits::create(r_root, pInfo, target);
+		if (result != Traits::success())
 			return result;
 
-		m_records.push_back(target);
+		m_records.push_back(*target);
 
-		return _resultTy{};
+		return Traits::success();
 	}
 
 };

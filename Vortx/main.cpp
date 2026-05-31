@@ -2,7 +2,7 @@
 
 struct CommandContext {
     rndr::resources* pResources;
-    rndr::creMethods* pMethods;
+    rndr::renderConfig* pMethods;
     rndr::presentation* pPresentation;
     rndr::Renderer* pRenderer;
 };
@@ -54,7 +54,7 @@ int main() {
 
     rndr::presentation present{ context, resource };
 
-    rndr::creMethods methods{ context, present, resource };
+    rndr::renderConfig methods{ context, present, resource };
 
     rndr::Renderer renderer{ context, present, methods };
     renderer.bindResources(resource);

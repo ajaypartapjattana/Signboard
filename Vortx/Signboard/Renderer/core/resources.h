@@ -23,6 +23,8 @@ namespace rndr {
 		rsrc_buffers m_bufferControl;
 		rsrc_images m_imageControl;
 
+		contextual_pool<VkBuffer> m_buffers;
+
 		sgb::vault<rhi::pmvBuffer> m_buffers;
 		sgb::vault<rhi::pmvImage> m_images;
 

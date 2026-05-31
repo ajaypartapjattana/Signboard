@@ -4,8 +4,6 @@
 
 namespace rndr {
 
-	struct _pAccess;
-
 	enum QueueFamilyType : uint32_t {
 		FAMILY_INDEX_GRAPHICS,
 		FAMILY_INDEX_COMPUTE,
@@ -14,10 +12,18 @@ namespace rndr {
 		FAMILY_INDEX_MAX_ENUM
 	};
 
+	struct ContextPage {
+		VkSurfaceKHR surface;
+		VkPhysicalDevice physicalDevice;
+		VkDevice device;
+		std::array<uint32_t, FAMILY_INDEX_MAX_ENUM> assignedQueueFamilies{};
+		uint32_t assignedPresentFamily;
+
+		VmaAllocator allocator;
+	};
+
 	class context {
 	private:
-		friend struct _pAccess;
-
 		rhi::instance instance;
 		std::vector<rhi::physicalDevice> physicalDevices;
 
@@ -26,23 +32,32 @@ namespace rndr {
 		uint32_t selectedPhysicalDeviceIndex;
 
 		rhi::device device;
-		std::array<uint32_t, FAMILY_INDEX_MAX_ENUM> assignedQueueFamilies{};
-		uint32_t assignedPresentFamily;
-
 		rhi::allocator allocator;
 
-	public:
-		context();
+		ContextPage* pPage;
 
+		void createInstance();
+
+	public:
+		context() {
+			createInstance();
+		}
+		context(ContextPage* pContextPage) noexcept 
+			:
+			pPage(pContextPage)
+		{
+			createInstance();
+		}
 		context(const context&) = delete;
+
 		context& operator=(const context&) = delete;
 
-		uint32_t familyIndex(QueueFamilyType type) const noexcept {
-			return assignedQueueFamilies[type];
+		~context() noexcept {
+
 		}
 
-		uint32_t presentationFamily() const noexcept {
-			return assignedPresentFamily;
+		void maintain(ContextPage* pContextPage) noexcept {
+			pPage = pContextPage;
 		}
 
 		void createDevice(GLFWwindow* window, uint32_t physicalDeviceIndex);

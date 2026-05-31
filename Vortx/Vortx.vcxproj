@@ -223,7 +223,6 @@
     <ClCompile Include="Signboard\Assets\configLoader\XMLLoader\XMLConfigLoader.cpp" />
     <ClCompile Include="Signboard\Assets\io\ResourceLoaders\file_loader.cpp" />
     <ClCompile Include="Signboard\Assets\io\ResourceLoaders\TextureLoader.cpp" />
-    <ClCompile Include="Signboard\Assets\shaderReflect\shaderReflect.cpp" />
     <ClCompile Include="Signboard\Assets\Utility\convStr.cpp" />
     <ClCompile Include="Signboard\Core\Logging\logger.cpp" />
     <ClCompile Include="Signboard\Core\Threading\threadPool.cpp" />
@@ -242,7 +241,7 @@
     <ClCompile Include="Signboard\Renderer\Method\Pass\renderPasses.cpp" />
     <ClCompile Include="Signboard\Renderer\primitive\interface.cpp" />
     <ClCompile Include="Signboard\Renderer\core\context.cpp" />
-    <ClCompile Include="Signboard\Renderer\core\method.cpp" />
+    <ClCompile Include="Signboard\Renderer\Method\method.cpp" />
     <ClCompile Include="Signboard\Renderer\core\presentation.cpp" />
     <ClCompile Include="Signboard\Renderer\core\window.cpp" />
     <ClCompile Include="Signboard\Renderer\Resources\rsrc_images.cpp" />
@@ -370,9 +369,9 @@
     <ClInclude Include="Signboard\Renderer\Method\Pass\renderPasses.h" />
     <ClInclude Include="Signboard\Renderer\primitive\rndr_primitive.h" />
     <ClInclude Include="Signboard\Renderer\primitive\interface.h" />
-    <ClInclude Include="Signboard\Renderer\core\context.h" />
-    <ClInclude Include="Signboard\Renderer\core\method.h" />
-    <ClInclude Include="Signboard\Renderer\core\presentation.h" />
+    <ClInclude Include="Signboard\Renderer\core\context.hh" />
+    <ClInclude Include="Signboard\Renderer\Method\method.hh" />
+    <ClInclude Include="Signboard\Renderer\core\presentation.hh" />
     <ClInclude Include="Signboard\Renderer\rndr.h" />
     <ClInclude Include="Signboard\Renderer\core\window.h" />
     <ClInclude Include="Signboard\Renderer\Resources\rsrc_core.h" />
@@ -380,8 +379,8 @@
     <ClInclude Include="Signboard\Renderer\core\resources.h" />
     <ClInclude Include="Signboard\Renderer\Resources\rsrc_images.h" />
     <ClInclude Include="Signboard\Renderer\Resources\rsrc_buffers.h" />
+    <ClInclude Include="Signboard\Renderer\Vertex\vertex.h" />
     <ClInclude Include="Signboard\RHI\core\physicalDevice.hh" />
-    <ClInclude Include="Signboard\RHI\core\vulkan_trait_base.hh" />
     <ClInclude Include="Signboard\RHI\core_t.hh" />
     <ClInclude Include="Signboard\RHI\core_t\fungible_pool_t.hh" />
     <ClInclude Include="Signboard\RHI\core_t\resource_pool_t.hh" />

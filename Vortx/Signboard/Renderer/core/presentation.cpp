@@ -2,7 +2,7 @@
 
 namespace rndr {
 
-	void presentation::targetPresentationDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) noexcept {
+	void presentation::presentationConfiguration(VkPhysicalDevice physicalDevice,VkSurfaceKHR surface) noexcept {
 		VkSurfaceFormatKHR selectedSurfaceFormat{};
 		
 		{
@@ -89,13 +89,17 @@ namespace rndr {
 		presentMode = selectedPresentMode;
 	}
 
-	void presentation::createSwapchain(VkDevice device) {
+	void presentation::createSwapchain(VkDevice device, uint32_t graphicsFamilyIndex, uint32_t presentFamilyIndex) {
 		VkSurfaceCapabilitiesKHR surfaceCapabilities{};
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDeviceCandidate, surfaceCandidate, &surfaceCapabilities);
 
 		uint32_t l_imageCount = surfaceCapabilities.minImageCount + 1;
 		if (surfaceCapabilities.maxImageCount && l_imageCount > surfaceCapabilities.maxImageCount)
 			l_imageCount = surfaceCapabilities.maxImageCount;
+
+		uint32_t queueFamilyIndices[] = { graphicsFamilyIndex, presentFamilyIndex };
+
+		bool concurrentImageUse = (graphicsFamilyIndex != presentFamilyIndex);
 
 		VkExtent2D l_extent = surfaceCapabilities.currentExtent;
 		VkSurfaceTransformFlagBitsKHR l_transform = surfaceCapabilities.currentTransform;
@@ -111,15 +115,12 @@ namespace rndr {
 		createInfo.imageExtent = l_extent;
 		createInfo.imageArrayLayers = 1;
 		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
-		createInfo.imageSharingMode = ;
-		createInfo.queueFamilyIndexCount = ;
-		createInfo.pQueueFamilyIndices = ;
-
+		createInfo.imageSharingMode = concurrentImageUse ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
+		createInfo.queueFamilyIndexCount = concurrentImageUse ? 2 : 0;
+		createInfo.pQueueFamilyIndices = concurrentImageUse ? queueFamilyIndices : nullptr;
 		createInfo.preTransform = l_transform;
 		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 		createInfo.presentMode = presentMode;
-
 		createInfo.clipped = VK_TRUE;
 		createInfo.oldSwapchain = m_swapchain;
 
@@ -127,39 +128,14 @@ namespace rndr {
 		if (result != VK_SUCCESS)
 			throw std::runtime_error("FAILURE: swapchain_creation!");
 
-		bufferedImageCount = l_imageCount;
-		extent = l_extent;
-		transform = l_transform;
+		bufferedImageCount = createInfo.minImageCount;
+		extent = createInfo.imageExtent;
+		imageSharingMode = createInfo.imageSharingMode;
+		transform = createInfo.preTransform;
 	}
 
-	void presentation::constructSwapchain(const rhi::pcdWatchdog& watchdog) {
-		m_swapchainCreate.recycle_swapchain(m_swapchain);
-
-		watchdog.wait_device();
-
-		VkResult result = m_swapchainCreate.publish(m_swapchain);
-		if (result != VK_SUCCESS)
-			throw std::runtime_error("FAILURE: swapchain_creation!");
-
-		m_swpachainImageAllocate.target_swapchain(m_swapchain);
-
-		uint32_t _siCt = m_swpachainImageAllocate.get_imageCount();
-
-		for (uint32_t idx : swapchainImageHandles) {
-			r_images.destroy(idx);
-		}
-
-		auto _ctor = [&](uint32_t i, rhi::pmvImage* image) {
-			result = m_swpachainImageAllocate.publish(*image, i);
-			if (result != VK_SUCCESS)
-				throw std::runtime_error("FAILURE: swapchain_image_allocation!");
-		};
-
-		swapchainImageHandles = r_images.construct_many(_siCt, _ctor);
-	}
-
-	uint32_t presentation::availableImageCount() const noexcept {
-		return static_cast<uint32_t>(swapchainImageHandles.size());
+	void presentation::reset() noexcept {
+		m_swapchain.reset();
 	}
 
 }

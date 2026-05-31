@@ -1,35 +1,25 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
+#include "vulkan_trait_base.hh"
 
 namespace rhi {
 
-	struct _pAccess;
+	struct descriptorSetLayout : vulkan_trait_base<descriptorSetLayout> {
+		using handle_type = VkDescriptorSetLayout;
+		using parent_type = VkDevice;
+		using createInfo_type = VkDescriptorSetLayoutCreateInfo;
+		using result_type = VkResult;
 
-	class pcdDescriptorSetLayoutCreate;
+		static result_type create(parent_type device, const createInfo_type* pInfo, handle_type* pDescriptorSetLayout) noexcept {
+			return vkCreateDescriptorSetLayout(device, pInfo, nullptr, pDescriptorSetLayout);
+		}
 
-	class pmvDescriptorSetLayout {
-	public:
-		pmvDescriptorSetLayout() noexcept;
+		static void destroy(parent_type device, handle_type descriptorSetLayout) noexcept {
+			if (!descriptorSetLayout)
+				return;
 
-		pmvDescriptorSetLayout(const pmvDescriptorSetLayout&) noexcept;
-		pmvDescriptorSetLayout& operator=(const pmvDescriptorSetLayout&) noexcept;
-
-		pmvDescriptorSetLayout(pmvDescriptorSetLayout&&) noexcept;
-		pmvDescriptorSetLayout& operator=(pmvDescriptorSetLayout&&) noexcept;
-
-		~pmvDescriptorSetLayout() noexcept;
-
-		void reset() noexcept;
-
-	private:
-		friend class pcdDescriptorSetLayoutCreate;
-		friend struct _pAccess;
-
-		VkDescriptorSetLayout m_setLayout;
-
-		VkDevice r_device;
-
+			vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+		}
 	};
 
 }

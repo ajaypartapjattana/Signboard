@@ -1,36 +1,25 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
+#include "vulkan_trait_base.hh"
 	
 namespace rhi {
 
-	struct _pAccess;
+	struct framebuffer : vulkan_trait_base<framebuffer> {
+		using handle_type = VkFramebuffer;
+		using parent_type = VkDevice;
+		using createInfo_type = VkFramebufferCreateInfo;
+		using result_type = VkResult;
 
-	class pcdFramebufferCreate;
+		static result_type create(parent_type device, const createInfo_type* pInfo, handle_type* pFramebuffer) noexcept {
+			return vkCreateFramebuffer(device, pInfo, nullptr, pFramebuffer);
+		}
 
-	class pmvFramebuffer {
-	public:
-		pmvFramebuffer() noexcept;
+		static void destroy(parent_type device, handle_type framebuffer) noexcept {
+			if (!framebuffer)
+				return;
 
-		pmvFramebuffer(const pmvFramebuffer&) = delete;
-		pmvFramebuffer& operator=(const pmvFramebuffer&) = delete;
-
-		pmvFramebuffer(pmvFramebuffer&&) noexcept;
-		pmvFramebuffer& operator=(pmvFramebuffer&&) noexcept;
-
-		~pmvFramebuffer() noexcept;
-
-		void reset() noexcept;
-
-	private:
-		friend class pcdFramebufferCreate;
-		friend struct _pAccess;
-
-		VkFramebuffer m_framebuffer;
-		VkExtent2D extent;
-
-		VkDevice r_device;
-
+			vkDestroyFramebuffer(device, framebuffer, nullptr);
+		}
 	};
 
 }

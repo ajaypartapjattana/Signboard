@@ -4,7 +4,7 @@
 
 namespace rndr {
 
-	Renderer::Renderer(const context& context, const presentation& presentation, const creMethods& methods) noexcept
+	Renderer::Renderer(const context& context, const presentation& presentation, const renderConfig& methods) noexcept
 		:
 		r_context(&context),
 		r_presentation(&presentation),
@@ -27,7 +27,7 @@ namespace rndr {
 		m_transfer.bindResources(r_resources);
 	}
 
-	void Renderer::bindMehtods(const creMethods& methods) {
+	void Renderer::bindMehtods(const renderConfig& methods) {
 		r_methods = _pAccess::view(methods);
 		targets = _pAccess::targets(methods);
 	}

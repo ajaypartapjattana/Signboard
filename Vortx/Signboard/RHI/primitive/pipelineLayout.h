@@ -1,35 +1,25 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
+#include "vulkan_trait_base.hh"
 
 namespace rhi {
 
-	struct _pAccess;
+	struct pipelineLayout : vulkan_trait_base<pipelineLayout> {
+		using handle_type = VkPipelineLayout;
+		using parent_type = VkDevice;
+		using createInfo_type = VkPipelineLayoutCreateInfo;
+		using result_type = VkResult;
 
-	class pcdPipelineLayoutCreate;
+		static result_type create(parent_type device, const createInfo_type* pInfo, handle_type* pPipelineLayout) noexcept {
+			return vkCreatePipelineLayout(device, pInfo, nullptr, pPipelineLayout);
+		}
 
-	class pmvPipelineLayout {
-	public:
-		pmvPipelineLayout() noexcept;
+		static void destroy(parent_type device, handle_type pipelineLayout) noexcept {
+			if (!pipelineLayout)
+				return;
 
-		pmvPipelineLayout(const pmvPipelineLayout&) = delete;
-		pmvPipelineLayout& operator=(const pmvPipelineLayout&) = delete;
-
-		pmvPipelineLayout(pmvPipelineLayout&&) noexcept;
-		pmvPipelineLayout& operator=(pmvPipelineLayout&&) noexcept;
-
-		~pmvPipelineLayout() noexcept;
-
-		void reset() noexcept;
-
-	private:
-		friend class pcdPipelineLayoutCreate;
-		friend struct _pAccess;
-
-		VkPipelineLayout m_layout;
-
-		VkDevice r_device;
-
+			vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+		}
 	};
 
 }

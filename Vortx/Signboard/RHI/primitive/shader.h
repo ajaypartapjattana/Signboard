@@ -1,36 +1,25 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
+#include "vulkan_trait_base.hh"
 
 namespace rhi {
 	
-	struct _pAccess;
+	struct shaderModule {
+		using handle_type = VkShaderModule;
+		using parent_type = VkDevice;
+		using createInfo_type = VkShaderModuleCreateInfo;
+		using result_type = VkResult;
 
-	class pcdShaderModuleCreate;
+		static result_type create(parent_type device, const createInfo_type* pInfo, handle_type* pShaderModule) noexcept {
+			return vkCreateShaderModule(device, pInfo, nullptr, pShaderModule);
+		}
 
-	class pmvShader {
-	public:
-		pmvShader() noexcept;
+		static void destroy(parent_type device, handle_type shaderModule) noexcept {
+			if (!shaderModule)
+				return;
 
-		pmvShader(const pmvShader&) noexcept;
-		pmvShader& operator=(const pmvShader&) noexcept;
-
-		pmvShader(pmvShader&&) noexcept;
-		pmvShader& operator=(pmvShader&&) noexcept;
-
-		~pmvShader() noexcept;
-
-		void reset() noexcept;
-
-	private:
-		friend class pcdShaderModuleCreate;
-		friend struct _pAccess;
-
-		VkShaderModule m_shader;
-		VkShaderStageFlagBits stage;
-
-		VkDevice r_device;
-
+			vkDestroyShaderModule(device, shaderModule, nullptr);
+		}
 	};
 
 }
