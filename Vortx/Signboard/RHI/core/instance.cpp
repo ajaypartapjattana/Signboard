@@ -2,7 +2,7 @@
 
 namespace rhi {
 
-	VkResult instance::create(const VkInstanceCreateInfo* pCreateInfo) {
+	VkResult instance::create(const VkInstanceCreateInfo* pCreateInfo) noexcept {
 
 #ifdef _VALIDATE
 		

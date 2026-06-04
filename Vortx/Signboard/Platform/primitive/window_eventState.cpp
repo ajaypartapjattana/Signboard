@@ -1,50 +1,58 @@
-#include "Signboard/Platform/internal/plf_pAccess.h"
+#include "window_eventState.h"
 
 namespace plf {
 
-	windowEventState::windowEventState(const window& window) noexcept {
-		attachWindow(window);
+	static inline windowEventState* from(GLFWwindow* window) {
+		return static_cast<windowEventState*>(glfwGetWindowUserPointer(window));
 	}
 
-	void windowEventState::attachWindow(const window& window) noexcept {
-		pWindow = _pAccess::extract(window);
+	struct glfwCallbacks {
+		static void keyCallback(GLFWwindow* window, int key, int scanCode, int action, int mods) {
+			if (auto* state = from(window)) {
+				state->inputs.push_back(InputEvent{ event::encodeKey(key, scanCode, action, mods) });
+			}
+		}
 
-		glfwSetWindowUserPointer(pWindow, this);
+		static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+			if (auto* state = from(window)) {
+				state->inputs.push_back(InputEvent{ event::encodeMouse(button, action, mods) });
+			}
+		}
 
-		glfwSetFramebufferSizeCallback(pWindow, glfw_callbacks::framebufferResizeCallback);
-		glfwSetDropCallback(pWindow, glfw_callbacks::fileDropCallback);
-		glfwSetKeyCallback(pWindow, glfw_callbacks::keyCallback);
-		glfwSetScrollCallback(pWindow, glfw_callbacks::scrollCallback);
-		glfwSetMouseButtonCallback(pWindow, glfw_callbacks::mouseButtonCallback);
-		glfwSetCursorPosCallback(pWindow, glfw_callbacks::cursorMoveCallback);
-	}
+		static void cursorMoveCallback(GLFWwindow* window, double xPos, double yPos) {
+			if (auto* state = from(window)) {
 
-	bool windowEventState::isWindowAlive() const noexcept {
-		return !glfwWindowShouldClose(pWindow);
-	}
+				glm::vec2 newPos{ xPos, yPos };
 
-	void windowEventState::waitWindowEvents() const noexcept {
-		glfwWaitEvents();
-	}
+				state->cursorDelta += newPos - state->cursorPosition;
+				state->cursorPosition = newPos;
+			}
+		}
 
-	void windowEventState::pollWindowEvents() const noexcept {
-		glfwPollEvents();
-	}
+		static void scrollCallback(GLFWwindow* window, double xOffset, double yOffset) {
+			if (auto* state = from(window)) {
+				state->scrollDelta += glm::vec2{xOffset, yOffset};
+			}
+		}
 
-	sgb::span<const InputEvent> windowEventState::input_events() const noexcept {
-		return sgb::span<const InputEvent>{ m_inputEvents };
-	}
+		static void fileDropCallback(GLFWwindow* window, int count, const char** paths) {
+			if (auto* state = from(window)) {
+				state->fileDrops.reserve(count);
+				for (int i = 0; i < count; ++i)
+					state->fileDrops.push_back(paths[i]);
+			}
+		}
+	};
 
-	sgb::span<const std::string> windowEventState::fileDrop_events() const noexcept {
-		return sgb::span<const std::string>{ m_fileDrops };
-	}
+	void windowEventState::attachWindow(GLFWwindow* window) noexcept {
 
-	uint64_t windowEventState::windowResize_event() const noexcept {
-		return windowResize;
-	}
+		glfwSetDropCallback(window, glfwCallbacks::fileDropCallback);
+		glfwSetKeyCallback(window, glfwCallbacks::keyCallback);
+		glfwSetScrollCallback(window, glfwCallbacks::scrollCallback);
+		glfwSetMouseButtonCallback(window, glfwCallbacks::mouseButtonCallback);
+		glfwSetCursorPosCallback(window, glfwCallbacks::cursorMoveCallback);
 
-	void windowEventState::windowResize_markClean() noexcept {
-		windowResize = event::markClean(windowResize);
+		r_window = window;
 	}
 
 }

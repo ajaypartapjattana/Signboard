@@ -1,35 +1,20 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
+#include "vulkan_trait_base.hh"
 
 namespace rhi {
 
-	struct _pAccess;
+	struct commandPool : vulkan_primitive_base {
+		using handle_type = VkCommandPool;
+		using createInfo_type = VkCommandPoolCreateInfo;
 
-	class pcdCommandPoolCreate;
+		static result_type create(parent_type device, const createInfo_type* pInfo, handle_type* pCommandPool) noexcept {
+			return vkCreateCommandPool(device, pInfo, nullptr, pCommandPool);
+		}
 
-	class pmvCommandPool {
-	public:
-		pmvCommandPool() noexcept;
-
-		pmvCommandPool(const pmvCommandPool&) noexcept;
-		pmvCommandPool& operator=(const pmvCommandPool&) noexcept;
-
-		pmvCommandPool(pmvCommandPool&&) noexcept;
-		pmvCommandPool& operator=(pmvCommandPool&&) noexcept;
-
-		~pmvCommandPool() noexcept;
-
-		void reset() noexcept;
-
-	private:
-		friend class pcdCommandPoolCreate;
-		friend struct _pAccess;
-
-		VkCommandPool m_commandPool;
-		uint32_t family;
-
-		VkDevice r_device;
+		static void destroy(parent_type device, handle_type commandPool) noexcept {
+			vkDestroyCommandPool(device, commandPool, nullptr);
+		}
 	};
 
 }

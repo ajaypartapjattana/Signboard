@@ -12,29 +12,23 @@ namespace rndr {
 		FAMILY_INDEX_MAX_ENUM
 	};
 
-	struct ContextPage {
-		VkSurfaceKHR surface;
-		VkPhysicalDevice physicalDevice;
-		VkDevice device;
+	struct DeviceInfo {
+		VkSurfaceKHR candidateSurface;
+		VkPhysicalDevice nativeDevice;
+		VkDevice logicalDevice;
 		std::array<uint32_t, FAMILY_INDEX_MAX_ENUM> assignedQueueFamilies{};
 		uint32_t assignedPresentFamily;
 
-		VmaAllocator allocator;
+		VmaAllocator resourceAllocator;
 	};
 
 	class context {
 	private:
 		rhi::instance instance;
 		std::vector<rhi::physicalDevice> physicalDevices;
-
 		rhi::surface surface;
-
-		uint32_t selectedPhysicalDeviceIndex;
-
 		rhi::device device;
 		rhi::allocator allocator;
-
-		ContextPage* pPage;
 
 		void createInstance();
 
@@ -42,10 +36,7 @@ namespace rndr {
 		context() {
 			createInstance();
 		}
-		context(ContextPage* pContextPage) noexcept 
-			:
-			pPage(pContextPage)
-		{
+		context() noexcept {
 			createInstance();
 		}
 		context(const context&) = delete;
@@ -56,11 +47,21 @@ namespace rndr {
 
 		}
 
-		void maintain(ContextPage* pContextPage) noexcept {
-			pPage = pContextPage;
+		void enumeratePhysicalDevices(uint32_t* pCount, const char** pNames) const noexcept {
+			if (!pCount)
+				return;
+
+			*pCount = static_cast<uint32_t>(physicalDevices.size());
+
+			if (!pNames)
+				return;
+
+			for (uint32_t i = 0; i < *pCount; ++i) {
+				pNames[i] = physicalDevices[i].deviceName();
+			}
 		}
 
-		void createDevice(GLFWwindow* window, uint32_t physicalDeviceIndex);
+		void createDevice(GLFWwindow* window, uint32_t physicalDeviceIndex, DeviceInfo* pInfo);
 
 	};
 

@@ -1,46 +1,76 @@
 #pragma once
 
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 #include <vector>
 
-#include "Signboard/Core/core.h"
+#include "Signboard/Core/Containers/span/span.h"
+#include "Signboard/Core/Frame/Frame_event.h"
 
 namespace plf {
 
-	class window;
-	class displayWindowHandler;
-
-	struct glfw_callbacks;
+	struct glfwCallbacks;
 
 	class windowEventState {
-	public:
-		windowEventState(const window& window) noexcept;
-
-		windowEventState(const windowEventState&) = delete;
-		windowEventState& operator=(const windowEventState&) = delete;
-
-		void attachWindow(const window& window) noexcept;
-
-		bool isWindowAlive() const noexcept;
-		void waitWindowEvents() const noexcept;
-		void pollWindowEvents() const noexcept;
-
-		sgb::span<const InputEvent> input_events() const noexcept;
-		sgb::span<const std::string> fileDrop_events() const noexcept;
-		uint64_t windowResize_event() const noexcept;
-		void windowResize_markClean() noexcept;
-
 	private:
-		friend class eventState_initializer;
-		friend class displayWindowHandler;
+		friend struct glfwCallbacks;
 
-		friend struct glfw_callbacks;
+		std::vector<InputEvent> inputs;
+		std::vector<std::string> fileDrops;
+
+		glm::vec2 cursorPosition = { 0.0f, 0.0f };
+		glm::vec2 cursorDelta = { 0.0f, 0.0f };
+		glm::vec2 scrollDelta = { 0.0f, 0.0f };
+
+		GLFWwindow* r_window;
+
+	public:
+		windowEventState() = default;
+		windowEventState(GLFWwindow* window) noexcept {
+			glfwSetWindowUserPointer(window, this);
+			attachWindow(window);
+		}
+		windowEventState(const windowEventState&) = delete;
+		windowEventState(windowEventState&& other) noexcept
+			:
+			inputs(std::move(other.inputs)),
+			fileDrops(std::move(other.fileDrops)),
+			r_window(std::exchange(other.r_window, nullptr))
+		{
+			glfwSetWindowUserPointer(r_window, this);
+		}
+
+		windowEventState& operator=(const windowEventState&) = delete;
+		windowEventState& operator=(windowEventState&& other) noexcept {
+			if (this == &other)
+				return *this;
+
+			inputs = std::move(other.inputs);
+			fileDrops = std::move(other.fileDrops);
+			r_window = std::exchange(other.r_window, nullptr);
+
+			glfwSetWindowUserPointer(r_window, this);
+		}
+
+		~windowEventState() noexcept = default;
+
+		void pollEvents() noexcept {
+			inputs.clear();
+			fileDrops.clear();
+			cursorDelta = { 0.0f, 0.0f };
+			scrollDelta = { 0.0f, 0.0f };
+
+			glfwPollEvents();
+		}
+
+		sgb::span<const InputEvent> input_events() const noexcept {
+			return inputs;
+		}
+		sgb::span<const std::string> fileDrop_events() const noexcept {
+			return fileDrops;
+		}
 		
-		std::vector<InputEvent> m_inputEvents;
-		std::vector<std::string> m_fileDrops;
-		uint64_t windowResize = 0;
-
-		GLFWwindow* pWindow = nullptr;
+		void attachWindow(GLFWwindow* window) noexcept;
 
 	};
 

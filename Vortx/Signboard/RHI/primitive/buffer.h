@@ -1,40 +1,20 @@
 #pragma once
 
-#include "Signboard/RHI/detail/vma/vma.h"
+#include "vma_trait_base.h"
 
 namespace rhi {
 
-	struct _pAccess;
+	struct buffer : vma_primitive_base {
+		using handle_type = VkBuffer;
+		using createInfo_type = VkBufferCreateInfo;
 
-	class pcdBufferAllocate;
+		static result_type create(parent_type allocator, const createInfo_type* pCreateInfo, const allocationCreateInfo_type* pAllocationCreateInfo, handle_type* pBuffer, allocation_type* pAllocation, allocationInfo_type* pAllocationInfo) noexcept {
+			return vmaCreateBuffer(allocator, pCreateInfo, pAllocationCreateInfo, pBuffer, pAllocation, pAllocationInfo);
+		}
 
-	class pmvBuffer {
-	public:
-		pmvBuffer() noexcept;
-
-		pmvBuffer(const pmvBuffer&) = delete;
-		pmvBuffer& operator=(const pmvBuffer&) = delete;
-
-		pmvBuffer(pmvBuffer&&) noexcept;
-		pmvBuffer& operator=(pmvBuffer&&) noexcept;
-
-		~pmvBuffer() noexcept;
-
-		void* native_mapped() const;
-		void flush(VkDeviceSize begin, VkDeviceSize end) const;
-
-	private:
-		friend class pcdBufferAllocate;
-		friend struct _pAccess;
-
-		VkBuffer m_buffer;
-		VmaAllocation allocation;
-
-		bool _is_host_coherent;
-		void* _mpd;
-
-		VmaAllocator r_allocator;
-
+		static void destroy(parent_type allocator, handle_type buffer, allocation_type allocation) noexcept {
+			vmaDestroyBuffer(allocator, buffer, allocation);
+		}
 	};
 
 }

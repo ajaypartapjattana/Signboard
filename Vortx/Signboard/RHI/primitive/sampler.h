@@ -1,35 +1,20 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
+#include "vulkan_trait_base.hh"
 
 namespace rhi {
 
-	struct _pAccess;
+	struct sampler : vulkan_primitive_base {
+		using handle_type = VkSampler;
+		using createInfo_type = VkSamplerCreateInfo;
 
-	class pcdSamplerCreate;
+		static result_type create(parent_type device, const createInfo_type* pInfo, handle_type* pSampler) noexcept {
+			return vkCreateSampler(device, pInfo, nullptr, pSampler);
+		}
 
-	class pmvSampler {
-	public:
-		pmvSampler() noexcept;
-
-		pmvSampler(const pmvSampler&) noexcept;
-		pmvSampler& operator=(const pmvSampler&) noexcept;
-
-		pmvSampler(pmvSampler&&) noexcept;
-		pmvSampler& operator=(pmvSampler&&) noexcept;
-
-		~pmvSampler() noexcept;
-
-		void reset() noexcept;
-
-	private:
-		friend class pcdSamplerCreate;
-		friend struct _pAccess;
-
-		VkSampler m_sampler;
-
-		VkDevice r_device;
-
+		static void destroy(parent_type device, handle_type sampler) noexcept {
+			vkDestroySampler(device, sampler, nullptr);
+		}
 	};
 
 }

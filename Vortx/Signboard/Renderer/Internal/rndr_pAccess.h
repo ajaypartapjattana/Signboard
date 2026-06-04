@@ -14,7 +14,7 @@ namespace rndr {
 		static inline sgb::vltWrite<rhi::pmvBuffer> bufferWrite(resources& resources) noexcept { return resources.m_buffers; }
 		static inline sgb::vltWrite<rhi::pmvImage> imageWrite(resources& resources) noexcept { return resources.m_images; }
 
-		static inline const rhi::swapchain& swapchain(const presentation& presentation) noexcept { return presentation.m_swapchain; }
+		static inline const rhi::swapchain& swapchain(const presentation& presentation) noexcept { return presentation.swapchain; }
 		static inline const std::vector<uint32_t>& imageHandles(const presentation& presentation) noexcept { return presentation.swapchainImageHandles; }
 
 		static inline const methodView view(const renderConfig& methods) noexcept { return { methods.m_renderPasses, methods.m_framebuffers, methods.m_pipelines }; }

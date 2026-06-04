@@ -1,66 +1,26 @@
 #include "Signboard/Signboard.h"
 
-struct CommandContext {
-    rndr::resources* pResources;
-    rndr::renderConfig* pMethods;
-    rndr::presentation* pPresentation;
-    rndr::Renderer* pRenderer;
-};
-
-constexpr uint32_t MAX_COMMAND_COUNT = 32;
-
-static bool routine_Config(CommandContext& context, glm::vec2 data) {
-    context.pPresentation->validateSwapchain();
-    context.pMethods->validate_primaryTarget();
-    context.pRenderer->syncPresentation();
-
-    return true;
-}
-
-static bool routine_upload(CommandContext& context, glm::vec2 data) {
-    Mesher::PrimitiveInfo ngon{};
-    ngon.size = 0.4f;
-    ngon.res = 8;
-
-    Mesher mesher;
-
-    std::unique_ptr<Model> a_model = mesher.createPrimitive(MESH_PRIMITIVE::NGON, ngon);
-    Model& _mdl = *a_model.get();
-
-    uint32_t mesh = context.pResources->allocateMesh(_mdl);
-    context.pRenderer->queueUpload(_mdl, mesh);
-
-    return false;
-}
-
-static bool routine_escape(CommandContext& context, glm::vec2 data) {
-
-    return true;
-}
+constexpr int DEFAULT_WIDTH = 800;
+constexpr int DEFAULT_HEIGHT = 600;
 
 int main() {
-    plf::context displayContext;
 
-    plf::window::createInfo windowInfo{};
-    windowInfo.extent = { 600, 800 };
-    windowInfo.fullscreen = false;
-    windowInfo.title = "My window";
+    // WINDOW_SETUP
 
-    plf::window window{ windowInfo };
-    plf::windowEventState windowState{ window };
+    plf::instance glfwInstance;
 
-    rndr::context context{ window };
-    rndr::resources resource{ context };
+    const char* title = "NEW WINDOW";
+    plf::window window{ DEFAULT_WIDTH, DEFAULT_HEIGHT, title};
 
-    rndr::presentation present{ context, resource };
+    plf::windowEventState events;
+    events.attachWindow(window);
 
-    rndr::renderConfig methods{ context, present, resource };
+    // RENDERER_SETUP
 
-    rndr::Renderer renderer{ context, present, methods };
-    renderer.bindResources(resource);
-    renderer.bindMehtods(methods);
+    rndr::Renderer renderer{ window };
 
-    CommandContext cmdCtx = { &resource, &methods, &present, &renderer };
+
+    /*CommandContext cmdCtx = { &resource, &methods, &present, &renderer };
 
     using CommandFn = bool(*)(CommandContext&, glm::vec2);
     std::array<CommandFn, MAX_COMMAND_COUNT> commandTable;
@@ -90,7 +50,7 @@ int main() {
         toExecuteCommands.clear();
 
         renderer.render();
-    }
+    }*/
 
     return EXIT_SUCCESS;
 }

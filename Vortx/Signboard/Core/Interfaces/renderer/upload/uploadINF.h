@@ -46,7 +46,7 @@ struct UploadSpan {
 };
 
 struct UploadTarget {
-	uint32_t buffer;
+	VkBuffer buffer;
 	uint64_t offset;
 };
 

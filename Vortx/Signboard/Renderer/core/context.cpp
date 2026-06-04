@@ -49,7 +49,7 @@ namespace rndr {
 		}
 	}
 
-	void context::createDevice(GLFWwindow* window, uint32_t physicalDeviceIndex) {
+	void context::createDevice(GLFWwindow* window, uint32_t physicalDeviceIndex, DeviceInfo* pInfo) {
 		rhi::surface l_surface{ instance, window };
 		rhi::physicalDevice& r_selectedDevice = physicalDevices[physicalDeviceIndex];
 
@@ -176,14 +176,15 @@ namespace rndr {
 		if (result != VK_SUCCESS)
 			throw std::runtime_error("FAILURE: allocator_creation!");
 
-		if (pPage) {
-			pPage->surface = surface;
-			pPage->physicalDevice = r_selectedDevice;
-			pPage->device = device;
-			pPage->assignedQueueFamilies = std::move(l_assignedFamilies);
-			pPage->assignedPresentFamily = l_assignedPresentFamily;
-			pPage->allocator = allocator;
-		}
+		if (!pInfo)
+			return;
+
+		pInfo->candidateSurface = surface;
+		pInfo->nativeDevice = r_selectedDevice;
+		pInfo->logicalDevice = device;
+		pInfo->assignedQueueFamilies = std::move(l_assignedFamilies);
+		pInfo->assignedPresentFamily = l_assignedPresentFamily;
+		pInfo->resourceAllocator = allocator;
 	}
 		
 }

@@ -1,42 +1,12 @@
 #pragma once
 
-#include "commandPool.h"
-#include "commandBuffer.h"
-
 #include "buffer.h"
 #include "image.h"
 #include "sampler.h"
-
 #include "renderPass.h"
 #include "framebuffer.h"
-
-#include "semaphorePool.h"
 #include "fence.h"
-
-#include "vertexLayout.h"
-#include "descriptorLayout.h"
+#include "descriptorSetLayout.h"
 #include "pipelineLayout.h"
 #include "shader.h"
 #include "pipeline.h"
-
-namespace rhi {
-
-	class pmvCommandBuffer;
-	class swapchain;
-
-	class pmvBuffer;
-	class pmvImage;
-	class pmvSampler;
-
-	class pmvRenderPass;
-	class pmvFramebuffer;
-
-	class pmvSemaphorePool;
-	class pmvFence;
-
-	class pmvDescriptorSetLayout;
-	class pmvPipelineLayout;
-	class pmvShader;
-	class pmvPipeline;
-
-}

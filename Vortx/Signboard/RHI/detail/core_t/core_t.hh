@@ -1,0 +1,5 @@
+#include "fungible_pool_t.hh"
+#include "contextual_pool_t.hh"
+#include "resource_pool_t.h"
+#include "contextual_registry_t.hh"
+#include "resource_registry_t.h"

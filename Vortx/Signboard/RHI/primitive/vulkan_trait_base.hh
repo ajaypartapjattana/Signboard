@@ -4,22 +4,19 @@
 
 namespace rhi {
 
-	template <typename Derived>
-	struct vulkan_trait_base {
-		
-		using _Ty = typename Derived::handle_type;
-		using _resultTy = typename Derived::result_type;
-		using _parentTy = typename Derived::parent_type;
+	struct vulkan_primitive_base {
+		using parent_type = VkDevice;
+		using result_type = VkResult;
 
-		static constexpr _Ty null() noexcept {
+		static constexpr auto null() noexcept {
 			return VK_NULL_HANDLE;
 		}
 
-		static constexpr _parentTy null_root() noexcept {
+		static constexpr parent_type null_root() noexcept {
 			return VK_NULL_HANDLE;
 		}
 
-		static constexpr _resultTy success() noexcept {
+		static constexpr result_type success() noexcept {
 			return VK_SUCCESS;
 		}
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Signboard/RHI/detail/vma/vma.h"
+#include <external/VMA/vma.h>
 #include <utility>
 
 namespace rhi {
