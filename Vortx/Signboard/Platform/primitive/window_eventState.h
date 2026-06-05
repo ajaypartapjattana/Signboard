@@ -3,6 +3,8 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <vector>
+#include <string>
+#include <utility>
 
 #include "Signboard/Core/Containers/span/span.h"
 #include "Signboard/Core/Frame/Frame_event.h"
@@ -50,6 +52,8 @@ namespace plf {
 			r_window = std::exchange(other.r_window, nullptr);
 
 			glfwSetWindowUserPointer(r_window, this);
+
+			return *this;
 		}
 
 		~windowEventState() noexcept = default;
@@ -64,10 +68,10 @@ namespace plf {
 		}
 
 		sgb::span<const InputEvent> input_events() const noexcept {
-			return inputs;
+			return sgb::span<const InputEvent>(inputs.data(), inputs.size());
 		}
 		sgb::span<const std::string> fileDrop_events() const noexcept {
-			return fileDrops;
+			return sgb::span<const std::string>(fileDrops.data(), fileDrops.size());
 		}
 		
 		void attachWindow(GLFWwindow* window) noexcept;

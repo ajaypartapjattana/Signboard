@@ -1,8 +1,10 @@
 #include "transfer.h"
 
+#include <unordered_map>
+
 namespace rndr {
 
-	VkResult TransferStage::allocateStagingBuffers(VmaAllocator allocator, size_t size, uint32_t count) noexcept {
+	VkResult TransferStage::allocateStagingBuffers(VkDevice device, VmaAllocator allocator, size_t size, uint32_t count) noexcept {
 		resource_pool<rhi::buffer> buffers{ allocator };
 		std::vector<stagingBufferInfo> bufferInfos(count);
 
@@ -46,6 +48,7 @@ namespace rndr {
 		stagingBufferStates.clear();
 		stagingBufferStates.resize(count);
 
+		r_device = device;
 		r_allocator = allocator;
 
 		return VK_SUCCESS;
@@ -68,7 +71,7 @@ namespace rndr {
 			if (bufferState.fence) {
 				VkResult result = vkGetFenceStatus(r_device, bufferState.fence);
 
-				if (result == VK_NOT_READY)
+				if (result != VK_SUCCESS)
 					continue;
 
 				resetBuffer(index);
@@ -108,12 +111,13 @@ namespace rndr {
 		return VK_SUCCESS;
 	}
 
-	void TransferStage::resetBuffer(size_t index) noexcept {
+	void inline TransferStage::resetBuffer(size_t index) noexcept {
 		stagingBufferState& bufferState = stagingBufferStates[index];
 
 		bufferState.currentOffset = 0;
 		bufferState.flushStart = SIZE_MAX;
 		bufferState.flushEnd = 0;
+		bufferState.regions.clear();
 		bufferState.fence = VK_NULL_HANDLE;
 	}
 
@@ -143,11 +147,36 @@ namespace rndr {
 			}
 
 			bufferState.fence = fence;
-
-			bufferState.regions.clear();
 		}
 
 		return VK_SUCCESS;
 	}
+
+	void TransferStage::informSubmissionFailure(VkFence fence) noexcept {
+		const size_t bufferCount = stagingBufferStates.size();
+
+		for (size_t i = 0; i < bufferCount; ++i) {
+			stagingBufferState& bufferState = stagingBufferStates[i];
+
+			if (bufferState.fence != fence)
+				continue;
+
+			bufferState.fence = VK_NULL_HANDLE;
+		}
+	}
+
+	void TransferStage::informTransferSuccess(VkFence fence) noexcept {
+		const size_t bufferCount = stagingBufferStates.size();
+
+		for (size_t i = 0; i < bufferCount; ++i) {
+			stagingBufferState& bufferState = stagingBufferStates[i];
+
+			if (bufferState.fence != fence)
+				continue;
+
+			resetBuffer(i);
+		}
+	}
+
 
 }

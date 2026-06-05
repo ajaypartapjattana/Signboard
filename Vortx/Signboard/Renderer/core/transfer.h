@@ -1,12 +1,13 @@
 #pragma once
 
-#include "Signboard/RHI/rhi.h"
-#include "Signboard/core/core.h"
+#include "Signboard/RHI/detail/core_t/resource_pool_t.h"
+#include "Signboard/RHI/primitive/buffer.h"
+#include "Signboard/core/Interfaces/renderer/upload/uploadINF.h"
 #include <utility>
 
-constexpr size_t DEFAULT_STAGING_SIZE = 4ull * 1024 * 1024;
-
 namespace rndr {
+
+	constexpr size_t DEFAULT_STAGING_SIZE = 4ull * 1024 * 1024;
 
 	class TransferStage {
 	private:
@@ -43,13 +44,12 @@ namespace rndr {
 			size_t offset;
 		};
 
+		void resetBuffer(size_t index) noexcept;
+
 	public:
 		TransferStage() = default;
-		TransferStage(VkDevice device, VmaAllocator allocator) noexcept 
-			:
-			r_device(device)
-		{
-			allocateStagingBuffers(allocator, DEFAULT_STAGING_SIZE);
+		TransferStage(VkDevice device, VmaAllocator allocator) noexcept {
+			allocateStagingBuffers(device, allocator, DEFAULT_STAGING_SIZE);
 		}
 		TransferStage(const TransferStage&) = delete;
 		TransferStage(TransferStage&& other) noexcept
@@ -58,6 +58,7 @@ namespace rndr {
 			stagingBufferInfos(std::move(other.stagingBufferInfos)),
 			stagingBufferStates(std::move(other.stagingBufferStates)),
 			freeBufferHint(other.freeBufferHint),
+			r_device(std::exchange(other.r_device, VK_NULL_HANDLE)),
 			r_allocator(std::exchange(other.r_allocator, VK_NULL_HANDLE))
 		{
 
@@ -76,14 +77,14 @@ namespace rndr {
 			return *this;
 		}
 
-		~TransferStage() noexcept;
+		~TransferStage() noexcept = default;
 
-		VkResult allocateStagingBuffers(VmaAllocator allocator, size_t size, uint32_t count = 2) noexcept;
+		VkResult allocateStagingBuffers(VkDevice device, VmaAllocator allocator, size_t size = DEFAULT_STAGING_SIZE, uint32_t count = 2) noexcept;
 
 		VkResult stageUpload(const UploadSpan& src, const UploadTarget& dst);
 		VkResult recordUploads(VkCommandBuffer commandBuffer, VkFence fence) noexcept;
-
-		void resetBuffer(size_t index) noexcept;
+		void informSubmissionFailure(VkFence fence) noexcept;
+		void informTransferSuccess(VkFence fence) noexcept;
 
 	};
 

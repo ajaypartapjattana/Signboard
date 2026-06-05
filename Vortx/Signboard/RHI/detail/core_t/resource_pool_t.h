@@ -64,7 +64,7 @@ public:
 			_Ty resource = m_resources[i];
 			_allocTy allocation = m_allocations[i];
 
-			if (resource == Traits::null() && allocation Traits::null())
+			if (resource == Traits::null() && allocation == Traits::null())
 				continue;
 
 			Traits::destroy(r_root, m_resources[i], m_allocations[i]);

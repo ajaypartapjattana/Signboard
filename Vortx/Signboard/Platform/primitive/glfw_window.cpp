@@ -2,7 +2,7 @@
 
 namespace plf {
 
-	int window::create(uint32_t width, uint32_t height, const char* title = nullptr) noexcept {
+	int window::create(uint32_t width, uint32_t height, const char* title) noexcept {
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
 		GLFWwindow* window = glfwCreateWindow(width, height, title, nullptr, nullptr);

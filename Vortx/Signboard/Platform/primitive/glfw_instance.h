@@ -8,7 +8,6 @@ namespace plf {
 
 	class instance {
 	public:
-		instance() = default;
 		instance() {
 			if (!glfwInit())
 				throw std::runtime_error("FAILURE: glfw_unintialized!");

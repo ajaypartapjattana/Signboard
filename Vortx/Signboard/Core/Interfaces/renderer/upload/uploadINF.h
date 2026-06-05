@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <vector>
 
+#include <vulkan/vulkan.h>
+
 struct UploadSpan {
 	const void* data = nullptr;
 	size_t size = 0;

@@ -49,8 +49,6 @@ namespace rhi {
 		VkResult create(const VkInstanceCreateInfo* pCreateInfo) noexcept;
 		void reset() noexcept;
 
-		std::vector<VkPhysicalDevice> enumeratePhysicalDevices() const;
-
 	};
 
 }

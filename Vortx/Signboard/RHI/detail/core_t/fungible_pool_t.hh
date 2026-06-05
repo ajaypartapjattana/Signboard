@@ -50,7 +50,7 @@ public:
 		return m_resources[index];
 	}
 
-	inline Traits::createInfo& createInfo() noexcept {
+	inline _infoTy& createInfo() noexcept {
 		return *pInfo;
 	}
 

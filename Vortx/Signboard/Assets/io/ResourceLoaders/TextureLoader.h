@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Signboard/Core/Threading/threadCommProtocol.h"
-
 #include <string>
 #include <vector>
 #include <memory>

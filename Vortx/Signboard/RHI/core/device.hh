@@ -10,9 +10,6 @@ namespace rhi {
 
 	class device {
 	private:
-		std::unique_ptr<VkPhysicalDeviceFeatures> enabledFeatures;
-		std::vector<uint32_t> familyQueueCount;
-
 		VkDevice m_device = VK_NULL_HANDLE;
 
 	public:
@@ -25,8 +22,6 @@ namespace rhi {
 		device(const device&) = delete;
 		device(device&& other) noexcept 
 			:
-			enabledFeatures(std::move(other.enabledFeatures)),
-			familyQueueCount(std::move(other.familyQueueCount)),
 			m_device(std::exchange(other.m_device, VK_NULL_HANDLE))
 		{
 
@@ -39,8 +34,6 @@ namespace rhi {
 
 			reset();
 
-			enabledFeatures = std::move(other.enabledFeatures);
-			familyQueueCount = std::move(other.familyQueueCount);
 			m_device = std::exchange(other.m_device, VK_NULL_HANDLE);
 
 			return *this;
@@ -52,10 +45,6 @@ namespace rhi {
 
 		operator VkDevice() const noexcept {
 			return m_device;
-		}
-
-		bool active_feature(const VkBool32 VkPhysicalDeviceFeatures::* feature) const noexcept {
-			return enabledFeatures && ((*enabledFeatures).*feature == VK_TRUE);
 		}
 
 		VkResult create(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo) noexcept;

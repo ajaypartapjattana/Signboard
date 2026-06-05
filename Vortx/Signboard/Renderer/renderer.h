@@ -1,23 +1,44 @@
 #pragma once
 
-#include "Signboard/Renderer/core/context.hh"
-#include "Presentation/presentation.hh"
-#include "Signboard/Renderer/Method/method.hh"
+#include "Signboard/RHI/rhi.h"
+#include <array>
 
 constexpr uint32_t DEFAULT_BUFFERED_FRAME_COUNT = 2;
 
 namespace rndr {
 
+	enum QueueFamilyType : uint32_t {
+		FAMILY_INDEX_GRAPHICS,
+		FAMILY_INDEX_COMPUTE,
+		FAMILY_INDEX_TRANSFER,
+
+		FAMILY_INDEX_MAX_ENUM
+	};
+
 	class Renderer {
 	private:
-		context renderContext;
-		
-		VkPhysicalDevice physicalDevice;
-		VkDevice device;
-		VkSwapchainKHR swapchain;
-		
+		rhi::instance instance;
+		std::vector<rhi::physicalDevice> physicalDevices;
+		size_t activePhysicalDeviceIndex;
 
-		presentation presentationState;
+		rhi::surface surface;
+		rhi::device device;
+		std::array<uint32_t, FAMILY_INDEX_MAX_ENUM> assignedQueueFamilies{};
+		uint32_t assignedPresentFamily;
+
+		rhi::allocator allocator;
+
+		struct {
+			VkSurfaceFormatKHR surfaceFormat;
+			VkPresentModeKHR presentMode;
+		} presentationInfo;
+		
+		rhi::swapchain swapchain;
+
+		struct {
+			uint32_t imageCount;
+			VkExtent2D extent;
+		} presentationState;
 		
 		contextual_pool<rhi::descriptorSetLayout> descriptorSetLayouts;
 		struct {
@@ -45,23 +66,11 @@ namespace rndr {
 		contextual_pool<rhi::framebuffer> framebuffers;
 		std::vector<size_t> backbufferIndices;
 
-
-
-		/*rhi::stdCommandPools m_commandPools;
-
-		std::vector<job> frames;
-		uint32_t availableFrameCount;
-		uint32_t activeFrameIndex = 0;
-
-		std::vector<uint32_t> imagesInFlight;
-
-		rhi::pcdWatchdog m_watchdog;
-
-		rhi::pcdCommandBufferRecord m_CommandRecord{};
-		rhi::pcdRenderPassRecord m_passRecord{};
-
-		Scheduler m_interface;
-		transferControl m_transfer;*/
+		
+		void createInstance();
+		void createDevice(GLFWwindow* window, uint32_t physicalDeviceIndex);
+		void selectPresentationConfiguration() noexcept;
+		void createSwapchain();
 
 		void createDescriptorSetLayouts();
 		void createPipelineLayouts();
@@ -76,14 +85,12 @@ namespace rndr {
 		Renderer(GLFWwindow* window);
 			
 
-		~Renderer() noexcept;
+		~Renderer() noexcept = default;
 
 		void syncPresentation();
 		void set_bufferedFrameCount(uint32_t count);
 		
 		void render();
-		void queueUpload(const Model& model, uint32_t allocatedMesh);
-
 	private:
 		bool prepareFrame(uint32_t frameIndex) noexcept;
 		bool defferUploads();
@@ -93,3 +100,19 @@ namespace rndr {
 	};
 
 }
+
+/*rhi::stdCommandPools m_commandPools;
+
+	std::vector<job> frames;
+	uint32_t availableFrameCount;
+	uint32_t activeFrameIndex = 0;
+
+	std::vector<uint32_t> imagesInFlight;
+
+	rhi::pcdWatchdog m_watchdog;
+
+	rhi::pcdCommandBufferRecord m_CommandRecord{};
+	rhi::pcdRenderPassRecord m_passRecord{};
+
+	Scheduler m_interface;
+	transferControl m_transfer;*/

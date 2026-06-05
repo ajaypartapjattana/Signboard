@@ -7,10 +7,6 @@
 
 namespace rndr {
 
-	struct config {
-		VkFenceCreateInfo fenceInfo;
-	};
-
 	struct job {
 		uint32_t assignedImage = 0;
 
@@ -32,11 +28,6 @@ namespace rndr {
 		}
 
 	};
-
-	class context;
-	class presentation;
-
-	struct _pAccess;
 
 	enum class QueueFamily : uint8_t {
 		GRAPHICS,
@@ -60,6 +51,8 @@ namespace rndr {
 	};
 
 	class Scheduler {
+	private:
+
 	public:
 		Scheduler(const context& context, const presentation& presentation);
 
@@ -74,9 +67,6 @@ namespace rndr {
 		void pushPresentJob(const job& frame) noexcept;
 
 	private:
-		friend struct _pAccess;
-
-		config m_config;
 
 		std::vector<job> pendingJobs;
 
