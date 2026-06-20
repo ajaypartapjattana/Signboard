@@ -14,7 +14,7 @@ private:
 
 	std::vector<_Ty> m_records;
 
-	_parentTy r_root = Traits::null_root();
+	_parentTy r_root = Traits::null();
 
 public:
 	contextual_pool() noexcept = default;
@@ -30,7 +30,7 @@ public:
 		m_records(std::move(other.m_records)),
 		r_root(other.r_root)
 	{
-		other.r_root = Traits::null_root();
+		other.r_root = Traits::null();
 	}
 
 	contextual_pool& operator=(const contextual_pool&) = delete;
@@ -43,7 +43,7 @@ public:
 		m_records = std::move(other.m_records);
 		r_root = other.r_root;
 
-		other.r_root = Traits::null_root();
+		other.r_root = Traits::null();
 
 		return *this;
 	}
@@ -71,7 +71,14 @@ public:
 		return m_records[index];
 	}
 
+	const _Ty* data() const noexcept {
+		return m_records.data();
+	}
+
 	void root(_parentTy root) noexcept {
+		if (root == r_root)
+			return;
+
 		reset();
 		r_root = root;
 	}
@@ -90,11 +97,21 @@ public:
 		return Traits::success();
 	}
 
-	_resultTy replace(const _infoTy* pInfo, size_t index) noexcept {
+	_resultTy place(const _infoTy* pInfo, size_t index) noexcept {
+		size_t size = m_records.size();
+
+		if (index > size)
+			return Traits::invalid();
+
 		_Ty target = Traits::null();
 		_resultTy result = Traits::create(r_root, pInfo, &target);
 		if (result != Traits::success())
 			return result;
+
+		if (index == size) {
+			m_records.push_back(target);
+			return Traits::success();
+		}
 
 		Traits::destroy(r_root, m_records[index]);
 		m_records[index] = target;

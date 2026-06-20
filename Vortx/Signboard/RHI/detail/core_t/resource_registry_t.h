@@ -17,7 +17,7 @@ private:
 	_Ty m_resource = Traits::null();
 	_allocTy m_allocation = Traits::null();
 
-	_parentTy r_root = Traits::null_root();
+	_parentTy r_root = Traits::null();
 
 public:
 	resource_registry() noexcept = default;
@@ -32,7 +32,7 @@ public:
 		:
 		m_resource(std::exchange(other.m_resource, Traits::null())),
 		m_allocation(std::exchange(other.m_allocation, Traits::null())),
-		r_root(std::exchange(other.r_root, Traits::null_root()))
+		r_root(std::exchange(other.r_root, Traits::null()))
 	{
 
 	}
@@ -46,7 +46,7 @@ public:
 
 		m_resource = std::exchange(other.m_resource, Traits::null());
 		m_allocation = std::exchange(other.m_allocation, Traits::null());
-		r_root = std::exchange(other.r_root, Traits::null_root());
+		r_root = std::exchange(other.r_root, Traits::null());
 
 		return *this;
 	}
@@ -83,6 +83,9 @@ public:
 	}
 
 	void root(_parentTy root) noexcept {
+		if (r_root == root)
+			return;
+
 		reset();
 		r_root = root;
 	}

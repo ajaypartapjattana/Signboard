@@ -23,8 +23,12 @@ namespace rhi {
 			return VK_SUCCESS;
 		}
 
-		static constexpr result_type invalid_argument() noexcept {
+		static constexpr result_type impermissible() noexcept {
 			return VK_ERROR_NOT_PERMITTED;
+		}
+
+		static constexpr result_type invalid() noexcept {
+			return VK_ERROR_INVALID_EXTERNAL_HANDLE;
 		}
 		
 	};

@@ -1,11 +1,15 @@
 #pragma once
 
 #include "buffer.h"
+#include "commandBuffer.h"
 #include "commandPool.h"
+#include "descriptorPool.h"
+#include "descriptorSet.h"
 #include "descriptorSetLayout.h"
 #include "fence.h"
 #include "framebuffer.h"
 #include "image.h"
+#include "imageView.h"
 #include "pipeline.h"
 #include "pipelineLayout.h"
 #include "renderPass.h"

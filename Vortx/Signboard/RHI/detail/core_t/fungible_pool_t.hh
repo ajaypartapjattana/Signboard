@@ -13,188 +13,156 @@ private:
 	using _infoTy = typename Traits::createInfo_type;
 
 	std::vector<_Ty> m_resources;
-	std::vector<uint64_t> available;
-	uint32_t m_size;
-	uint32_t nextFree= 0;
+	size_t mark = 0;
+	size_t currentSize = 0;
 
-	std::unique_ptr<_infoTy> m_ownedInfo;
-	_infoTy* pInfo = nullptr;
+	std::unique_ptr<_infoTy> m_ownedInfo = std::make_unique<_infoTy>();
 	
-	_parentTy r_parent{};
-
-	_infoTy* allot_basic(_infoTy* pCreateInfo) noexcept {
-		if (pCreateInfo)
-			return pCreateInfo;
-
-		m_ownedInfo = std::make_unique<_infoTy>();
-		return m_ownedInfo.get();
-	}
+	_parentTy r_root = Traits::null();
 
 public:
 
-	fungible_pool(_parentTy parent, _infoTy* pCreateInfo = nullptr)
+	fungible_pool() noexcept = default;
+	fungible_pool(_parentTy root) noexcept
 		:
-		r_parent(parent),
-		pInfo(allot_basic(pCreateInfo))
+		r_root(root)
 	{
 
 	}
 
+	fungible_pool(const fungible_pool&) = delete;
+	fungible_pool(fungible_pool&& other) noexcept 
+		:
+		m_resources(std::move(other.m_resources)),
+		mark(other.mark),
+		currentSize(other.currentSize),
+		m_ownedInfo(std::move(other.m_ownedInfo)),
+		r_root(std::exchange(other.r_root, Traits::null()))
+	{
+
+	}
+
+	fungible_pool& operator=(const fungible_pool&) = delete;
+	fungible_pool& operator=(fungible_pool&& other) noexcept {
+		if (this == &other)
+			return *this;
+
+		m_resources = std::move(other.m_resources);
+		mark = other.mark;
+		currentSize = other.currentSize;
+		m_ownedInfo = std::move(other.m_ownedInfo);
+		r_root = std::exchange(other.r_root, Traits::null());
+
+		return *this;
+	}
+
 	~fungible_pool() noexcept {
-		for (uint32_t i = 0; i < m_size; ++i) {
-			Traits::destroy(r_parent, m_resources[i]);
+		for (size_t i = mark; i < currentSize; ++i) {
+			Traits::destroy(r_root, m_resources[i]);
 		}
 	}
 
-	inline _Ty operator[](uint32_t index) const noexcept {
-		return m_resources[index];
+	_NODISCARD _infoTy* createInfo() noexcept {
+		return m_ownedInfo.get();
 	}
 
-	inline _infoTy& createInfo() noexcept {
-		return *pInfo;
+	size_t size() const noexcept {
+		return currentSize;
 	}
 
-	inline uint32_t size() const noexcept {
-		return static_cast<uint32_t>(m_resources.size());
-	}
-
-	uint32_t grant() noexcept {
-		const uint32_t blockCount = static_cast<uint32_t>(available.size());
-
-		uint32_t startBlock = nextFree >> 6;
-
-		for (uint32_t count = 0, blockIndex = startBlock; count < blockCount; ++count, blockIndex = (blockIndex + 1 == blockCount) ? 0 : blockIndex + 1) {
-			uint64_t bits = available[blockIndex];
-
-			if (!bits)
-				continue;
-
-#if defined(_MSC_VER)
-			unsigned long bitIndex;
-			_BitScanForward64(&bitIndex, bits);
-			const uint32_t bit = static_cast<uint32_t>(bitIndex);
-#else
-			const uint32_t bit = static_cast<uint32_t>(__builtin_ctzll(bits));
-#endif
-			const uint32_t index = (blockIndex << 6) + bit;
-
-			available[blockIndex] &= ~(1ull << bit);
-			nextFree = index + 1;
-
-			return index;
+	_resultTy grant(_Ty* resource) noexcept {
+		if (mark >= currentSize) {
+			_resultTy result = resize(currentSize ? currentSize * 2 : 1);
+			if (result != Traits::success())
+				return result;
 		}
 
-		const uint32_t oldSize = m_size;
-		resize(oldSize ? oldSize * 2 : 1);
-
-		const uint32_t block = oldSize >> 6;
-		const uint32_t bit = oldSize & 63u;
-
-		available[block] &= ~(1ull << bit);
-		nextFree = oldSize + 1;
-
-		return oldSize;
+		*resource = m_resources[mark++];
+		return Traits::success();
 	}
 
-	void recycle(uint32_t index) noexcept {
-		const uint32_t blockIndex = index >> 6;
-		const uint32_t bit = index & 63u;
+	_resultTy recycle(_Ty resource) noexcept {
+		if (!mark)
+			return Traits::impermissible();
 
-		available[blockIndex] |= (1ull << bit);
-
-		if (index < nextFree)
-			nextFree = index;
+		m_resources[--mark] = resource;
+		return Traits::success();
 	}
 
-	_resultTy root(_parentTy parent) {
-		std::vector<_Ty> resources(m_size);
+	_resultTy root(_parentTy root) {
+		if (r_root == root)
+			return Traits::success();
+
+		if (!currentSize) {
+			r_root = root;
+			return Traits::success();
+		}
+
+		if (mark)
+			return Traits::impermissible();
+
+		std::vector<_Ty> resources(currentSize);
 
 		_resultTy result;
-		for (size_t i = 0; i < m_size; ++i) {
-			result = Traits::create(parent, pInfo, &resources[i]);
+		for (size_t i = 0; i < currentSize; ++i) {
+			result = Traits::create(root, m_ownedInfo.get(), &resources[i]);
 			if (result == Traits::success())
 				continue;
 
 			for (size_t j = 0; j < i; ++j) {
-				Traits::destroy(parent, resources[j]);
+				Traits::destroy(root, resources[j]);
 			}
 
 			return result;
 		}
 
-		for (size_t i = 0; i < m_size; ++i) {
-			Traits::destroy(r_parent, m_resources[i]);
+		for (size_t i = 0; i < currentSize; ++i) {
+			Traits::destroy(r_root, m_resources[i]);
 		}
 
 		m_resources.swap(resources);
-		r_parent = parent;
+		r_root = root;
 
 		return Traits::success();
 	}
 
-	_resultTy resize(uint32_t size) {
-		if (size == m_size)
+	_resultTy resize(size_t _Newsize) noexcept {
+		if (_Newsize == currentSize)
 			return Traits::success();
 
-		const uint32_t blockSz_64 = (size + 63u) >> 6;
+		if (_Newsize < currentSize) {
+			if (_Newsize < mark)
+				return Traits::impermissible();
 
-		if (size < m_size) {
-			for (uint32_t i = size; i < m_size; ++i) {
-				Traits::destroy(r_parent, m_resources[i]);
+			for (size_t i = _Newsize; i < currentSize; ++i) {
+				Traits::destroy(r_root, m_resources[i]);
 			}
 
-			m_resources.resize(size);
-			available.resize(blockSz_64);
-
-			if (available.empty()) {
-				return Traits::success();
-			}
-
-			const uint32_t rem = size & 63u;
-
-			if (rem) {
-				available.back() &= ((1ull << rem) - 1ull);
-			}
-
-			m_size = size;
+			m_resources.resize(_Newsize);
+			currentSize = _Newsize;
 
 			return Traits::success();
 		}
 
-		m_resources.resize(size);
+		m_resources.resize(_Newsize);
 
 		_resultTy result;
-		for (uint32_t i = m_size; i < size; ++i) {
-			result = Traits::create(r_parent, pInfo, &m_resources[i]);
+		for (size_t i = currentSize; i < _Newsize; ++i) {
+			result = Traits::create(r_root, m_ownedInfo.get(), &m_resources[i]);
 			if (result == Traits::success()) {
 				continue;
 			}
 
-			for (uint32_t j = m_size; j < i; ++j) {
-				Traits::destroy(r_parent, m_resources[j]);
+			for (size_t j = currentSize; j < i; ++j) {
+				Traits::destroy(r_root, m_resources[j]);
 			}
 
-			m_resources.resize(m_size);
+			m_resources.resize(currentSize);
 
 			return result;
 		}
 
-		available.resize(blockSz_64, ~0ull);
-
-		const uint32_t startBlock = m_size >> 6;
-		const uint32_t startBit = m_size & 63u;
-
-		if (startBit) {
-			available[startBlock] |= (~0ull << startBit);
-		}
-
-		const uint32_t endBit = size & 63u;
-
-		if (endBit) {
-			available.back() &= ((1ull << endBit) - 1ull);
-		}
-
-		m_size = size;
+		currentSize = _Newsize;
 
 		return Traits::success();
 	}

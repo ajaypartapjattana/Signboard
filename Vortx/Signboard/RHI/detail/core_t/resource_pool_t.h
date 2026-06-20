@@ -19,7 +19,7 @@ private:
 	std::vector<_Ty> m_resources;
 	std::vector<_allocTy> m_allocations;
 
-	_parentTy r_root = Traits::null_root();
+	_parentTy r_root = Traits::null();
 
 public:
 	resource_pool() noexcept = default;
@@ -36,7 +36,7 @@ public:
 		m_allocations(std::move(other.m_allocations)),
 		r_root(other.r_root)
 	{
-		other.r_root = Traits::null_root();
+		other.r_root = Traits::null();
 	}
 
 	resource_pool& operator=(const resource_pool&) = delete;
@@ -48,7 +48,7 @@ public:
 
 		m_resources = std::move(other.m_resources);
 		m_allocations = std::move(other.m_allocations);
-		r_root = std::exchange(other.r_root, Traits::null_root());
+		r_root = std::exchange(other.r_root, Traits::null());
 
 		return *this;
 	}
@@ -83,6 +83,9 @@ public:
 	}
 
 	void root(_parentTy root) noexcept {
+		if (r_root == root)
+			return;
+
 		reset();
 		r_root = root;
 	}
@@ -105,7 +108,7 @@ public:
 
 	_resultTy replace(const _createInfoTy* pCreateInfo, const _allocCreateInfoTy* pAllocationCreateInfo, size_t index, _allocInfo* pAllocationInfo) noexcept {
 		if (index >= m_resources.size())
-			return Traits::invalid_argument();
+			return Traits::invalid();
 		
 		_Ty target = Traits::null();
 		_allocTy allocation = Traits::null();

@@ -6,51 +6,90 @@ namespace rndr {
 
 	class presentationStage {
 	private:
-		contextual_registry<rhi::swapchain> swapchain;
-
-		uint32_t presentationFamily = UINT32_MAX;
-
-		struct {
-			VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-			VkSurfaceKHR surface = VK_NULL_HANDLE;
-			VkSurfaceFormatKHR surfaceFormat = { VK_FORMAT_UNDEFINED, VK_COLORSPACE_SRGB_NONLINEAR_KHR };
-			VkPresentModeKHR surfacePresentMode = VK_PRESENT_MODE_FIFO_KHR;
-		} compatible;
+		VkDevice r_device = VK_NULL_HANDLE;
+		VkPhysicalDevice r_physicalDevice = VK_NULL_HANDLE;
+		VkSurfaceKHR r_surface = VK_NULL_HANDLE;
 
 		struct {
+			VkRenderPass compositionPass;
+		} passes;
+
+		struct {
+			uint32_t presentFamily = 0;
+			VkQueue presentQueue = VK_NULL_HANDLE;
+
+			VkSwapchainKHR swapchain = VK_NULL_HANDLE;
 			VkExtent2D extent{};
-			uint32_t imageCount{};
-		} swapchainState;
+			uint32_t imageCount = 0;
+
+			std::vector<VkImageView> swapchainImageViews;
+			std::vector<VkFramebuffer> framebuffers;
+		
+		} presentation;
+
+		struct {
+			VkSurfaceFormatKHR surfaceFormat{};
+			VkPresentModeKHR surfacePresentMode{};
+		
+		} configuration;
+
+		struct {
+			VkSampler sampler;
+			VkDescriptorSetLayout descriptorSetLayout;
+
+			VkDescriptorPool descriptorPool;
+			std::vector<VkDescriptorSet> descriptorSets;
+			
+		} bindings;
+
+		struct {
+			VkPipelineLayout pipelineLayout;
+			VkPipeline pipeline;
+		} rendering;
+
+		struct {
+			uint32_t graphicsFamily = 0;
+			VkQueue graphicsQueue = VK_NULL_HANDLE;
+
+			VkCommandPool commandPool;
+			std::vector<VkCommandBuffer> commandBuffers;
+		} execution;
+
+		struct RenderJob {
+			VkFence inFlight;
+
+			VkSemaphore imageAvailable;
+			VkSemaphore renderComplete;
+
+			VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
+			
+			VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
+		};
+
+		std::vector<RenderJob> renderJobs;
+		size_t jobHint = 0;
+
+		std::vector<VkFence> presentJobs;
+
+		VkResult configurePasses(VkDevice device) noexcept;
+		VkResult configureBindings(VkDevice device) noexcept;
+		VkResult configureRendering(VkDevice device) noexcept;
+		VkResult configureExecution(VkDevice device) noexcept;
 
 	public:
 		presentationStage() = default;
 		presentationStage(const presentationStage&) = delete;
-		presentationStage(presentationStage&& other) noexcept
-			:
-			swapchain(std::move(other.swapchain)),
-			compatible(other.compatible),
-			swapchainState(other.swapchainState)
-		{
-
-		}
+		presentationStage(presentationStage&& other) = delete;
 		
 		presentationStage& operator=(const presentationStage&) = delete;
-		presentationStage& operator=(presentationStage&& other) noexcept {
-			if (this == &other)
-				return *this;
+		presentationStage& operator=(presentationStage&& other) = delete;
 
-			swapchain = std::move(other.swapchain);
-			compatible = other.compatible;
-			swapchainState = other.swapchainState;
+		~presentationStage() noexcept;
 
-			return *this;
-		}
+		VkResult root(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) noexcept;
 
-		~presentationStage() = default;
-
-		VkResult createPresentationConfiguration(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t* presentationFamilyIndex, uint32_t selectedGraphicsFamilyIndex = UINT32_MAX) noexcept;
-		VkResult createSwapchain(VkDevice device, uint32_t graphicsFamilyIndex) noexcept;
-
+		VkResult configurePresentation() noexcept;
+		VkResult stagePresentation(VkImageView view);
 
 	};
 

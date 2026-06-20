@@ -11,7 +11,7 @@ private:
 
 	_Ty m_resource = Traits::null();
 
-	_parentTy r_root = Traits::null_root();
+	_parentTy r_root = Traits::null();
 
 public:
 	contextual_registry() noexcept = default;
@@ -24,10 +24,10 @@ public:
 	contextual_registry(const contextual_registry&) = delete;
 	contextual_registry(contextual_registry&& other) noexcept
 		:
-		m_resource(other.m_resource),
-		r_root(other.r_root)
+		m_resource(std::exchange(other.m_resource, Traits::null())),
+		r_root(std::exchange(other.r_root, Traits::null()))
 	{
-		other.m_resource = _Ty{};
+
 	}
 
 	contextual_registry& operator=(const contextual_registry&) = delete;
@@ -37,10 +37,8 @@ public:
 
 		reset();
 
-		m_resource = other.m_resource;
-		r_root = other.r_root;
-
-		other.m_resource = _Ty{};
+		m_resource = std::exchange(other.m_resource, Traits::null());
+		r_root = std::exchange(other.r_root, Traits::null());
 
 		return *this;
 	}
@@ -79,8 +77,15 @@ public:
 	}
 
 	void root(_parentTy root) noexcept {
+		if (root == r_root)
+			return;
+
 		reset();
 		r_root = root;
+	}
+
+	_parentTy get_root() const noexcept {
+		return r_root;
 	}
 
 	_Ty release() noexcept {

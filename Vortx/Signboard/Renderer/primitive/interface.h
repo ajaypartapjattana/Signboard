@@ -54,7 +54,7 @@ namespace rndr {
 	private:
 
 	public:
-		Scheduler(const context& context, const presentation& presentation);
+		Scheduler(const context& context, const pipeline& pipeline);
 
 		void validate_swapchainDependancy();
 

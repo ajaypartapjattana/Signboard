@@ -658,7 +658,7 @@ namespace rndr {
 				createInfo.pStages = shaderStages.data();
 
 				auto vertexAttributes = Vertex_3D::attributes();
-				auto vertexBindings = Vertex_3D::binding();
+				VkVertexInputBindingDescription vertexBindings = Vertex_3D::binding();
 
 				vertexInputState.vertexBindingDescriptionCount = 1;
 				vertexInputState.pVertexBindingDescriptions = &vertexBindings;
