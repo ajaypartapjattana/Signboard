@@ -4,6 +4,13 @@
 
 namespace rndr {
 
+	struct PresentationStageCreateInfo {
+		uint32_t presentFamilyIndex;
+		VkQueue presentQueue;
+		uint32_t graphicsFamilyIndex;
+		VkQueue graphicsQueue;
+	};
+
 	class presentationStage {
 	private:
 		VkDevice r_device = VK_NULL_HANDLE;
@@ -13,25 +20,6 @@ namespace rndr {
 		struct {
 			VkRenderPass compositionPass;
 		} passes;
-
-		struct {
-			uint32_t presentFamily = 0;
-			VkQueue presentQueue = VK_NULL_HANDLE;
-
-			VkSwapchainKHR swapchain = VK_NULL_HANDLE;
-			VkExtent2D extent{};
-			uint32_t imageCount = 0;
-
-			std::vector<VkImageView> swapchainImageViews;
-			std::vector<VkFramebuffer> framebuffers;
-		
-		} presentation;
-
-		struct {
-			VkSurfaceFormatKHR surfaceFormat{};
-			VkPresentModeKHR surfacePresentMode{};
-		
-		} configuration;
 
 		struct {
 			VkSampler sampler;
@@ -55,7 +43,26 @@ namespace rndr {
 			std::vector<VkCommandBuffer> commandBuffers;
 		} execution;
 
-		struct RenderJob {
+		struct {
+			uint32_t presentFamily = 0;
+			VkQueue presentQueue = VK_NULL_HANDLE;
+
+			VkSwapchainKHR swapchain = VK_NULL_HANDLE;
+			std::vector<VkImageView> swapchainImageViews;
+			std::vector<VkFramebuffer> framebuffers;
+
+			VkExtent2D extent{};
+			uint32_t imageCount = 0;
+
+		} presentation;
+
+		struct {
+			VkSurfaceFormatKHR surfaceFormat{};
+			VkPresentModeKHR surfacePresentMode{};
+
+		} configuration;
+
+		struct presentJob {
 			VkFence inFlight;
 
 			VkSemaphore imageAvailable;
@@ -66,15 +73,8 @@ namespace rndr {
 			VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
 		};
 
-		std::vector<RenderJob> renderJobs;
+		std::vector<presentJob> jobs;
 		size_t jobHint = 0;
-
-		std::vector<VkFence> presentJobs;
-
-		VkResult configurePasses(VkDevice device) noexcept;
-		VkResult configureBindings(VkDevice device) noexcept;
-		VkResult configureRendering(VkDevice device) noexcept;
-		VkResult configureExecution(VkDevice device) noexcept;
 
 	public:
 		presentationStage() = default;
@@ -86,10 +86,12 @@ namespace rndr {
 
 		~presentationStage() noexcept;
 
-		VkResult root(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) noexcept;
+		VkResult root(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, const PresentationStageCreateInfo* pCreateInfo) noexcept;
 
-		VkResult configurePresentation() noexcept;
-		VkResult stagePresentation(VkImageView view);
+		VkResult configurePresentation(uint32_t minImageCount) noexcept;
+
+		VkResult presentationImagePool(const VkImageView* pImageViews, uint32_t count);
+		VkResult stagePresentation(uint32_t imageIndex, VkSemaphore waitSemaphore);
 
 	};
 

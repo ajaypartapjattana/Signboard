@@ -7,29 +7,7 @@
 
 namespace rndr {
 
-	constexpr uint32_t MIN_SWAPCHAIN_IMAGE_COUNT = 2;
-	constexpr uint32_t MAX_CONCURRENT_PRESENTATION_JOB_COUNT = MIN_SWAPCHAIN_IMAGE_COUNT;
-
-	constexpr std::array preferredSurfaceFormats = {
-		VkSurfaceFormatKHR{ VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR },
-		VkSurfaceFormatKHR{ VK_FORMAT_R8G8B8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR },
-		VkSurfaceFormatKHR{ VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR },
-		VkSurfaceFormatKHR{ VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR }
-	};
-
-	struct SurfaceFormatEq {
-		constexpr bool operator()(const VkSurfaceFormatKHR& a, const VkSurfaceFormatKHR& b) const noexcept {
-			return a.format == b.format && a.colorSpace == b.colorSpace;
-		}
-	};
-
-	constexpr std::array preferredPresentModes = {
-		VK_PRESENT_MODE_MAILBOX_KHR,
-		VK_PRESENT_MODE_FIFO_KHR ,
-		VK_PRESENT_MODE_IMMEDIATE_KHR
-	};
-
-	VkResult presentationStage::root(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
+	VkResult presentationStage::root(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, const PresentationStageCreateInfo* pCreateInfo) {
 		VkResult result;
 
 		VkSurfaceFormatKHR surfaceFormat;
@@ -42,6 +20,19 @@ namespace rndr {
 
 			std::vector<VkSurfaceFormatKHR> supportedFormats(supportedFormatCount);
 			vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &supportedFormatCount, supportedFormats.data());
+
+			constexpr std::array preferredSurfaceFormats = {
+				VkSurfaceFormatKHR{ VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR },
+				VkSurfaceFormatKHR{ VK_FORMAT_R8G8B8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR },
+				VkSurfaceFormatKHR{ VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR },
+				VkSurfaceFormatKHR{ VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR }
+			};
+
+			struct SurfaceFormatEq {
+				constexpr bool operator()(const VkSurfaceFormatKHR& a, const VkSurfaceFormatKHR& b) const noexcept {
+					return a.format == b.format && a.colorSpace == b.colorSpace;
+				}
+			};
 
 			size_t index = 0;
 			std::findEarly_basic<VkSurfaceFormatKHR, SurfaceFormatEq>(preferredSurfaceFormats.data(), preferredSurfaceFormats.size(), supportedFormats.data(), supportedFormats.size(), &index);
@@ -60,51 +51,18 @@ namespace rndr {
 			std::vector<VkPresentModeKHR> supportedPresentModes(supportedPresentModeCount);
 			vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &supportedPresentModeCount, supportedPresentModes.data());
 
+			constexpr std::array preferredPresentModes = {
+				VK_PRESENT_MODE_MAILBOX_KHR,
+				VK_PRESENT_MODE_FIFO_KHR ,
+				VK_PRESENT_MODE_IMMEDIATE_KHR
+			};
+
 			size_t index = 0;
 			std::findEarly_basic(preferredPresentModes.data(), preferredPresentModes.size(), supportedPresentModes.data(), supportedPresentModes.size(), &index);
 
 			surfacePresentMode = supportedPresentModes[index];
 		}
 		
-
-		result = configurePasses(device);
-		if (result != VK_SUCCESS)
-			return result;
-
-		result = configureBindings(device);
-		if (result != VK_SUCCESS)
-			return result;
-
-		result = configureRendering(device);
-		if (result != VK_SUCCESS)
-			return result;
-
-		result = configureExecution(device);
-		if (result != VK_SUCCESS)
-			return result;
-
-		if (!renderJobs.empty()) {
-			size_t renderJobCount = renderJobs.size();
-			for (size_t i = 0; i < renderJobCount; ++i) {
-				vkDestroyFence(r_device, renderJobs[i].inFlight, nullptr);
-				
-				vkDestroySemaphore(r_device, renderJobs[i].imageAvailable, nullptr);
-				vkDestroySemaphore(r_device, renderJobs[i].renderComplete, nullptr);
-			}
-		}
-
-		renderJobs.clear();
-
-		r_device = device;
-		r_physicalDevice = physicalDevice;
-		r_surface = surface;
-
-		return VK_SUCCESS;
-	}
-
-	VkResult presentationStage::configurePasses(VkDevice device) noexcept {
-		VkResult result;
-
 		VkRenderPass renderPass;
 
 		{
@@ -159,17 +117,6 @@ namespace rndr {
 				return result;
 		}
 
-		if (passes.compositionPass)
-			vkDestroyRenderPass(r_device, passes.compositionPass, nullptr);
-
-		passes.compositionPass = renderPass;
-
-		return VK_SUCCESS;
-	}
-
-	VkResult presentationStage::configureBindings(VkDevice device) noexcept {
-		VkResult result;
-		
 		VkSampler sampler;
 
 		{
@@ -194,8 +141,11 @@ namespace rndr {
 			createInfo.unnormalizedCoordinates = VK_FALSE;
 
 			result = vkCreateSampler(device, &createInfo, nullptr, &sampler);
-			if (result != VK_SUCCESS)
-			return result;
+			if (result != VK_SUCCESS) {
+				vkDestroyRenderPass(device, renderPass, nullptr);
+
+				return result;
+			}
 		}
 
 		VkDescriptorSetLayout descriptorSetLayout;
@@ -216,78 +166,13 @@ namespace rndr {
 			createInfo.pBindings = &image;
 
 			result = vkCreateDescriptorSetLayout(device, &createInfo, nullptr, &descriptorSetLayout);
-			if (result != VK_SUCCESS)
-				vkDestroySampler(device, sampler, nullptr);
-
-				return result;
-		}
-
-		VkDescriptorPool descriptorPool;
-
-		{
-			VkDescriptorPoolSize poolSize{};
-			poolSize.type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-			poolSize.descriptorCount = MAX_CONCURRENT_PRESENTATION_JOB_COUNT;
-
-			VkDescriptorPoolCreateInfo createInfo{};
-			createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-			createInfo.pNext = nullptr;
-			createInfo.flags = 0;
-			createInfo.maxSets = MAX_CONCURRENT_PRESENTATION_JOB_COUNT;
-			createInfo.poolSizeCount = 1;
-			createInfo.pPoolSizes = &poolSize;
-
-			result = vkCreateDescriptorPool(device, &createInfo, nullptr, &descriptorPool);
 			if (result != VK_SUCCESS) {
-				vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 				vkDestroySampler(device, sampler, nullptr);
-
+				vkDestroyRenderPass(device, renderPass, nullptr);
+				
 				return result;
 			}
 		}
-
-		std::vector<VkDescriptorSet> descriptorSets(MAX_CONCURRENT_PRESENTATION_JOB_COUNT);
-
-		{
-			VkDescriptorSetAllocateInfo allocateInfo{};
-			allocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-			allocateInfo.pNext = nullptr;
-			allocateInfo.descriptorPool = bindings.descriptorPool;
-			allocateInfo.descriptorSetCount = MAX_CONCURRENT_PRESENTATION_JOB_COUNT;
-			allocateInfo.pSetLayouts = &bindings.descriptorSetLayout;
-
-			result = vkAllocateDescriptorSets(device, &allocateInfo, descriptorSets.data());
-			if (result != VK_SUCCESS) {
-				vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-				vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
-				vkDestroySampler(device, sampler, nullptr);
-
-				return result;
-			}
-		}
-
-		if (bindings.descriptorPool)
-			vkDestroyDescriptorPool(r_device, bindings.descriptorPool, nullptr);
-		
-		bindings.descriptorPool = descriptorPool;
-
-		bindings.descriptorSets = std::move(descriptorSets);
-		
-		if (bindings.descriptorSetLayout)
-			vkDestroyDescriptorSetLayout(r_device, bindings.descriptorSetLayout, nullptr);
-		
-		bindings.descriptorSetLayout = descriptorSetLayout;
-		
-		if (bindings.sampler)
-			vkDestroySampler(r_device, bindings.sampler, nullptr);
-
-		bindings.sampler = sampler;
-
-		return VK_SUCCESS;
-	}
-
-	VkResult presentationStage::configureRendering(VkDevice device) noexcept {
-		VkResult result;
 
 		VkPipelineLayout pipelineLayout;
 
@@ -302,65 +187,90 @@ namespace rndr {
 			createInfo.pPushConstantRanges = nullptr;
 
 			result = vkCreatePipelineLayout(device, &createInfo, nullptr, &pipelineLayout);
-			if (result != VK_SUCCESS)
+			if (result != VK_SUCCESS) {
+				
+
 				return result;
+			}
 		}
 
 		VkPipeline pipeline;
 
 		{
-			contextual_pool<rhi::shaderModule> shaderModules{ device };
-			std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
+			VkShaderModule vertexModule;
 
 			{
-				size_t vertexModuleIndex = 0;
-				size_t fragmentModuleIndex = 0;
+				std::vector<uint32_t> spirv = io::loader::file_loader::load_SPIRV("shaders/base.vert");
 
-				{
-					io::loader::file_loader loader;
+				VkShaderModuleCreateInfo createInfo{};
+				createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+				createInfo.pNext = nullptr;
+				createInfo.flags = 0;
+				createInfo.codeSize = spirv.size() * sizeof(uint32_t);
+				createInfo.pCode = spirv.data();
 
-					VkShaderModuleCreateInfo createInfo{};
-					createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-					createInfo.pNext = nullptr;
-					createInfo.flags = 0;
+				result = vkCreateShaderModule(device, &createInfo, nullptr, &vertexModule);
+				if (result != VK_SUCCESS) {
+					vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+					vkDestroySampler(device, sampler, nullptr);
+					vkDestroyRenderPass(device, renderPass, nullptr);
 
-					std::vector<uint32_t> spirv = loader.load_SPIRV("shaders/base.vert");
-
-					createInfo.codeSize = spirv.size() * sizeof(uint32_t);
-					createInfo.pCode = spirv.data();
-
-					result = shaderModules.create(&createInfo, &vertexModuleIndex);
-					if (result != VK_SUCCESS)
-						return result;
-
-					spirv = loader.load_SPIRV("shaders/base.frag");
-
-					createInfo.codeSize = spirv.size() * sizeof(uint32_t);
-					createInfo.pCode = spirv.data();
-
-					result = shaderModules.create(&createInfo, &fragmentModuleIndex);
-					if (result != VK_SUCCESS)
-						return result;
+					return result;
 				}
+			}
+			
+			VkShaderModule fragmentModule;
 
-				shaderStages.reserve(2);
+			{
+				std::vector<uint32_t> spirv = io::loader::file_loader::load_SPIRV("shaders/base.frag");
 
+				VkShaderModuleCreateInfo createInfo{};
+				createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+				createInfo.pNext = nullptr;
+				createInfo.flags = 0;
+				createInfo.codeSize = spirv.size() * sizeof(uint32_t);
+				createInfo.pCode = spirv.data();
+
+				result = vkCreateShaderModule(device, &createInfo, nullptr, &fragmentModule);
+				if (result != VK_SUCCESS) {
+					vkDestroyShaderModule(device, vertexModule, nullptr);
+					vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+					vkDestroySampler(device, sampler, nullptr);
+					vkDestroyRenderPass(device, renderPass, nullptr);
+
+					return result;
+				}
+			}
+
+			std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
+
+			shaderStages.reserve(2);
+
+			{
 				VkPipelineShaderStageCreateInfo stageInfo{};
 				stageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 				stageInfo.pNext = nullptr;
 				stageInfo.flags = 0;
 				stageInfo.pName = "main";
-
-				stageInfo.module = shaderModules[vertexModuleIndex];
+				stageInfo.module = vertexModule;
 				stageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
 
 				shaderStages.push_back(stageInfo);
+			}
 
-				stageInfo.module = shaderModules[fragmentModuleIndex];
+			{
+				VkPipelineShaderStageCreateInfo stageInfo{};
+				stageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+				stageInfo.pNext = nullptr;
+				stageInfo.flags = 0;
+				stageInfo.pName = "main";
+				stageInfo.module = fragmentModule;
 				stageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 				shaderStages.push_back(stageInfo);
 			}
+
+			contextual_pool<rhi::shaderModule> shaderModules{ device };
 
 			VkPipelineVertexInputStateCreateInfo vertexInputState{};
 			vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -490,28 +400,19 @@ namespace rndr {
 			createInfo.basePipelineIndex = 0;
 
 			result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &createInfo, nullptr, &pipeline);
+
+			vkDestroyShaderModule(device, fragmentModule, nullptr);
+			vkDestroyShaderModule(device, vertexModule, nullptr);
+
 			if (result != VK_SUCCESS) {
 				vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+				vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+				vkDestroySampler(device, sampler, nullptr);
+				vkDestroyRenderPass(device, renderPass, nullptr);
 
 				return result;
 			}
 		}
-
-		if (rendering.pipelineLayout)
-			vkDestroyPipelineLayout(r_device, rendering.pipelineLayout, nullptr);
-
-		rendering.pipelineLayout = pipelineLayout;
-
-		if (rendering.pipeline)
-			vkDestroyPipeline(r_device, rendering.pipeline, nullptr);
-
-		rendering.pipeline = pipeline;
-
-		return VK_SUCCESS;
-	}
-
-	VkResult presentationStage::configureExecution(VkDevice device) noexcept {
-		VkResult result;
 
 		VkCommandPool commandPool;
 
@@ -520,26 +421,15 @@ namespace rndr {
 			createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 			createInfo.pNext = nullptr;
 			createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-			createInfo.queueFamilyIndex = execution.graphicsFamily;
+			createInfo.queueFamilyIndex = pCreateInfo->graphicsFamilyIndex;
 
 			result = vkCreateCommandPool(device, &createInfo, nullptr, &commandPool);
-			if (result != VK_SUCCESS)
-				return result;
-		}
-
-		std::vector<VkCommandBuffer> commandBuffers(MAX_CONCURRENT_PRESENTATION_JOB_COUNT);
-
-		{
-			VkCommandBufferAllocateInfo allocateInfo{};
-			allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-			allocateInfo.pNext = nullptr;
-			allocateInfo.commandPool = execution.commandPool;
-			allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-			allocateInfo.commandBufferCount = MAX_CONCURRENT_PRESENTATION_JOB_COUNT;
-
-			result = vkAllocateCommandBuffers(device, &allocateInfo, commandBuffers.data());
 			if (result != VK_SUCCESS) {
-				vkDestroyCommandPool(device, commandPool, nullptr);
+				vkDestroyPipeline(r_device, pipeline, nullptr);
+				vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+				vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+				vkDestroySampler(device, sampler, nullptr);
+				vkDestroyRenderPass(device, renderPass, nullptr);
 
 				return result;
 			}
@@ -550,12 +440,62 @@ namespace rndr {
 
 		execution.commandPool = commandPool;
 
-		execution.commandBuffers = std::move(commandBuffers);
+		execution.graphicsFamily = pCreateInfo->graphicsFamilyIndex;
+		execution.graphicsQueue = pCreateInfo->graphicsQueue;
+
+		if (rendering.pipeline)
+			vkDestroyPipeline(r_device, rendering.pipeline, nullptr);
+
+		rendering.pipeline = pipeline;
+
+		if (rendering.pipelineLayout)
+			vkDestroyPipelineLayout(r_device, rendering.pipelineLayout, nullptr);
+
+		rendering.pipelineLayout = pipelineLayout;
+
+		if (bindings.descriptorSetLayout)
+			vkDestroyDescriptorSetLayout(r_device, bindings.descriptorSetLayout, nullptr);
+
+		bindings.descriptorSetLayout = descriptorSetLayout;
+
+		if (bindings.sampler)
+			vkDestroySampler(r_device, bindings.sampler, nullptr);
+
+		bindings.sampler = sampler;
+
+		if (passes.compositionPass)
+			vkDestroyRenderPass(r_device, passes.compositionPass, nullptr);
+
+		passes.compositionPass = renderPass;
+
+		if (!jobs.empty()) {
+			const size_t jobCount = jobs.size();
+			for (size_t i = 0; i < jobCount; ++i) {
+				VkFence fence = jobs[i].inFlight;
+				if (!fence)
+					continue;
+
+				vkWaitForFences(r_device, 1, &fence, VK_TRUE, UINT64_MAX);
+
+				vkDestroyFence(r_device, fence, nullptr);
+				vkDestroySemaphore(r_device, jobs[i].imageAvailable, nullptr);
+				vkDestroySemaphore(r_device, jobs[i].renderComplete, nullptr);
+			}
+			
+			jobs.clear();
+		}
+
+		presentation.presentFamily = pCreateInfo->presentFamilyIndex;
+		presentation.presentQueue = pCreateInfo->presentQueue;
+
+		r_device = device;
+		r_physicalDevice = physicalDevice;
+		r_surface = surface;
 
 		return VK_SUCCESS;
 	}
 
-	VkResult presentationStage::configurePresentation() noexcept {
+	VkResult presentationStage::configurePresentation(uint32_t minImageCount) noexcept {
 		VkResult result;
 
 		VkExtent2D extent;
@@ -576,7 +516,7 @@ namespace rndr {
 			createInfo.pNext = nullptr;
 			createInfo.flags = 0;
 			createInfo.surface = r_surface;
-			createInfo.minImageCount = surfaceCapabilities.maxImageCount ? std::clamp(MIN_SWAPCHAIN_IMAGE_COUNT, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount) : std::max(MIN_SWAPCHAIN_IMAGE_COUNT, surfaceCapabilities.minImageCount);
+			createInfo.minImageCount = surfaceCapabilities.maxImageCount ? std::clamp(minImageCount, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount) : std::max(minImageCount, surfaceCapabilities.minImageCount);
 			createInfo.imageFormat = configuration.surfaceFormat.format;
 			createInfo.imageColorSpace = configuration.surfaceFormat.colorSpace;
 			createInfo.imageExtent = surfaceCapabilities.currentExtent;
@@ -678,20 +618,79 @@ namespace rndr {
 			}
 		}
 
-		size_t presentJobCount = presentJobs.size();
-		for (size_t i = 0; i < presentJobCount; ++i) {
-			VkFence fence = presentJobs[i];
-			if (!fence)
-				continue;
+		const size_t availableJobCount = jobs.size();
 
-			result = vkWaitForFences(r_device, 1, &fence, VK_TRUE, UINT64_MAX);
-			if (result != VK_SUCCESS)
-				return result;
+		if (availableJobCount < imageCount) {
+			const size_t requiredRenderJobCount = imageCount - availableJobCount;
+
+			for (size_t i = 0; i < requiredRenderJobCount; ++i) {
+				presentJob job;
+
+				{
+					VkFenceCreateInfo createInfo{};
+					createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+					createInfo.pNext = nullptr;
+					createInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+					result = vkCreateFence(r_device, &createInfo, nullptr, &job.inFlight);
+					if (result != VK_SUCCESS)
+						return result;
+				}
+
+				{
+					VkSemaphoreCreateInfo createInfo{};
+					createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+					createInfo.pNext = nullptr;
+					createInfo.flags = 0;
+
+					result = vkCreateSemaphore(r_device, &createInfo, nullptr, &job.imageAvailable);
+					if (result != VK_SUCCESS) {
+						vkDestroyFence(r_device, job.inFlight, nullptr);
+						return result;
+					}
+
+					result = vkCreateSemaphore(r_device, &createInfo, nullptr, &job.renderComplete);
+					if (result != VK_SUCCESS) {
+						vkDestroySemaphore(r_device, job.imageAvailable, nullptr);
+						vkDestroyFence(r_device, job.inFlight, nullptr);
+
+						return result;
+					}
+				}
+
+				{
+					VkCommandBufferAllocateInfo allocateInfo{};
+					allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+					allocateInfo.pNext = nullptr;
+					allocateInfo.commandPool = execution.commandPool;
+					allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+					allocateInfo.commandBufferCount = 1;
+
+					result = vkAllocateCommandBuffers(r_device, &allocateInfo, &job.commandBuffer);
+					if (result != VK_SUCCESS) {
+						return result;
+					}
+				}
+
+				jobs.emplace_back(job);
+			}
+
 		}
 
-		presentJobs.assign(imageCount, VK_NULL_HANDLE);
+		{
+			const size_t presentJobCount = jobs.size();
+			for (size_t i = 0; i < presentJobCount; ++i) {
+				VkFence fence = jobs[i].inFlight;
+				if (!fence)
+					continue;
 
-		size_t framebufferCount = presentation.framebuffers.size();
+				result = vkWaitForFences(r_device, 1, &fence, VK_TRUE, UINT64_MAX);
+				if (result != VK_SUCCESS)
+					return result;
+			}
+		}
+
+		const size_t framebufferCount = presentation.framebuffers.size();
 
 		for (size_t i = 0; i < framebufferCount; ++i) {
 			vkDestroyFramebuffer(r_device, presentation.framebuffers[i], nullptr);
@@ -701,7 +700,7 @@ namespace rndr {
 
 		presentation.extent = extent;
 
-		size_t imageViewCount = presentation.swapchainImageViews.size();
+		const size_t imageViewCount = presentation.swapchainImageViews.size();
 
 		for (size_t i = 0; i < imageViewCount; ++i) {
 			vkDestroyImageView(r_device, presentation.swapchainImageViews[i], nullptr);
@@ -719,111 +718,67 @@ namespace rndr {
 		return VK_SUCCESS;
 	}
 
-	VkResult presentationStage::stagePresentation(VkImageView view) {
+	VkResult presentationStage::presentationImagePool(const VkImageView* pImageViews, uint32_t count) {
 		VkResult result;
-
-		RenderJob* pJob = nullptr;
-
-		if (!renderJobs.empty())
-			pJob = &renderJobs[jobHint];
-
-		if (pJob) {
-			result = vkGetFenceStatus(r_device, pJob->inFlight);
-
-			size_t jobCount = renderJobs.size();
-
-			switch (result) {
-			case VK_SUCCESS:
-				bindings.descriptorSets.emplace_back(pJob->descriptorSet);
-				execution.commandBuffers.emplace_back(pJob->commandBuffer);
-
-				jobHint = (jobHint + 1) % jobCount;
-				break;
-
-			case VK_NOT_READY:
-				if (jobCount < MAX_CONCURRENT_PRESENTATION_JOB_COUNT) {
-					pJob = nullptr;
-					
-					break;
-				}
-				
-				result = vkWaitForFences(r_device, 1, &pJob->inFlight, VK_TRUE, UINT16_MAX);
-				if (result != VK_SUCCESS)
-					return result;
-				
-				break;
-
-			default:
-				return result;
-			}
-		}
-
-		if (!pJob) {
-			RenderJob job{};
-
-			{
-				VkFenceCreateInfo createInfo{};
-				createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-				createInfo.pNext = nullptr;
-				createInfo.flags = 0;
-
-				result = vkCreateFence(r_device, &createInfo, nullptr, &job.inFlight);
-				if (result != VK_SUCCESS)
-					return result;
-			}
-
-			{
-				VkSemaphoreCreateInfo createInfo{};
-				createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-				createInfo.pNext = nullptr;
-				createInfo.flags = 0;
-
-				result = vkCreateSemaphore(r_device, &createInfo, nullptr, &job.imageAvailable);
-				if (result != VK_SUCCESS) {
-					vkDestroyFence(r_device, job.inFlight, nullptr);
-					return result;
-				}
-
-				result = vkCreateSemaphore(r_device, &createInfo, nullptr, &job.renderComplete);
-				if (result != VK_SUCCESS) {
-					vkDestroySemaphore(r_device, job.imageAvailable, nullptr);
-					vkDestroyFence(r_device, job.inFlight, nullptr);
-
-					return result;
-				}
-			}
-
-			renderJobs.emplace_back(job);
-			pJob = &renderJobs.back();
-		}
-
-		uint32_t availableImageIndex = 0;
-
-		{
-			result = vkAcquireNextImageKHR(r_device, presentation.swapchain, UINT64_MAX, pJob->imageAvailable, VK_NULL_HANDLE, &availableImageIndex);
-			if (result != VK_SUCCESS)
-				return result;
-
-			VkFence imageFence = presentJobs[availableImageIndex];
-			if (imageFence) {
-				result = vkWaitForFences(r_device, 1, &imageFence, VK_TRUE, UINT32_MAX);
-				if (result != VK_SUCCESS)
-					return result;
-			}
-		}
 		
-		VkDescriptorSet descriptorSet = bindings.descriptorSets.back();
+		const size_t availableDescriptorSetCount = bindings.descriptorSets.size();
+
+		if (availableDescriptorSetCount < count) {
+			VkDescriptorPool descriptorPool;
+
+			{
+				VkDescriptorPoolSize poolSize{};
+				poolSize.type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+				poolSize.descriptorCount = count;
+
+				VkDescriptorPoolCreateInfo createInfo{};
+				createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+				createInfo.pNext = nullptr;
+				createInfo.flags = 0;
+				createInfo.maxSets = count;
+				createInfo.poolSizeCount = 1;
+				createInfo.pPoolSizes = &poolSize;
+
+				result = vkCreateDescriptorPool(r_device, &createInfo, nullptr, &descriptorPool);
+				if (result != VK_SUCCESS) {
+					return result;
+				}
+			}
+
+			std::vector<VkDescriptorSet> descriptorSets(count);
+
+			{
+				VkDescriptorSetAllocateInfo allocateInfo{};
+				allocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+				allocateInfo.pNext = nullptr;
+				allocateInfo.descriptorPool = bindings.descriptorPool;
+				allocateInfo.descriptorSetCount = count;
+				allocateInfo.pSetLayouts = &bindings.descriptorSetLayout;
+
+				result = vkAllocateDescriptorSets(r_device, &allocateInfo, descriptorSets.data());
+				if (result != VK_SUCCESS) {
+					return result;
+				}
+			}
+
+			if (bindings.descriptorPool)
+				vkDestroyDescriptorPool(r_device, bindings.descriptorPool, nullptr);
+
+			bindings.descriptorPool = descriptorPool;
+
+			bindings.descriptorSets = std::move(descriptorSets);
+		}
 
 		{
 			VkDescriptorImageInfo imageInfo{};
 			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageInfo.imageView = view;
+			imageInfo.imageView = VK_NULL_HANDLE;
 			imageInfo.sampler = VK_NULL_HANDLE;
 
 			VkWriteDescriptorSet write{};
 			write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			write.pNext = nullptr;
-			write.dstSet = descriptorSet;
+			write.dstSet = VK_NULL_HANDLE;
 			write.dstBinding = 0;
 			write.dstArrayElement = 0;
 			write.descriptorCount = 1;
@@ -832,10 +787,35 @@ namespace rndr {
 			write.pBufferInfo = nullptr;
 			write.pTexelBufferView = nullptr;
 
-			vkUpdateDescriptorSets(r_device, 1, &write, 0, nullptr);
+			for (uint32_t i = 0; i < count; ++i) {
+				imageInfo.imageView = pImageViews[i];
+				write.dstSet = bindings.descriptorSets[i];
+
+				vkUpdateDescriptorSets(r_device, 1, &write, 0, nullptr);
+			}
 		}
 
-		VkCommandBuffer commandBuffer = execution.commandBuffers.back();
+		return VK_SUCCESS;
+	}
+
+	VkResult presentationStage::stagePresentation(uint32_t imageIndex, VkSemaphore waitSemaphore) {
+		VkResult result;
+
+		presentJob& job = jobs[jobHint];
+
+		result = vkWaitForFences(r_device, 1, &job.inFlight, VK_TRUE, UINT32_MAX);
+		if (result != VK_SUCCESS)
+			return result;
+
+		jobHint = (jobHint + 1) % jobs.size();
+
+		uint32_t availableImageIndex = 0;
+
+		result = vkAcquireNextImageKHR(r_device, presentation.swapchain, UINT64_MAX, job.imageAvailable, VK_NULL_HANDLE, &availableImageIndex);
+		if (result != VK_SUCCESS)
+			return result;
+
+		VkCommandBuffer commandBuffer = job.commandBuffer;
 
 		{
 			vkResetCommandBuffer(commandBuffer, 0);
@@ -889,7 +869,9 @@ namespace rndr {
 			vkCmdSetScissor(commandBuffer, 0, 1, &scissors);
 		}
 
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, rendering.pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, rendering.pipelineLayout, 0, 1, &bindings.descriptorSets[imageIndex], 0, nullptr);
+
+		job.descriptorSet = bindings.descriptorSets[imageIndex];
 
 		vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
@@ -900,40 +882,34 @@ namespace rndr {
 			return result;
 
 		{
-			VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			VkSemaphore waitSemaphores[2] = {job.imageAvailable, waitSemaphore};
+
+			VkPipelineStageFlags waitStages[2] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
 			VkSubmitInfo submitInfo{};
 			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 			submitInfo.pNext = nullptr;
-			submitInfo.waitSemaphoreCount = 1;
-			submitInfo.pWaitSemaphores = &pJob->imageAvailable;
-			submitInfo.pWaitDstStageMask = &waitStage;
+			submitInfo.waitSemaphoreCount = 2;
+			submitInfo.pWaitSemaphores = waitSemaphores;
+			submitInfo.pWaitDstStageMask = waitStages;
 			submitInfo.commandBufferCount = 1;
 			submitInfo.pCommandBuffers = &commandBuffer;
 			submitInfo.signalSemaphoreCount = 1;
-			submitInfo.pSignalSemaphores = &pJob->renderComplete;
+			submitInfo.pSignalSemaphores = &job.renderComplete;
 
-			vkResetFences(r_device, 1, &pJob->inFlight);
+			vkResetFences(r_device, 1, &job.inFlight);
 
-			result = vkQueueSubmit(execution.graphicsQueue, 1, &submitInfo, pJob->inFlight);
+			result = vkQueueSubmit(execution.graphicsQueue, 1, &submitInfo, job.inFlight);
 			if (result != VK_SUCCESS) {
 				return result;
 			}
 		}
 
-		presentJobs[availableImageIndex] = pJob->inFlight;
-
-		pJob->descriptorSet = descriptorSet;
-		bindings.descriptorSets.pop_back();
-
-		pJob->commandBuffer = commandBuffer;
-		execution.commandBuffers.pop_back();
-
 		VkPresentInfoKHR presentInfo{};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 		presentInfo.pNext = nullptr;
 		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = &pJob->renderComplete;
+		presentInfo.pWaitSemaphores = &job.renderComplete;
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = &presentation.swapchain;
 		presentInfo.pImageIndices = &availableImageIndex;
@@ -947,7 +923,54 @@ namespace rndr {
 	}
 
 	presentationStage::~presentationStage() noexcept {
+		{
+			const size_t jobCount = jobs.size();
+			for (size_t i = 0; i < jobCount; ++i) {
+				VkFence fence = jobs[i].inFlight;
+				if (!fence)
+					continue;
 
+				vkWaitForFences(r_device, 1, &fence, VK_TRUE, UINT64_MAX);
+
+				vkDestroyFence(r_device, fence, nullptr);
+				vkDestroySemaphore(r_device, jobs[i].imageAvailable, nullptr);
+				vkDestroySemaphore(r_device, jobs[i].renderComplete, nullptr);
+			}
+		}
+		
+		if (presentation.swapchain) {
+			const size_t framebufferCount = presentation.framebuffers.size();
+			for (size_t i = 0; i < framebufferCount; ++i) {
+				vkDestroyFramebuffer(r_device, presentation.framebuffers[i], nullptr);
+			}
+
+			const size_t imageViewCount = presentation.swapchainImageViews.size();
+			for (size_t i = 0; i < imageViewCount; ++i) {
+				vkDestroyImageView(r_device, presentation.swapchainImageViews[i], nullptr);
+			}
+
+			vkDestroySwapchainKHR(r_device, presentation.swapchain, nullptr);
+		}
+
+		if (execution.commandPool) {
+			vkDestroyCommandPool(r_device, execution.commandPool, nullptr);
+		}
+		
+		if (rendering.pipeline) {
+			vkDestroyPipeline(r_device, rendering.pipeline, nullptr);
+			vkDestroyPipelineLayout(r_device, rendering.pipelineLayout, nullptr);
+		}
+		
+		if (bindings.descriptorPool) {
+			vkDestroyDescriptorPool(r_device, bindings.descriptorPool, nullptr);
+			vkDestroyDescriptorSetLayout(r_device, bindings.descriptorSetLayout, nullptr);
+			vkDestroySampler(r_device, bindings.sampler, nullptr);
+		}
+		
+		if (passes.compositionPass) {
+			vkDestroyRenderPass(r_device, passes.compositionPass, nullptr);
+		}
+		
 	}
 
 }

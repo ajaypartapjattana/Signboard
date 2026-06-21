@@ -9,7 +9,7 @@ namespace io::loader {
 
 	class file_loader {
 	public:
-		std::vector<uint32_t> load_SPIRV(const std::filesystem::path& path) {
+		static std::vector<uint32_t> load_SPIRV(const std::filesystem::path& path) {
 			std::ifstream file{ path, std::ios::binary | std::ios::ate };
 
 			if (!file)
@@ -31,7 +31,7 @@ namespace io::loader {
 			return buffer;
 		}
 
-		std::vector<char> load_BIN(const std::filesystem::path& path) {
+		static std::vector<char> load_BIN(const std::filesystem::path& path) {
 			std::ifstream file{ path, std::ios::binary | std::ios::ate };
 			const std::streamsize size = file.tellg();
 
