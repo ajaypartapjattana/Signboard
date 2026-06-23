@@ -7,8 +7,18 @@
 
 namespace rndr {
 
-	VkResult presentationStage::root(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, const PresentationStageCreateInfo* pCreateInfo) {
+	struct SurfaceFormatEq {
+		constexpr bool operator()(const VkSurfaceFormatKHR& a, const VkSurfaceFormatKHR& b) const noexcept {
+			return a.format == b.format && a.colorSpace == b.colorSpace;
+		}
+	};
+
+	VkResult presentationStage::root(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, const PresentationStageQueueInfo* pQueueInfo) noexcept {
 		VkResult result;
+		
+		if (!presentationTargets.empty()) {
+			return VK_ERROR_NOT_PERMITTED;
+		}
 
 		VkSurfaceFormatKHR surfaceFormat;
 
@@ -21,17 +31,11 @@ namespace rndr {
 			std::vector<VkSurfaceFormatKHR> supportedFormats(supportedFormatCount);
 			vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &supportedFormatCount, supportedFormats.data());
 
-			constexpr std::array preferredSurfaceFormats = {
+			constexpr std::array preferredSurfaceFormats {
 				VkSurfaceFormatKHR{ VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR },
 				VkSurfaceFormatKHR{ VK_FORMAT_R8G8B8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR },
 				VkSurfaceFormatKHR{ VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR },
 				VkSurfaceFormatKHR{ VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR }
-			};
-
-			struct SurfaceFormatEq {
-				constexpr bool operator()(const VkSurfaceFormatKHR& a, const VkSurfaceFormatKHR& b) const noexcept {
-					return a.format == b.format && a.colorSpace == b.colorSpace;
-				}
 			};
 
 			size_t index = 0;
@@ -39,35 +43,12 @@ namespace rndr {
 
 			surfaceFormat = supportedFormats[index];
 		}
-
-		VkPresentModeKHR surfacePresentMode;
-
-		{
-			uint32_t supportedPresentModeCount = 0;
-			result = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &supportedPresentModeCount, nullptr);
-			if (result != VK_SUCCESS)
-				return result;
-
-			std::vector<VkPresentModeKHR> supportedPresentModes(supportedPresentModeCount);
-			vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &supportedPresentModeCount, supportedPresentModes.data());
-
-			constexpr std::array preferredPresentModes = {
-				VK_PRESENT_MODE_MAILBOX_KHR,
-				VK_PRESENT_MODE_FIFO_KHR ,
-				VK_PRESENT_MODE_IMMEDIATE_KHR
-			};
-
-			size_t index = 0;
-			std::findEarly_basic(preferredPresentModes.data(), preferredPresentModes.size(), supportedPresentModes.data(), supportedPresentModes.size(), &index);
-
-			surfacePresentMode = supportedPresentModes[index];
-		}
 		
 		VkRenderPass renderPass;
 
 		{
 			VkAttachmentDescription output{};
-			output.format = configuration.surfaceFormat.format;
+			output.format = surfaceFormat.format;
 			output.samples = VK_SAMPLE_COUNT_1_BIT;
 			output.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			output.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -153,7 +134,7 @@ namespace rndr {
 		{
 			VkDescriptorSetLayoutBinding image{};
 			image.binding = 0;
-			image.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+			image.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			image.descriptorCount = 1;
 			image.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 			image.pImmutableSamplers = &sampler;
@@ -182,7 +163,7 @@ namespace rndr {
 			createInfo.pNext = nullptr;
 			createInfo.flags = 0;
 			createInfo.setLayoutCount = 1;
-			createInfo.pSetLayouts = &bindings.descriptorSetLayout;
+			createInfo.pSetLayouts = &descriptorSetLayout;
 			createInfo.pushConstantRangeCount = 0;
 			createInfo.pPushConstantRanges = nullptr;
 
@@ -200,7 +181,7 @@ namespace rndr {
 			VkShaderModule vertexModule;
 
 			{
-				std::vector<uint32_t> spirv = io::loader::file_loader::load_SPIRV("shaders/base.vert");
+				std::vector<uint32_t> spirv = io::loader::file_loader::load_SPIRV("shaders/presentation.vert.spv");
 
 				VkShaderModuleCreateInfo createInfo{};
 				createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -222,7 +203,7 @@ namespace rndr {
 			VkShaderModule fragmentModule;
 
 			{
-				std::vector<uint32_t> spirv = io::loader::file_loader::load_SPIRV("shaders/base.frag");
+				std::vector<uint32_t> spirv = io::loader::file_loader::load_SPIRV("shaders/presentation.frag.spv");
 
 				VkShaderModuleCreateInfo createInfo{};
 				createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -394,7 +375,7 @@ namespace rndr {
 			createInfo.pColorBlendState = &colorBlendState;
 			createInfo.pDynamicState = &dynamicState;
 			createInfo.layout = pipelineLayout;
-			createInfo.renderPass = passes.compositionPass;
+			createInfo.renderPass = renderPass;
 			createInfo.subpass = 0;
 			createInfo.basePipelineHandle = VK_NULL_HANDLE;
 			createInfo.basePipelineIndex = 0;
@@ -421,11 +402,11 @@ namespace rndr {
 			createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 			createInfo.pNext = nullptr;
 			createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-			createInfo.queueFamilyIndex = pCreateInfo->graphicsFamilyIndex;
+			createInfo.queueFamilyIndex = pQueueInfo->graphicsFamilyIndex;
 
 			result = vkCreateCommandPool(device, &createInfo, nullptr, &commandPool);
 			if (result != VK_SUCCESS) {
-				vkDestroyPipeline(r_device, pipeline, nullptr);
+				vkDestroyPipeline(device, pipeline, nullptr);
 				vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 				vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 				vkDestroySampler(device, sampler, nullptr);
@@ -435,13 +416,116 @@ namespace rndr {
 			}
 		}
 
+		{
+			presentJob job;
+
+			{
+				VkFenceCreateInfo createInfo{};
+				createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+				createInfo.pNext = nullptr;
+				createInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+				result = vkCreateFence(device, &createInfo, nullptr, &job.inFlight);
+				if (result != VK_SUCCESS) {
+					vkDestroyCommandPool(device, commandPool, nullptr);
+					vkDestroyPipeline(device, pipeline, nullptr);
+					vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+					vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+					vkDestroySampler(device, sampler, nullptr);
+					vkDestroyRenderPass(device, renderPass, nullptr);
+
+					return result;
+				}
+			}
+
+			{
+				VkSemaphoreCreateInfo createInfo{};
+				createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+				createInfo.pNext = nullptr;
+				createInfo.flags = 0;
+
+				result = vkCreateSemaphore(device, &createInfo, nullptr, &job.imageAvailable);
+				if (result != VK_SUCCESS) {
+					vkDestroyFence(device, job.inFlight, nullptr);
+					vkDestroyCommandPool(device, commandPool, nullptr);
+					vkDestroyPipeline(device, pipeline, nullptr);
+					vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+					vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+					vkDestroySampler(device, sampler, nullptr);
+					vkDestroyRenderPass(device, renderPass, nullptr);
+
+					return result;
+				}
+
+				result = vkCreateSemaphore(device, &createInfo, nullptr, &job.renderComplete);
+				if (result != VK_SUCCESS) {
+					vkDestroySemaphore(device, job.imageAvailable, nullptr);
+					vkDestroyFence(device, job.inFlight, nullptr);
+					vkDestroyCommandPool(device, commandPool, nullptr);
+					vkDestroyPipeline(device, pipeline, nullptr);
+					vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+					vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+					vkDestroySampler(device, sampler, nullptr);
+					vkDestroyRenderPass(device, renderPass, nullptr);
+
+					return result;
+				}
+			}
+
+			{
+				VkCommandBufferAllocateInfo allocateInfo{};
+				allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+				allocateInfo.pNext = nullptr;
+				allocateInfo.commandPool = commandPool;
+				allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+				allocateInfo.commandBufferCount = 1;
+
+				result = vkAllocateCommandBuffers(device, &allocateInfo, &job.commandBuffer);
+				if (result != VK_SUCCESS) {
+					vkDestroySemaphore(device, job.renderComplete, nullptr);
+					vkDestroySemaphore(device, job.imageAvailable, nullptr);
+					vkDestroyFence(device, job.inFlight, nullptr);
+					vkDestroyCommandPool(device, commandPool, nullptr);
+					vkDestroyPipeline(device, pipeline, nullptr);
+					vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+					vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+					vkDestroySampler(device, sampler, nullptr);
+					vkDestroyRenderPass(device, renderPass, nullptr);
+
+					return result;
+				}
+			}
+
+			const size_t jobCount = jobs.size();
+			for (size_t i = 0; i < jobCount; ++i) {
+				VkFence fence = jobs[i].inFlight;
+				if (!fence)
+					continue;
+
+				vkWaitForFences(r_device, 1, &fence, VK_TRUE, UINT64_MAX);
+
+				vkDestroyFence(r_device, fence, nullptr);
+				vkDestroySemaphore(r_device, jobs[i].imageAvailable, nullptr);
+				vkDestroySemaphore(r_device, jobs[i].renderComplete, nullptr);
+			}
+
+			jobs.clear();
+
+			jobs.reserve(MAX_CONCURRENT_PRESENTATION_JOB_COUNT);
+			jobs.emplace_back(job);
+
+			oldJobHint = 0;
+		}
+
 		if (execution.commandPool)
 			vkDestroyCommandPool(r_device, execution.commandPool, nullptr);
 
 		execution.commandPool = commandPool;
 
-		execution.graphicsFamily = pCreateInfo->graphicsFamilyIndex;
-		execution.graphicsQueue = pCreateInfo->graphicsQueue;
+		execution.graphicsFamily = pQueueInfo->graphicsFamilyIndex;
+		execution.graphicsQueue = pQueueInfo->graphicsQueue;
+		execution.presentFamily = pQueueInfo->presentFamilyIndex;
+		execution.presentQueue = pQueueInfo->presentQueue;
 
 		if (rendering.pipeline)
 			vkDestroyPipeline(r_device, rendering.pipeline, nullptr);
@@ -468,35 +552,107 @@ namespace rndr {
 
 		passes.compositionPass = renderPass;
 
-		if (!jobs.empty()) {
-			const size_t jobCount = jobs.size();
-			for (size_t i = 0; i < jobCount; ++i) {
-				VkFence fence = jobs[i].inFlight;
-				if (!fence)
-					continue;
-
-				vkWaitForFences(r_device, 1, &fence, VK_TRUE, UINT64_MAX);
-
-				vkDestroyFence(r_device, fence, nullptr);
-				vkDestroySemaphore(r_device, jobs[i].imageAvailable, nullptr);
-				vkDestroySemaphore(r_device, jobs[i].renderComplete, nullptr);
-			}
-			
-			jobs.clear();
-		}
-
-		presentation.presentFamily = pCreateInfo->presentFamilyIndex;
-		presentation.presentQueue = pCreateInfo->presentQueue;
-
+		configuration.surfaceFormat = surfaceFormat;
+		
 		r_device = device;
 		r_physicalDevice = physicalDevice;
-		r_surface = surface;
 
 		return VK_SUCCESS;
 	}
 
-	VkResult presentationStage::configurePresentation(uint32_t minImageCount) noexcept {
+	VkResult presentationStage::targetSurface(VkSurfaceKHR surface, size_t* pIndex) noexcept {
 		VkResult result;
+
+		if (!pIndex)
+			return VK_ERROR_INVALID_EXTERNAL_HANDLE;
+
+		{
+			VkBool32 surfaceSupport;
+			result = vkGetPhysicalDeviceSurfaceSupportKHR(r_physicalDevice, execution.presentFamily, surface, &surfaceSupport);
+			if (result != VK_SUCCESS)
+				return result;
+				
+			if (!surfaceSupport)
+				return VK_ERROR_NOT_PERMITTED;
+		}
+
+		{
+			uint32_t supportedFormatCount = 0;
+			result = vkGetPhysicalDeviceSurfaceFormatsKHR(r_physicalDevice, surface, &supportedFormatCount, nullptr);
+			if (result != VK_SUCCESS)
+				return result;
+
+			std::vector<VkSurfaceFormatKHR> supportedFormats(supportedFormatCount);
+			vkGetPhysicalDeviceSurfaceFormatsKHR(r_physicalDevice, surface, &supportedFormatCount, supportedFormats.data());
+
+			bool support = std::contain<VkSurfaceFormatKHR, SurfaceFormatEq>(configuration.surfaceFormat, supportedFormats.data(), supportedFormats.size());
+			if (!support)
+				return VK_ERROR_FORMAT_NOT_SUPPORTED;
+		}
+		
+		VkPresentModeKHR surfacePresentMode = VK_PRESENT_MODE_FIFO_KHR;
+
+		{
+			uint32_t supportedPresentModeCount = 0;
+			result = vkGetPhysicalDeviceSurfacePresentModesKHR(r_physicalDevice, surface, &supportedPresentModeCount, nullptr);
+			if (result != VK_SUCCESS)
+				return result;
+
+			std::vector<VkPresentModeKHR> supportedPresentModes(supportedPresentModeCount);
+			vkGetPhysicalDeviceSurfacePresentModesKHR(r_physicalDevice, surface, &supportedPresentModeCount, supportedPresentModes.data());
+
+			if (std::contain(VK_PRESENT_MODE_MAILBOX_KHR, supportedPresentModes.data(), supportedPresentModes.size())) {
+				surfacePresentMode = VK_PRESENT_MODE_MAILBOX_KHR;
+			}
+		}
+
+		*pIndex = presentationTargets.size();
+
+		PresentationTarget& target = presentationTargets.emplace_back();
+
+		target.surface = surface;
+		target.presentMode = surfacePresentMode;
+
+		return VK_SUCCESS;
+	}
+
+	void presentationStage::releaseSurface(size_t index, VkSurfaceKHR* pSurface) noexcept {
+		if (!pSurface)
+			return;
+
+		const PresentationTarget& target = presentationTargets[index];
+
+		for (uint32_t i = 0; i < target.imageCount; ++i) {
+			VkFence fence = target.imageFence[i];
+			if (!fence)
+				continue;
+
+			VkResult result = vkWaitForFences(r_device, 1, &fence, VK_TRUE, UINT64_MAX);
+			if (result != VK_SUCCESS) {
+				*pSurface = VK_NULL_HANDLE;
+
+				return;
+			}
+		}
+
+		for (size_t i = 0; i < target.imageCount; ++i) {
+			vkDestroyFramebuffer(r_device, target.framebuffers[i], nullptr);
+		}
+
+		for (size_t i = 0; i < target.imageCount; ++i) {
+			vkDestroyImageView(r_device, target.imageViews[i], nullptr);
+		}
+
+		if (target.swapchain)
+			vkDestroySwapchainKHR(r_device, target.swapchain, nullptr);
+
+		*pSurface = target.surface;
+	}
+
+	VkResult presentationStage::configurePresentation(size_t targetIndex, uint32_t minImageCount) noexcept {
+		VkResult result;
+
+		PresentationTarget& target = presentationTargets[targetIndex];
 
 		VkExtent2D extent;
 
@@ -505,17 +661,15 @@ namespace rndr {
 		{
 			VkSurfaceCapabilitiesKHR surfaceCapabilities{};
 
-			result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(r_physicalDevice, r_surface, &surfaceCapabilities);
+			result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(r_physicalDevice, target.surface, &surfaceCapabilities);
 			if (result != VK_SUCCESS)
 				return result;
-
-			extent = surfaceCapabilities.currentExtent;
 
 			VkSwapchainCreateInfoKHR createInfo{};
 			createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 			createInfo.pNext = nullptr;
 			createInfo.flags = 0;
-			createInfo.surface = r_surface;
+			createInfo.surface = target.surface;
 			createInfo.minImageCount = surfaceCapabilities.maxImageCount ? std::clamp(minImageCount, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount) : std::max(minImageCount, surfaceCapabilities.minImageCount);
 			createInfo.imageFormat = configuration.surfaceFormat.format;
 			createInfo.imageColorSpace = configuration.surfaceFormat.colorSpace;
@@ -527,9 +681,9 @@ namespace rndr {
 			createInfo.pQueueFamilyIndices = nullptr;
 			createInfo.preTransform = surfaceCapabilities.currentTransform;
 			createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-			createInfo.presentMode = configuration.surfacePresentMode;
+			createInfo.presentMode = target.presentMode;
 			createInfo.clipped = VK_TRUE;
-			createInfo.oldSwapchain = presentation.swapchain;
+			createInfo.oldSwapchain = target.swapchain;
 
 			result = vkCreateSwapchainKHR(r_device, &createInfo, nullptr, &swapchain);
 			if (result != VK_SUCCESS)
@@ -618,102 +772,40 @@ namespace rndr {
 			}
 		}
 
-		const size_t availableJobCount = jobs.size();
+		const uint32_t oldImageCount = target.imageCount;
 
-		if (availableJobCount < imageCount) {
-			const size_t requiredRenderJobCount = imageCount - availableJobCount;
+		for (uint32_t i = 0; i < oldImageCount; ++i) {
+			VkFence fence = target.imageFence[i];
+			if (!fence)
+				continue;
 
-			for (size_t i = 0; i < requiredRenderJobCount; ++i) {
-				presentJob job;
-
-				{
-					VkFenceCreateInfo createInfo{};
-					createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-					createInfo.pNext = nullptr;
-					createInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-					result = vkCreateFence(r_device, &createInfo, nullptr, &job.inFlight);
-					if (result != VK_SUCCESS)
-						return result;
-				}
-
-				{
-					VkSemaphoreCreateInfo createInfo{};
-					createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-					createInfo.pNext = nullptr;
-					createInfo.flags = 0;
-
-					result = vkCreateSemaphore(r_device, &createInfo, nullptr, &job.imageAvailable);
-					if (result != VK_SUCCESS) {
-						vkDestroyFence(r_device, job.inFlight, nullptr);
-						return result;
-					}
-
-					result = vkCreateSemaphore(r_device, &createInfo, nullptr, &job.renderComplete);
-					if (result != VK_SUCCESS) {
-						vkDestroySemaphore(r_device, job.imageAvailable, nullptr);
-						vkDestroyFence(r_device, job.inFlight, nullptr);
-
-						return result;
-					}
-				}
-
-				{
-					VkCommandBufferAllocateInfo allocateInfo{};
-					allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-					allocateInfo.pNext = nullptr;
-					allocateInfo.commandPool = execution.commandPool;
-					allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-					allocateInfo.commandBufferCount = 1;
-
-					result = vkAllocateCommandBuffers(r_device, &allocateInfo, &job.commandBuffer);
-					if (result != VK_SUCCESS) {
-						return result;
-					}
-				}
-
-				jobs.emplace_back(job);
-			}
-
+			result = vkWaitForFences(r_device, 1, &fence, VK_TRUE, UINT64_MAX);
+			if (result != VK_SUCCESS)
+				return result;
 		}
 
-		{
-			const size_t presentJobCount = jobs.size();
-			for (size_t i = 0; i < presentJobCount; ++i) {
-				VkFence fence = jobs[i].inFlight;
-				if (!fence)
-					continue;
-
-				result = vkWaitForFences(r_device, 1, &fence, VK_TRUE, UINT64_MAX);
-				if (result != VK_SUCCESS)
-					return result;
-			}
+		for (size_t i = 0; i < oldImageCount; ++i) {
+			vkDestroyFramebuffer(r_device, target.framebuffers[i], nullptr);
 		}
 
-		const size_t framebufferCount = presentation.framebuffers.size();
+		target.framebuffers = std::move(framebuffers);
 
-		for (size_t i = 0; i < framebufferCount; ++i) {
-			vkDestroyFramebuffer(r_device, presentation.framebuffers[i], nullptr);
+		target.extent = extent;
+
+		for (size_t i = 0; i < oldImageCount; ++i) {
+			vkDestroyImageView(r_device, target.imageViews[i], nullptr);
 		}
 
-		presentation.framebuffers = std::move(framebuffers);
+		target.imageViews = std::move(imageViews);
 
-		presentation.extent = extent;
+		target.imageFence.assign(imageCount, VK_NULL_HANDLE);
 
-		const size_t imageViewCount = presentation.swapchainImageViews.size();
+		target.imageCount = imageCount;
 
-		for (size_t i = 0; i < imageViewCount; ++i) {
-			vkDestroyImageView(r_device, presentation.swapchainImageViews[i], nullptr);
-		}
+		if (target.swapchain)
+			vkDestroySwapchainKHR(r_device, target.swapchain, nullptr);
 
-		presentation.swapchainImageViews = std::move(imageViews);
-
-		presentation.imageCount = imageCount;
-
-		if (presentation.swapchain)
-			vkDestroySwapchainKHR(r_device, presentation.swapchain, nullptr);
-
-		presentation.swapchain = swapchain;
+		target.swapchain = swapchain;
 
 		return VK_SUCCESS;
 	}
@@ -728,7 +820,7 @@ namespace rndr {
 
 			{
 				VkDescriptorPoolSize poolSize{};
-				poolSize.type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+				poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 				poolSize.descriptorCount = count;
 
 				VkDescriptorPoolCreateInfo createInfo{};
@@ -798,20 +890,105 @@ namespace rndr {
 		return VK_SUCCESS;
 	}
 
-	VkResult presentationStage::stagePresentation(uint32_t imageIndex, VkSemaphore waitSemaphore) {
+	VkResult presentationStage::stagePresentation(uint32_t imageIndex, uint32_t targetIndex, VkSemaphore waitSemaphore) {
 		VkResult result;
 
-		presentJob& job = jobs[jobHint];
+		size_t jobIndex;
 
-		result = vkWaitForFences(r_device, 1, &job.inFlight, VK_TRUE, UINT32_MAX);
-		if (result != VK_SUCCESS)
-			return result;
+		{
+			presentJob& oldJob = jobs[oldJobHint];
+			
+			result = vkGetFenceStatus(r_device, oldJob.inFlight);
+			switch (result) {
+			case VK_NOT_READY: {
+				if (jobs.size() >= MAX_CONCURRENT_PRESENTATION_JOB_COUNT) {
+					result = vkWaitForFences(r_device, 1, &oldJob.inFlight, VK_TRUE, UINT32_MAX);
+					if (result != VK_SUCCESS)
+						return result;
 
-		jobHint = (jobHint + 1) % jobs.size();
+					jobIndex = oldJobHint;
+					oldJobHint = (oldJobHint + 1) % jobs.size();
+
+					break;
+				}
+
+				presentJob job;
+
+				{
+					VkFenceCreateInfo createInfo{};
+					createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+					createInfo.pNext = nullptr;
+					createInfo.flags = 0;
+
+					result = vkCreateFence(r_device, &createInfo, nullptr, &job.inFlight);
+					if (result != VK_SUCCESS)
+						return result;
+				}
+
+				{
+					VkSemaphoreCreateInfo createInfo{};
+					createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+					createInfo.pNext = nullptr;
+					createInfo.flags = 0;
+
+					result = vkCreateSemaphore(r_device, &createInfo, nullptr, &job.imageAvailable);
+					if (result != VK_SUCCESS) {
+						vkDestroyFence(r_device, job.inFlight, nullptr);
+						return result;
+					}
+
+					result = vkCreateSemaphore(r_device, &createInfo, nullptr, &job.renderComplete);
+					if (result != VK_SUCCESS) {
+						vkDestroySemaphore(r_device, job.imageAvailable, nullptr);
+						vkDestroyFence(r_device, job.inFlight, nullptr);
+
+						return result;
+					}
+				}
+
+				{
+					VkCommandBufferAllocateInfo allocateInfo{};
+					allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+					allocateInfo.pNext = nullptr;
+					allocateInfo.commandPool = execution.commandPool;
+					allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+					allocateInfo.commandBufferCount = 1;
+
+					result = vkAllocateCommandBuffers(r_device, &allocateInfo, &job.commandBuffer);
+					if (result != VK_SUCCESS) {
+						vkDestroySemaphore(r_device, job.renderComplete, nullptr);
+						vkDestroySemaphore(r_device, job.imageAvailable, nullptr);
+						vkDestroyFence(r_device, job.inFlight, nullptr);
+
+						return result;
+					}
+				}
+
+				jobIndex = jobs.size();
+				jobs.emplace_back(job);
+
+				break;
+			}
+
+			case VK_SUCCESS:
+				jobIndex = oldJobHint;
+				oldJobHint = (oldJobHint + 1) % jobs.size();
+
+				break;
+
+			default:
+				return result;
+			}
+			
+		}
+		
+		presentJob& job = jobs[jobIndex];
+
+		PresentationTarget& target = presentationTargets[targetIndex];
 
 		uint32_t availableImageIndex = 0;
 
-		result = vkAcquireNextImageKHR(r_device, presentation.swapchain, UINT64_MAX, job.imageAvailable, VK_NULL_HANDLE, &availableImageIndex);
+		result = vkAcquireNextImageKHR(r_device, target.swapchain, UINT64_MAX, job.imageAvailable, VK_NULL_HANDLE, &availableImageIndex);
 		if (result != VK_SUCCESS)
 			return result;
 
@@ -835,13 +1012,13 @@ namespace rndr {
 		{
 			VkRect2D renderArea{};
 			renderArea.offset = { 0, 0 };
-			renderArea.extent = presentation.extent;
+			renderArea.extent = target.extent;
 
 			VkRenderPassBeginInfo pass{};
 			pass.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			pass.pNext = nullptr;
 			pass.renderPass = passes.compositionPass;
-			pass.framebuffer = presentation.framebuffers[availableImageIndex];
+			pass.framebuffer = target.framebuffers[availableImageIndex];
 			pass.renderArea = renderArea;
 			pass.clearValueCount = 0;
 			pass.pClearValues = nullptr;
@@ -855,8 +1032,8 @@ namespace rndr {
 			VkViewport viewport{};
 			viewport.x = 0;
 			viewport.y = 0;
-			viewport.width = presentation.extent.width;
-			viewport.height = presentation.extent.height;
+			viewport.width = (float)target.extent.width;
+			viewport.height = (float)target.extent.height;
 			viewport.minDepth = 0.0f;
 			viewport.maxDepth = 1.0f;
 
@@ -864,7 +1041,7 @@ namespace rndr {
 
 			VkRect2D scissors{};
 			scissors.offset = { 0,0 };
-			scissors.extent = presentation.extent;
+			scissors.extent = target.extent;
 
 			vkCmdSetScissor(commandBuffer, 0, 1, &scissors);
 		}
@@ -905,24 +1082,26 @@ namespace rndr {
 			}
 		}
 
+		target.imageFence[availableImageIndex] = job.inFlight;
+
 		VkPresentInfoKHR presentInfo{};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 		presentInfo.pNext = nullptr;
 		presentInfo.waitSemaphoreCount = 1;
 		presentInfo.pWaitSemaphores = &job.renderComplete;
 		presentInfo.swapchainCount = 1;
-		presentInfo.pSwapchains = &presentation.swapchain;
+		presentInfo.pSwapchains = &target.swapchain;
 		presentInfo.pImageIndices = &availableImageIndex;
 		presentInfo.pResults = nullptr;
 
-		result = vkQueuePresentKHR(presentation.presentQueue, &presentInfo);
+		result = vkQueuePresentKHR(execution.presentQueue, &presentInfo);
 		if (result != VK_SUCCESS)
 			return result;
 
 		return VK_SUCCESS;
 	}
-
-	presentationStage::~presentationStage() noexcept {
+	
+	void presentationStage::reset() noexcept {
 		{
 			const size_t jobCount = jobs.size();
 			for (size_t i = 0; i < jobCount; ++i) {
@@ -937,82 +1116,28 @@ namespace rndr {
 				vkDestroySemaphore(r_device, jobs[i].renderComplete, nullptr);
 			}
 		}
-		
-		if (presentation.swapchain) {
-			const size_t framebufferCount = presentation.framebuffers.size();
-			for (size_t i = 0; i < framebufferCount; ++i) {
-				vkDestroyFramebuffer(r_device, presentation.framebuffers[i], nullptr);
-			}
-
-			const size_t imageViewCount = presentation.swapchainImageViews.size();
-			for (size_t i = 0; i < imageViewCount; ++i) {
-				vkDestroyImageView(r_device, presentation.swapchainImageViews[i], nullptr);
-			}
-
-			vkDestroySwapchainKHR(r_device, presentation.swapchain, nullptr);
-		}
 
 		if (execution.commandPool) {
 			vkDestroyCommandPool(r_device, execution.commandPool, nullptr);
 		}
-		
+
 		if (rendering.pipeline) {
 			vkDestroyPipeline(r_device, rendering.pipeline, nullptr);
 			vkDestroyPipelineLayout(r_device, rendering.pipelineLayout, nullptr);
 		}
-		
+
 		if (bindings.descriptorPool) {
 			vkDestroyDescriptorPool(r_device, bindings.descriptorPool, nullptr);
+		}
+
+		if (bindings.descriptorSetLayout) {
 			vkDestroyDescriptorSetLayout(r_device, bindings.descriptorSetLayout, nullptr);
 			vkDestroySampler(r_device, bindings.sampler, nullptr);
 		}
-		
+
 		if (passes.compositionPass) {
 			vkDestroyRenderPass(r_device, passes.compositionPass, nullptr);
 		}
-		
 	}
 
 }
-
-//{
-//	uint32_t presentationFamilyIndex = UINT32_MAX;
-//
-//	uint32_t familyCount = 0;
-//	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &familyCount, nullptr);
-//
-//	std::vector<VkQueueFamilyProperties> queueFamilyProperties(familyCount);
-//	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &familyCount, queueFamilyProperties.data());
-//
-//	std::vector<VkBool32> presentationSupport(familyCount, VK_FALSE);
-//	for (uint32_t i = 0; i < familyCount; ++i) {
-//		vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &presentationSupport[i]);
-//	}
-//
-//	if (selectedGraphicsFamilyIndex != UINT32_MAX && presentationSupport[selectedGraphicsFamilyIndex]) {
-//		presentationFamilyIndex = selectedGraphicsFamilyIndex;
-//	}
-//
-//	if (presentationFamilyIndex == UINT32_MAX) {
-//		for (uint32_t i = 0; i < familyCount; ++i) {
-//			if (!presentationSupport[i])
-//				continue;
-//
-//			if (queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-//				presentationFamilyIndex = i;
-//				break;
-//			}
-//
-//			if (presentationFamilyIndex == UINT32_MAX) {
-//				presentationFamilyIndex = i;
-//			}
-//		}
-//	}
-//
-//	if (presentationFamilyIndex == UINT32_MAX)
-//		return VK_ERROR_FEATURE_NOT_PRESENT;
-//
-//	*presentFamilyIndex = presentationFamilyIndex;
-//
-//	presentationFamily = presentationFamilyIndex;
-//		}

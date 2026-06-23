@@ -1,118 +1,58 @@
 #pragma once
 
-#include "Signboard/RHI/rhi.h"
-#include <array>
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
 
-constexpr uint32_t DEFAULT_BUFFERED_FRAME_COUNT = 2;
+#include <vulkan/vulkan.h>
 
-namespace rndr {
+#include "core/renderer_core.h"
 
-	enum QueueFamilyType : uint32_t {
-		FAMILY_INDEX_GRAPHICS,
-		FAMILY_INDEX_COMPUTE,
-		FAMILY_INDEX_TRANSFER,
+class Renderer {
+private:
+	VkInstance m_instance = VK_NULL_HANDLE;
 
-		FAMILY_INDEX_MAX_ENUM
+	struct PhysicalDevice {
+		VkPhysicalDeviceProperties properties{};
+		VkPhysicalDeviceMemoryProperties memory{};
+		VkPhysicalDeviceFeatures features{};
+
+		VkPhysicalDevice handle = VK_NULL_HANDLE;
 	};
+	std::vector<PhysicalDevice> m_physicalDevices;
 
-	class Renderer {
-	private:
-		rhi::instance instance;
-		std::vector<rhi::physicalDevice> physicalDevices;
-		size_t activePhysicalDeviceIndex;
+	size_t activePhysicalDeviceIndex = 0;
+	VkPhysicalDevice activePhysicalDevice = VK_NULL_HANDLE;
 
-		rhi::surface surface;
-		rhi::device device;
-		std::array<uint32_t, FAMILY_INDEX_MAX_ENUM> assignedQueueFamilies{};
-		uint32_t assignedPresentFamily;
+	VkDevice m_device = VK_NULL_HANDLE;
 
-		rhi::allocator allocator;
+	struct {
+		uint32_t graphicsFamilyIndex{};
+		VkQueue graphicsQueue = VK_NULL_HANDLE;
 
-		struct {
-			VkSurfaceFormatKHR surfaceFormat;
-			VkPresentModeKHR presentMode;
-		} presentationInfo;
-		
-		rhi::swapchain swapchain;
+		uint32_t transferFamilyIndex{};
+		VkQueue transferQueue = VK_NULL_HANDLE;
 
-		struct {
-			uint32_t imageCount;
-			VkExtent2D extent;
-		} presentationState;
-		
-		contextual_pool<rhi::descriptorSetLayout> descriptorSetLayouts;
-		struct {
-			std::size_t gloabalSetLayout;
-			std::size_t materialSetLayout;
-			std::size_t objectSetLayout;
-		} uniqueDescriptorSetLayoutIndices;
+		uint32_t presentFamilyIndex{};
+		VkQueue presentQueue = VK_NULL_HANDLE;
+	} execution;
 
-		contextual_pool<rhi::pipelineLayout> pipelineLayouts;
-		struct {
-			std::size_t PipelineLayout_2D;
-			std::size_t PipelineLayout_3D;
-		} uniquePipelineLayoutIndices;
+	VmaAllocator m_allocator = VK_NULL_HANDLE;
 
-		contextual_pool<rhi::renderPass> renderPasses;
-		struct {
-			std::size_t backbufferRenderPass;
-		} uniqueRenderPassIndices;
+	rndr::presentationStage presentation;
 
-		contextual_pool<rhi::graphicsPipeline> grpahicsPipelines;
-		struct {
-			std::size_t pipeline_3D;
-		} uniquePipelineIndices;
+	std::vector<size_t> renderTargets;
 
-		contextual_pool<rhi::framebuffer> framebuffers;
-		std::vector<size_t> backbufferIndices;
+public:
+	Renderer() noexcept = default;
+	~Renderer() noexcept;
 
-		
-		void createInstance();
-		void createDevice(GLFWwindow* window, uint32_t physicalDeviceIndex);
-		void selectPresentationConfiguration() noexcept;
-		void createSwapchain();
+	void deploy();
 
-		void createDescriptorSetLayouts();
-		void createPipelineLayouts();
+	void enumeratePhysicalDevices(size_t* count, const char** deviceNames) noexcept;
+	void createDevice(HINSTANCE hinstance, HWND hwnd, size_t physicalDeviceIndex);
 
-		void createRenderMethods(VkFormat backbufferImageFormat);
-		VkFramebuffer createFramebuffer(VkRenderPass renderPass, sgb::span<const VkImageView> attachments, VkExtent2D extent);
+	int pushRenderTarget(HINSTANCE hinstance, HWND hwnd) noexcept;
 
-		void validate_primaryTarget();
+	void reset() noexcept;
 
-	public:
-		Renderer() = default;
-		Renderer(GLFWwindow* window);
-			
-
-		~Renderer() noexcept = default;
-
-		void syncPresentation();
-		void set_bufferedFrameCount(uint32_t count);
-		
-		void render();
-	private:
-		bool prepareFrame(uint32_t frameIndex) noexcept;
-		bool defferUploads();
-		
-		void advance_frame() noexcept;
-
-	};
-
-}
-
-/*rhi::stdCommandPools m_commandPools;
-
-	std::vector<job> frames;
-	uint32_t availableFrameCount;
-	uint32_t activeFrameIndex = 0;
-
-	std::vector<uint32_t> imagesInFlight;
-
-	rhi::pcdWatchdog m_watchdog;
-
-	rhi::pcdCommandBufferRecord m_CommandRecord{};
-	rhi::pcdRenderPassRecord m_passRecord{};
-
-	Scheduler m_interface;
-	transferControl m_transfer;*/
+};

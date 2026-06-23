@@ -227,17 +227,18 @@
     <ClCompile Include="Signboard\Core\Threading\threadPool.cpp" />
     <ClCompile Include="Signboard\Core\Time\Time.cpp" />
     <ClCompile Include="Signboard\Core\Frame\Frame_event.h" />
+    <ClCompile Include="Signboard\Platform\platform.cpp" />
     <ClCompile Include="Signboard\Platform\primitive\window_eventState.cpp" />
     <ClCompile Include="Signboard\Platform\primitive\glfw_window.cpp" />
     <ClCompile Include="Signboard\Renderer\core\presentation.cpp" />
     <ClCompile Include="Signboard\Renderer\Mesh\mesher.cpp" />
     <ClCompile Include="Signboard\Renderer\core\transfer.cpp" />
+    <ClCompile Include="Signboard\Renderer\renderer.cpp" />
     <ClCompile Include="Signboard\RHI\core\physicalDevice.cpp" />
     <ClCompile Include="Signboard\RHI\core\device.cpp" />
     <ClCompile Include="Signboard\RHI\core\instance.cpp" />
     <ClCompile Include="Signboard\RHI\core\allocator.cpp" />
     <ClCompile Include="Signboard\RHI\core\surface.cpp" />
-    <ClCompile Include="Signboard\Renderer\renderer.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -297,9 +298,11 @@
     <ClInclude Include="Signboard\Platform\primitive\platform_primitive.h" />
     <ClInclude Include="Signboard\Core\Interfaces\renderer\mesh\mesh.h" />
     <ClInclude Include="Signboard\Renderer\core\presentation.h" />
+    <ClInclude Include="Signboard\Renderer\core\renderer_core.h" />
     <ClInclude Include="Signboard\Renderer\Mesh\mesher.h" />
     <ClInclude Include="Signboard\Renderer\primitive\rndr_primitive.h" />
     <ClInclude Include="Signboard\Renderer\core\transfer.h" />
+    <ClInclude Include="Signboard\Renderer\renderer.h" />
     <ClInclude Include="Signboard\Renderer\Vertex\vertex.hh" />
     <ClInclude Include="Signboard\RHI\core\physicalDevice.hh" />
     <ClInclude Include="Signboard\RHI\detail\core_t\allocation_pool_t.hh" />
@@ -343,8 +346,6 @@
     <ClInclude Include="Signboard\RHI\core\instance.hh" />
     <ClInclude Include="Signboard\Core\Containers\threadSafe\queue.h" />
     <ClInclude Include="external\FastNoiseLite.h" />
-    <ClInclude Include="Signboard\Renderer\renderer.h" />
-    <ClInclude Include="Signboard\Renderer\DescriptorSchema.h" />
     <ClInclude Include="Signboard\Scene\Scene.h" />
     <ClInclude Include="Signboard\Platform\primitive\glfw_window.h" />
     <ClInclude Include="Signboard\Signboard.h" />
@@ -354,6 +355,8 @@
     <None Include="shaders\base.frag" />
     <None Include="shaders\base.vert" />
     <None Include="shaders\baseDS.vert" />
+    <None Include="shaders\presentation.frag" />
+    <None Include="shaders\presentation.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <Import Project="$(MSBuildProjectDirectory)\ShaderBuild.targets" />

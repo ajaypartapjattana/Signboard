@@ -12,6 +12,17 @@ namespace std {
 	};
 
 	template <typename T, typename _Teq = DefaultEq>
+	bool contain(const T _ref, const T* pSearch, size_t searchSize) noexcept {
+		_Teq eq{};
+
+		for (size_t j = 0; j < searchSize; ++j)
+			if (eq(_ref, pSearch[j]))
+				return true;
+
+		return false;
+	}
+
+	template <typename T, typename _Teq = DefaultEq>
 	bool findEarly_basic(const T* pList, size_t listSize, const T* pSearch, size_t searchSize, size_t* index) noexcept {
 		_Teq eq{};
 		

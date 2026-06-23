@@ -1,56 +1,64 @@
 #include "Signboard/Signboard.h"
 
-constexpr int DEFAULT_WIDTH = 800;
-constexpr int DEFAULT_HEIGHT = 600;
-
 int main() {
 
-    // WINDOW_SETUP
+    Platform platform;
 
-    plf::instance glfwInstance;
+    platform.createWindowClass();
 
-    const char* title = "NEW WINDOW";
-    plf::window window{ DEFAULT_WIDTH, DEFAULT_HEIGHT, title};
+    HWND window;
+    {
+        const wchar_t* title = L"PLATFORM_WINDOW";
 
-    plf::windowEventState events;
-    events.attachWindow(window);
+        constexpr uint32_t width = 800;
+        constexpr uint32_t height = 600;
 
-    // RENDERER_SETUP
+        window = platform.createWindow(title, width, height);
+    }
 
-    rndr::Renderer renderer{ window };
+    Renderer renderer;
 
+    try {
+        renderer.deploy();
+    }
+    catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+    }
 
-    /*CommandContext cmdCtx = { &resource, &methods, &present, &renderer };
+    HINSTANCE instance = platform.getInstance();
 
-    using CommandFn = bool(*)(CommandContext&, glm::vec2);
-    std::array<CommandFn, MAX_COMMAND_COUNT> commandTable;
-    commandTable[(uint32_t)CommandID::CONFIG] = &routine_Config;
-    commandTable[(uint32_t)CommandID::ESCAPE] = &routine_escape;
+    {
+        size_t deviceCount;
+        renderer.enumeratePhysicalDevices(&deviceCount, nullptr);
 
-    InputMapping bindings = { {GLFW_KEY_ESCAPE, InputTrigger::Pressed, CommandID::ESCAPE} };
-    std::vector<FrameCommand> toExecuteCommands;
-    CommandDispatcher dispatcher{ std::move(bindings), toExecuteCommands, windowState };
+        std::vector<const char*> devices(deviceCount);
+        renderer.enumeratePhysicalDevices(&deviceCount, devices.data());
 
-    windowState.pollWindowEvents();
-    while (windowState.isWindowAlive()) {
-        if (!dispatcher.ensureWindowVisibility()) {
-            windowState.waitWindowEvents();
-            continue;
+        for (size_t i = 0; i < deviceCount; ++i) {
+            std::cout << "[" << i << "] : " << devices[i] << std::endl;
         }
 
-        dispatcher.resolveInputEvents();
+        std::cout << "PHYSICAL_DEVICE_INDEX : ";
+        
+        uint32_t selectedDeviceIndex = 0;
+        std::cin >> selectedDeviceIndex;
 
-        for (FrameCommand& command : toExecuteCommands) {
-            auto fn = commandTable[(uint32_t)command.id];
-            if (fn && fn(cmdCtx, command.data)) {
-                break;
-            }
+
+        try {
+            renderer.createDevice(instance, window, selectedDeviceIndex);
         }
+        catch (const std::exception& e) {
+            std::cerr << e.what() << std::endl;
+        }
+    }
 
-        toExecuteCommands.clear();
+    renderer.pushRenderTarget(instance, window);
 
-        renderer.render();
-    }*/
+    while (platform.pollEvents()) {
+
+    }
+
+    renderer.reset();
 
     return EXIT_SUCCESS;
 }
