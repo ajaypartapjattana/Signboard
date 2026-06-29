@@ -222,6 +222,7 @@
     <ClCompile Include="external\VMA\vma.cpp" />
     <ClCompile Include="Signboard\Assets\configLoader\ConfigLoader.cpp" />
     <ClCompile Include="Signboard\Assets\configLoader\XMLLoader\XMLConfigLoader.cpp" />
+    <ClCompile Include="Signboard\Assets\io\pngDecode.cpp" />
     <ClCompile Include="Signboard\Assets\Utility\convStr.cpp" />
     <ClCompile Include="Signboard\Core\Logging\logger.cpp" />
     <ClCompile Include="Signboard\Core\Threading\threadPool.cpp" />

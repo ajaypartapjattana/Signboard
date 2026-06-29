@@ -1,6 +1,12 @@
 #include "Signboard/Signboard.h"
 
+#include "Signboard/Assets/io/io.h"
+
 int main() {
+    io::ImageFile image;
+    io::Result result = image.loadPNGw(L"assets_data/textures/seaside.png");
+
+    return EXIT_SUCCESS;
 
     Platform platform;
 

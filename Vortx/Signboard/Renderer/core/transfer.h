@@ -11,14 +11,13 @@ namespace rndr {
 
 	class TransferStage {
 	private:
-		resource_pool<rhi::buffer> stagingBuffers;
-
 		struct stagingBufferInfo {
-			VkBuffer buffer;
+			VkBuffer handle;
+			VmaAllocation allocation;
 			void* pMapped;
 			size_t size;
 		};
-		std::vector<stagingBufferInfo> stagingBufferInfos;
+		std::vector<stagingBufferInfo> stagingBuffers;
 		
 		VkDevice r_device;
 		VmaAllocator r_allocator;
@@ -55,7 +54,6 @@ namespace rndr {
 		TransferStage(TransferStage&& other) noexcept
 			:
 			stagingBuffers(std::move(other.stagingBuffers)),
-			stagingBufferInfos(std::move(other.stagingBufferInfos)),
 			stagingBufferStates(std::move(other.stagingBufferStates)),
 			freeBufferHint(other.freeBufferHint),
 			r_device(std::exchange(other.r_device, VK_NULL_HANDLE)),
@@ -70,8 +68,9 @@ namespace rndr {
 				return *this;
 
 			stagingBuffers = std::move(other.stagingBuffers);
-			stagingBufferInfos = std::move(other.stagingBufferInfos);
+			stagingBufferStates = std::move(other.stagingBufferStates);
 			freeBufferHint = other.freeBufferHint;
+			r_device = std::exchange(other.r_device, VK_NULL_HANDLE);
 			r_allocator = std::exchange(other.r_allocator, VK_NULL_HANDLE);
 			
 			return *this;
@@ -85,6 +84,8 @@ namespace rndr {
 		VkResult recordUploads(VkCommandBuffer commandBuffer, VkFence fence) noexcept;
 		void informSubmissionFailure(VkFence fence) noexcept;
 		void informTransferSuccess(VkFence fence) noexcept;
+
+		void reset() noexcept;
 
 	};
 

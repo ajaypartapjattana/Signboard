@@ -1,0 +1,99 @@
+﻿﻿Microsoft (R) VSInstr Post-Link Instrumentation 17.14.37127.6 x64
+Analyzing component...
+Instrumenting component...
+#                    (0.31 %%)
+##                   (5.28 %%)
+###                  (10.25 %%)
+####                 (15.22 %%)
+#####                (20.19 %%)
+######               (25.16 %%)
+#######              (30.12 %%)
+########             (35.09 %%)
+#########            (40.06 %%)
+##########           (45.03 %%)
+###########          (50.31 %%)
+############         (55.28 %%)
+#############        (60.25 %%)
+##############       (65.22 %%)
+###############      (70.19 %%)
+################     (75.16 %%)
+#################    (80.12 %%)
+##################   (85.09 %%)
+###################  (90.06 %%)
+#################### (95.03 %%)
+#################### (100.00 %%)
+Successfully instrumented file D:\PROJECT\Vortx\bin\x64\Release\Vortx.exe.
+
+Profiling of 'Vortx' started.
+Vortx has exited.
+Profiling of 'Vortx' stopped.
+Symbols loaded for vortx.exe from \\?\C:\Users\ajayp\AppData\Local\Temp\SymbolCache\Vortx.instr.pdb\20136CB188164806A1517EFB5F087C6C2\Vortx.instr.pdb
+Symbols failed to load for kernel32.dll. Failed to find local symbol file kernel32.pdb
+Symbols loaded for vortx.exe from \\?\C:\Users\ajayp\AppData\Local\Temp\SymbolCache\Vortx.instr.pdb\20136CB188164806A1517EFB5F087C6C2\Vortx.instr.pdb
+Symbols loaded for vortx.exe from \\?\C:\Users\ajayp\AppData\Local\Temp\SymbolCache\Vortx.instr.pdb\20136CB188164806A1517EFB5F087C6C2\Vortx.instr.pdb
+Symbols loaded for vortx.exe from \\?\C:\Users\ajayp\AppData\Local\Temp\SymbolCache\Vortx.instr.pdb\20136CB188164806A1517EFB5F087C6C2\Vortx.instr.pdb
+Symbols loaded for vortx.exe from \\?\C:\Users\ajayp\AppData\Local\Temp\SymbolCache\Vortx.instr.pdb\20136CB188164806A1517EFB5F087C6C2\Vortx.instr.pdb
+﻿Microsoft (R) VSInstr Post-Link Instrumentation 17.14.37127.6 x64
+Analyzing component...
+Instrumenting component...
+#                    (0.31 %%)
+##                   (5.02 %%)
+###                  (10.03 %%)
+####                 (15.05 %%)
+#####                (20.06 %%)
+######               (25.08 %%)
+#######              (30.09 %%)
+########             (35.11 %%)
+#########            (40.13 %%)
+##########           (45.14 %%)
+###########          (50.16 %%)
+############         (55.17 %%)
+#############        (60.19 %%)
+##############       (65.20 %%)
+###############      (70.22 %%)
+################     (75.23 %%)
+#################    (80.25 %%)
+##################   (85.27 %%)
+###################  (90.28 %%)
+#################### (95.30 %%)
+#################### (100.00 %%)
+Successfully instrumented file D:\PROJECT\Vortx\bin\x64\Release\Vortx.exe.
+
+Profiling of 'Vortx' started.
+Vortx has exited.
+Profiling of 'Vortx' stopped.
+Symbols loaded for vortx.exe from \\?\C:\Users\ajayp\AppData\Local\Temp\SymbolCache\Vortx.instr.pdb\65D2FEA95AF84385AE92024176E8540B2\Vortx.instr.pdb
+Symbols failed to load for kernel32.dll. Failed to find local symbol file kernel32.pdb
+﻿Microsoft (R) VSInstr Post-Link Instrumentation 17.14.37127.6 x64
+Analyzing component...
+Instrumenting component...
+#                    (0.31 %%)
+##                   (5.02 %%)
+###                  (10.03 %%)
+####                 (15.05 %%)
+#####                (20.06 %%)
+######               (25.08 %%)
+#######              (30.09 %%)
+########             (35.11 %%)
+#########            (40.13 %%)
+##########           (45.14 %%)
+###########          (50.16 %%)
+############         (55.17 %%)
+#############        (60.19 %%)
+##############       (65.20 %%)
+###############      (70.22 %%)
+################     (75.23 %%)
+#################    (80.25 %%)
+##################   (85.27 %%)
+###################  (90.28 %%)
+#################### (95.30 %%)
+#################### (100.00 %%)
+Successfully instrumented file D:\PROJECT\Vortx\bin\x64\Release\Vortx.exe.
+
+Profiling of 'Vortx' started.
+Vortx has exited.
+Profiling of 'Vortx' stopped.
+Symbols loaded for vortx.exe from \\?\C:\Users\ajayp\AppData\Local\Temp\SymbolCache\Vortx.instr.pdb\70CDCDE7FE164FE4A3576A6D15B840652\Vortx.instr.pdb
+Symbols failed to load for kernel32.dll. Failed to find local symbol file kernel32.pdb
+Symbols loaded for vortx.exe from \\?\C:\Users\ajayp\AppData\Local\Temp\SymbolCache\Vortx.instr.pdb\70CDCDE7FE164FE4A3576A6D15B840652\Vortx.instr.pdb
+Symbols loaded for vortx.exe from \\?\C:\Users\ajayp\AppData\Local\Temp\SymbolCache\Vortx.instr.pdb\70CDCDE7FE164FE4A3576A6D15B840652\Vortx.instr.pdb

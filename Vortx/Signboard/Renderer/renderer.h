@@ -42,6 +42,9 @@ private:
 
 	std::vector<size_t> renderTargets;
 
+	std::vector<VkImage> images;
+	std::vector<VkImageView> presentationPool;
+
 public:
 	Renderer() noexcept = default;
 	~Renderer() noexcept;
@@ -52,6 +55,8 @@ public:
 	void createDevice(HINSTANCE hinstance, HWND hwnd, size_t physicalDeviceIndex);
 
 	int pushRenderTarget(HINSTANCE hinstance, HWND hwnd) noexcept;
+
+	int createImageInstance(uint32_t width, uint32_t height);
 
 	void reset() noexcept;
 

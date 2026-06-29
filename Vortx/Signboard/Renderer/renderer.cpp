@@ -386,6 +386,47 @@ int Renderer::pushRenderTarget(HINSTANCE hinstance, HWND hwnd) noexcept {
 	return 1;
 }
 
+int Renderer::createImageInstance(uint32_t width, uint32_t height) {
+	VkResult result;
+
+	VkImage image;
+
+	VmaAllocation allocation;
+
+	{
+		VkImageCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		createInfo.pNext = nullptr;
+		createInfo.flags = 0;
+		createInfo.imageType = VK_IMAGE_TYPE_2D;
+		createInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+		createInfo.extent = { width, height, 1 };
+		createInfo.mipLevels = 1;
+		createInfo.arrayLayers = 1;
+		createInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		createInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		createInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		createInfo.queueFamilyIndexCount = 0;
+		createInfo.pQueueFamilyIndices = nullptr;
+		createInfo.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		VmaAllocationCreateInfo allocationInfo{};
+		allocationInfo.flags = 0;
+		allocationInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+		allocationInfo.requiredFlags = 0;
+		allocationInfo.preferredFlags = 0;
+		allocationInfo.memoryTypeBits = 0;
+		allocationInfo.pool = nullptr;
+		allocationInfo.pUserData = nullptr;
+		allocationInfo.priority = 0;
+
+		result = vmaCreateImage(m_allocator, &createInfo, &allocationInfo, &image, &allocation, nullptr);
+	}
+
+
+}
+
 void Renderer::reset() noexcept {
 	{
 		VkSurfaceKHR surface;

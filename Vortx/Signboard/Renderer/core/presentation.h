@@ -59,12 +59,11 @@ namespace rndr {
 			std::vector<VkFence> imageFence;
 
 			VkExtent2D extent{};
-			uint32_t imageCount = 0;
 		};
 
 		std::vector<PresentationTarget> presentationTargets;
 
-		struct presentJob {
+		struct PresentStageJob {
 			VkFence inFlight;
 
 			VkSemaphore imageAvailable;
@@ -75,10 +74,10 @@ namespace rndr {
 			VkCommandBuffer commandBuffer;
 		};
 
-		std::vector<presentJob> jobs;
+		std::vector<PresentStageJob> jobs;
 		size_t oldJobHint = 0;
 
-		static constexpr size_t MAX_CONCURRENT_PRESENTATION_JOB_COUNT = 3;
+		uint32_t maxConcurrentPresentations = 3;
 
 	public:
 		presentationStage() = default;

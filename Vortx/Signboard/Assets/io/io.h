@@ -1,15 +1,43 @@
 #pragma once
 
-#include "ResourceLoaders/loader.h"
+#include <vector>
+#include <stdint.h>
 
 namespace io {
 
-	namespace loader {
+	enum Result{
+		SUCCESS = 1,
+		FAILURE = 0,
+		INVALID_ARGUMENTS = -1,
+		NOT_PERMITTED = -2,
+		VALIDITY_CHECK_FAILURE = -3,
+		UNSUPPORTED_FEATURE = -4
+	};
 
-		class ModelLoader;
-		class TextureLoader;
-		class file_loader;
+	enum ImageType : uint16_t {
+		IMAGE_TYPE_UNDEFINED,
+		IMAGE_TYPE_GRAYSCALE,
+		IMAGE_TYPE_GRAYSCALE_ALPHA,
+		IMAGE_TYPE_INDEXED,
+		IMAGE_TYPE_RGB,
+		IMAGE_TYPE_RGB_ALPHA
+	};
 
-	}
+	class ImageFile {
+	private:
+		struct {
+			uint32_t width;
+			uint32_t height;
+			uint16_t bitDepth;
+			ImageType type;
+		} description;
+
+		std::vector<uint8_t> bin;
+
+	public:
+		Result loadPNGw(const wchar_t* path);
+
+	};
+
 
 }

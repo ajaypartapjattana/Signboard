@@ -5,10 +5,11 @@
 namespace rndr {
 
 	VkResult TransferStage::allocateStagingBuffers(VkDevice device, VmaAllocator allocator, size_t size, uint32_t count) noexcept {
-		resource_pool<rhi::buffer> buffers{ allocator };
-		std::vector<stagingBufferInfo> bufferInfos(count);
+		VkResult result;
+		
+		std::vector<stagingBufferInfo> buffers(count);
 
-		{
+		do {
 			VkBufferCreateInfo createInfo{};
 			createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 			createInfo.pNext = nullptr;
@@ -29,29 +30,43 @@ namespace rndr {
 			allocationCreateInfo.pUserData = nullptr;
 			allocationCreateInfo.priority = 0.0f;
 
-			size_t index;
 			VmaAllocationInfo allocationInfo{};
-			
-			for (uint32_t i = 0; i < count; ++i) {
-				VkResult result = buffers.create(&createInfo, &allocationCreateInfo, &index, &allocationInfo);
-				if (result != VK_SUCCESS)
-					return result;
 
-				bufferInfos[i] = { buffers[index], allocationInfo.pMappedData, allocationInfo.size };
+			for (uint32_t i = 0; i < count; ++i) {
+				result = vmaCreateBuffer(allocator, &createInfo, &allocationCreateInfo, &buffers[i].handle, &buffers[i].allocation, &allocationInfo);
+				if (result != VK_SUCCESS)
+					break;
+
+				buffers[i].pMapped = allocationInfo.pMappedData;
+				buffers[i].size = allocationInfo.size;
 			}
-			
+
+		} while (false);
+
+		if(result == VK_SUCCESS) {
+			const size_t stageCount = stagingBuffers.size();
+
+			for (size_t i = 0; i < stageCount; ++i) {
+				vmaDestroyBuffer(r_allocator, stagingBuffers[i].handle, stagingBuffers[i].allocation);
+			}
+
+			stagingBuffers = std::move(buffers);
+
+			stagingBufferStates.clear();
+			stagingBufferStates.resize(count);
+
+			r_device = device;
+			r_allocator = allocator;
+
+			return VK_SUCCESS;
 		}
 
-		stagingBuffers = std::move(buffers);
-		stagingBufferInfos = std::move(bufferInfos);
+		for (uint32_t i = 0; i < count; ++i) {
+			if (buffers[i].allocation)
+				vmaDestroyBuffer(allocator, buffers[i].handle, buffers[i].allocation);
+		}
 
-		stagingBufferStates.clear();
-		stagingBufferStates.resize(count);
-
-		r_device = device;
-		r_allocator = allocator;
-
-		return VK_SUCCESS;
+		return result;
 	}
 
 	VkResult TransferStage::stageUpload(const UploadSpan& src, const UploadTarget& dst) {
@@ -77,7 +92,7 @@ namespace rndr {
 				resetBuffer(index);
 			}
 
-			const stagingBufferInfo& bufferInfo = stagingBufferInfos[index];
+			const stagingBufferInfo& bufferInfo = stagingBuffers[index];
 
 			size_t alignedOffset = (bufferState.currentOffset + src.alignment - 1) & ~(src.alignment - 1);
 
@@ -93,7 +108,7 @@ namespace rndr {
 		if (bufferIndex == SIZE_MAX)
 			return VK_INCOMPLETE;
 
-		const stagingBufferInfo& bufferInfo = stagingBufferInfos[bufferIndex];
+		const stagingBufferInfo& bufferInfo = stagingBuffers[bufferIndex];
 		stagingBufferState& bufferState = stagingBufferStates[bufferIndex];
 
 		void* pDst = static_cast<char*>(bufferInfo.pMapped) + offset;
@@ -136,7 +151,7 @@ namespace rndr {
 				batches[r.dstBuffer].push_back(r.copyInfo);
 			}
 
-			VkBuffer stagingBuffer = stagingBufferInfos[i].buffer;
+			VkBuffer stagingBuffer = stagingBuffers[i].buffer;
 
 			size_t flushSize = bufferState.flushEnd - bufferState.flushStart;
 			vmaFlushAllocation(r_allocator, stagingBuffers.allocation(i), bufferState.flushStart, flushSize);
@@ -176,6 +191,20 @@ namespace rndr {
 
 			resetBuffer(i);
 		}
+	}
+
+	void TransferStage::reset() noexcept {
+		const size_t stagingBufferCount = stagingBuffers.size();
+		
+		for (size_t i = 0; i < stagingBufferCount; ++i) {
+			stagingBufferInfo& stage = stagingBuffers[i];
+
+			if (stage.allocation)
+				vmaDestroyBuffer(r_allocator, stage.handle, stage.allocation);
+		}
+
+		stagingBufferStates.clear();
+		stagingBuffers.clear();
 	}
 
 
