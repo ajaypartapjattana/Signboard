@@ -1,60 +1,134 @@
 #pragma once
 
-#include "Signboard/RHI/detail/core_t/resource_pool_t.h"
-#include "Signboard/RHI/primitive/buffer.h"
-#include "Signboard/core/Interfaces/renderer/upload/uploadINF.h"
+#include <vulkan/vulkan.h>
+#include <external/VMA/vma.h>
+#include <vector>
 #include <utility>
 
 namespace rndr {
 
-	constexpr size_t DEFAULT_STAGING_SIZE = 4ull * 1024 * 1024;
+	struct BufferTransferInfo {
+		const void* pData;
+		size_t size;
+		size_t alignment;
+
+		VkBuffer buffer;
+		VkDeviceSize dstOffset;
+	};
+
+	struct ImageTransferInfo {
+		const void* pData;
+		size_t size;
+		size_t alignment;
+
+		VkImage image;
+
+		VkImageSubresourceLayers subresources;
+		VkExtent3D extent;
+		VkOffset3D offset;
+	};
+
+	enum TransferMode {
+		TRANSFER_MODE_IMMEDIATE,
+		TRANSFER_MODE_BATCH,
+		TRANSFER_MODE_STREAM
+	};
+
+	struct TransferStageCreateInfo {
+		uint32_t transferFamilyIndex;
+		VkQueue transferQueue;
+
+		VkDeviceSize stagingMemoryBudget;
+		VkDeviceSize preferredTransferSize;
+		uint32_t sizeClassCount;
+		float transferSizeDistribution;
+
+		uint32_t maxConcurrentTransferJobs;
+	};
 
 	class TransferStage {
 	private:
-		struct stagingBufferInfo {
-			VkBuffer handle;
+		VkDevice r_device = VK_NULL_HANDLE;
+		VmaAllocator r_allocator = VK_NULL_HANDLE;
+		
+		uint32_t transferFamilyIndex;
+		VkQueue transferQueue;
+
+		VkCommandPool commandPool = VK_NULL_HANDLE;
+
+		struct TransferJob {
+			VkCommandBuffer commandBuffer;
+			VkFence fence;
+		};
+
+		std::vector<TransferJob> jobs;
+
+
+		struct Stage {
+			VkBuffer buffer;
 			VmaAllocation allocation;
 			void* pMapped;
-			size_t size;
-		};
-		std::vector<stagingBufferInfo> stagingBuffers;
-		
-		VkDevice r_device;
-		VmaAllocator r_allocator;
 
-		struct stagingBufferState{
 			size_t currentOffset = 0;
 			size_t flushStart = SIZE_MAX;
 			size_t flushEnd = 0;
 
-			struct CopyRegion {
-				VkBuffer dstBuffer;
-				VkBufferCopy copyInfo;
-			};
-			std::vector<CopyRegion> regions;
 			VkFence fence;
 		};
-		std::vector<stagingBufferState> stagingBufferStates;
-		size_t freeBufferHint = 0;
+		std::vector<Stage> stages;
+		std::vector<VkDeviceSize> availableStageSizes;
+		
+		std::vector<uint32_t> sizeClassRanges;
+		uint32_t baseClassOffset;
 
-		struct AllocResult {
-			size_t stagingIndex;
-			void* pAllocBase;
-			size_t offset;
+		struct Allocation {
+			VkBuffer buffer;
+			VkDeviceSize offset;
+			uint32_t size;
 		};
+
+		std::vector<Allocation> allcoations;
+
+		enum TransferType {
+			TRANSFER_TYPE_BUFFER,
+			TRANSFER_TYPE_IMAGE
+		};
+
+		struct BufferCopy {
+			size_t allocationIndex;
+
+			VkBuffer dstBuffer;
+			VkBufferCopy copy;
+		};
+		
+		struct ImageCopy {
+			size_t allocationIndex;
+
+			VkImage image;
+			VkImageLayout dstLayout;
+			VkImageCopy copy;
+		};
+
+		struct Copy {
+			TransferType type;
+			size_t allocationIndex;
+
+			union {
+				BufferCopy bufferCopyInfo;
+				ImageCopy imageCopyInfo;
+			};
+		};
+
+		std::vector<Copy> copyRegions;
 
 		void resetBuffer(size_t index) noexcept;
 
 	public:
 		TransferStage() = default;
-		TransferStage(VkDevice device, VmaAllocator allocator) noexcept {
-			allocateStagingBuffers(device, allocator, DEFAULT_STAGING_SIZE);
-		}
 		TransferStage(const TransferStage&) = delete;
 		TransferStage(TransferStage&& other) noexcept
 			:
-			stagingBuffers(std::move(other.stagingBuffers)),
-			stagingBufferStates(std::move(other.stagingBufferStates)),
+			stages(std::move(other.stages)),
 			freeBufferHint(other.freeBufferHint),
 			r_device(std::exchange(other.r_device, VK_NULL_HANDLE)),
 			r_allocator(std::exchange(other.r_allocator, VK_NULL_HANDLE))
@@ -67,8 +141,7 @@ namespace rndr {
 			if (this == &other)
 				return *this;
 
-			stagingBuffers = std::move(other.stagingBuffers);
-			stagingBufferStates = std::move(other.stagingBufferStates);
+			stages = std::move(other.stages);
 			freeBufferHint = other.freeBufferHint;
 			r_device = std::exchange(other.r_device, VK_NULL_HANDLE);
 			r_allocator = std::exchange(other.r_allocator, VK_NULL_HANDLE);
@@ -78,12 +151,12 @@ namespace rndr {
 
 		~TransferStage() noexcept = default;
 
-		VkResult allocateStagingBuffers(VkDevice device, VmaAllocator allocator, size_t size = DEFAULT_STAGING_SIZE, uint32_t count = 2) noexcept;
+		VkResult root(VkDevice device, VmaAllocator allocator, const TransferStageCreateInfo* pCreateInfo) noexcept;
 
-		VkResult stageUpload(const UploadSpan& src, const UploadTarget& dst);
-		VkResult recordUploads(VkCommandBuffer commandBuffer, VkFence fence) noexcept;
-		void informSubmissionFailure(VkFence fence) noexcept;
-		void informTransferSuccess(VkFence fence) noexcept;
+		VkResult stageBufferUpload(const BufferTransferInfo* pTransferInfos, uint32_t infoCount, TransferMode mode);
+		VkResult stageImageUpload(const void* pData, size_t size, size_t alignment, const VkImage target, const VkDeviceSize offset);
+
+		VkResult submitUploads(VkCommandBuffer commandBuffer, VkFence fence) noexcept;
 
 		void reset() noexcept;
 

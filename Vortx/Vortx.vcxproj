@@ -285,7 +285,6 @@
     <ClInclude Include="Signboard\Core\Interfaces\KeyMappingConfigType.h" />
     <ClInclude Include="Signboard\Core\Interfaces\renderer\UBOs\cameraSet.h" />
     <ClInclude Include="Signboard\Core\Interfaces\renderer\rendererINF.h" />
-    <ClInclude Include="Signboard\Core\Interfaces\renderer\upload\uploadINF.h" />
     <ClInclude Include="Signboard\Core\Interfaces\renderer\model\model.h" />
     <ClInclude Include="Signboard\Core\Interfaces\renderer\model\Vertex.h" />
     <ClInclude Include="Signboard\Core\Memory\casting.h" />

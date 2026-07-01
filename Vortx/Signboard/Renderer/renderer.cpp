@@ -9,7 +9,7 @@
 void Renderer::deploy() {
 	VkResult result;
 
-	VkInstance instance;
+	VkInstance _instance;
 
 	{
 		VkApplicationInfo appInfo{};
@@ -54,7 +54,7 @@ void Renderer::deploy() {
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(instanceExtensions.size());
 		createInfo.ppEnabledExtensionNames = instanceExtensions.data();
 
-		result = vkCreateInstance(&createInfo, nullptr, &instance);
+		result = vkCreateInstance(&createInfo, nullptr, &_instance);
 		if (result != VK_SUCCESS)
 			throw std::runtime_error("FAILURE : instance_creation!");
 	}
@@ -64,16 +64,16 @@ void Renderer::deploy() {
 	{
 		uint32_t physicalDeviceCount;
 
-		VkResult result = vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr);
+		VkResult result = vkEnumeratePhysicalDevices(_instance, &physicalDeviceCount, nullptr);
 		if (result != VK_SUCCESS) {
-			vkDestroyInstance(instance, nullptr);
+			vkDestroyInstance(_instance, nullptr);
 
 			throw std::runtime_error("FAILURE : physical_device_enumeration!");
 		}
 
 		std::vector<VkPhysicalDevice> physicalDeviceHandles(physicalDeviceCount);
 
-		vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, physicalDeviceHandles.data());
+		vkEnumeratePhysicalDevices(_instance, &physicalDeviceCount, physicalDeviceHandles.data());
 
 		physicalDevices.reserve(physicalDeviceCount);
 
@@ -90,13 +90,13 @@ void Renderer::deploy() {
 		}
 	}
 
-	if (m_instance) {
-		vkDestroyInstance(m_instance, nullptr);
+	if (instance) {
+		vkDestroyInstance(instance, nullptr);
 	}
 
 	m_physicalDevices = std::move(physicalDevices);
 
-	m_instance = instance;
+	instance = _instance;
 }
 
 void Renderer::enumeratePhysicalDevices(size_t* count, const char** deviceNames) noexcept {
@@ -116,22 +116,9 @@ void Renderer::enumeratePhysicalDevices(size_t* count, const char** deviceNames)
 void Renderer::createDevice(HINSTANCE hinstance, HWND hwnd, size_t physicalDeviceIndex) {
 	VkResult result;
 	
-	VkSurfaceKHR surface;
-	
-	{
-		VkWin32SurfaceCreateInfoKHR createinfo{};
-		createinfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-		createinfo.pNext = nullptr;
-		createinfo.flags = 0;
-		createinfo.hinstance = hinstance;
-		createinfo.hwnd = hwnd;
-
-		result = vkCreateWin32SurfaceKHR(m_instance, &createinfo, nullptr, &surface);
-		if (result != VK_SUCCESS)
-			throw std::runtime_error("FAILURE : win32_surface_creation!");
-	}
-
 	VkPhysicalDevice physicalDevice = m_physicalDevices[physicalDeviceIndex].handle;
+	
+	VkSurfaceKHR _surface = VK_NULL_HANDLE;
 
 	uint32_t graphicsFamilyIndex = UINT32_MAX;
 	VkQueue graphicsQueue;
@@ -142,9 +129,25 @@ void Renderer::createDevice(HINSTANCE hinstance, HWND hwnd, size_t physicalDevic
 	uint32_t presentFamilyIndex = UINT32_MAX;
 	VkQueue presentQueue;
 
-	VkDevice device;
+	VkDevice _device = VK_NULL_HANDLE;
 
-	{
+	VmaAllocator _allocator = VK_NULL_HANDLE;
+
+	do {
+		{
+			VkWin32SurfaceCreateInfoKHR createinfo{};
+			createinfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+			createinfo.pNext = nullptr;
+			createinfo.flags = 0;
+			createinfo.hinstance = hinstance;
+			createinfo.hwnd = hwnd;
+
+			result = vkCreateWin32SurfaceKHR(instance, &createinfo, nullptr, &_surface);
+		}
+
+		if (result != VK_SUCCESS)
+			throw std::runtime_error("FAILURE : win32_surface_creation!");
+
 		uint32_t queueFamilyCount;
 
 		{
@@ -162,187 +165,161 @@ void Renderer::createDevice(HINSTANCE hinstance, HWND hwnd, size_t physicalDevic
 				familyRoles[i] = __popcnt(queueFlags);
 			}
 
-			{
-				uint32_t min = UINT32_MAX;
+			uint32_t min = UINT32_MAX;
 
-				for (uint32_t i = 0; i < queueFamilyCount; ++i) {
-					if ((queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) && familyRoles[i] < min) {
-						min = familyRoles[i];
-						graphicsFamilyIndex = i;
-					}
-				}
-
-				if (graphicsFamilyIndex == UINT32_MAX) {
-					vkDestroySurfaceKHR(m_instance, surface, nullptr);
-
-					throw std::runtime_error("FAILURE : device_does_not_support_grpahics");
+			for (uint32_t i = 0; i < queueFamilyCount; ++i) {
+				if ((queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) && familyRoles[i] < min) {
+					min = familyRoles[i];
+					graphicsFamilyIndex = i;
 				}
 			}
 
-			{
-				uint32_t min = UINT32_MAX;
+			min = UINT32_MAX;
 
-				for (uint32_t i = 0; i < queueFamilyCount; ++i) {
-					if ((queueFamilies[i].queueFlags & VK_QUEUE_TRANSFER_BIT) && familyRoles[i] < min) {
-						min = familyRoles[i];
-						transferFamilyIndex = i;
-					}
-				}
-
-				if (transferFamilyIndex == UINT32_MAX) {
-					vkDestroySurfaceKHR(m_instance, surface, nullptr);
-
-					throw std::runtime_error("FAILURE : device_does_not_support_transfer");
+			for (uint32_t i = 0; i < queueFamilyCount; ++i) {
+				if ((queueFamilies[i].queueFlags & VK_QUEUE_TRANSFER_BIT) && familyRoles[i] < min) {
+					min = familyRoles[i];
+					transferFamilyIndex = i;
 				}
 			}
 
 			VkBool32 presentSupport = VK_FALSE;
 
 			for (uint32_t i = 0; i < queueFamilyCount; ++i) {
-				vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &presentSupport);
+				vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, _surface, &presentSupport);
 				if (presentSupport) {
 					presentFamilyIndex = i;
 					break;
 				}
 			}
-
-			if (presentFamilyIndex == UINT32_MAX) {
-				vkDestroySurfaceKHR(m_instance, surface, nullptr);
-
-				throw std::runtime_error("FAILURE : device_does_not_support_presentation");
-			}
 		}
 
-		std::vector<VkDeviceQueueCreateInfo> queueInfos;
+		if (graphicsFamilyIndex == UINT32_MAX || transferFamilyIndex == UINT32_MAX || presentFamilyIndex == UINT32_MAX)
+			break;
+		
+		{
+			std::vector<VkDeviceQueueCreateInfo> queueInfos;
+
+			{
+				std::vector<VkBool32> requiredQueueFamilies(queueFamilyCount, VK_FALSE);
+
+				requiredQueueFamilies[graphicsFamilyIndex] = VK_TRUE;
+				requiredQueueFamilies[transferFamilyIndex] = VK_TRUE;
+				requiredQueueFamilies[presentFamilyIndex] = VK_TRUE;
+
+				queueInfos.reserve(queueFamilyCount);
+
+				constexpr float queuePriority = 1.0f;
+
+				for (uint32_t i = 0; i < queueFamilyCount; ++i) {
+					if (!requiredQueueFamilies[i])
+						continue;
+
+					VkDeviceQueueCreateInfo& info = queueInfos.emplace_back();
+
+					info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+					info.pNext = nullptr;
+					info.flags = 0;
+					info.queueFamilyIndex = i;
+					info.queueCount = 1;
+					info.pQueuePriorities = &queuePriority;
+				}
+			}
+
+			constexpr std::array<const char*, 1> extensions{
+				"VK_KHR_swapchain"
+			};
+
+			VkPhysicalDeviceFeatures enabledFeatures{};
+
+			if (m_physicalDevices[physicalDeviceIndex].features.samplerAnisotropy)
+				enabledFeatures.samplerAnisotropy = VK_TRUE;
+
+			VkDeviceCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+			createInfo.pNext = nullptr;
+			createInfo.flags = 0;
+			createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueInfos.size());
+			createInfo.pQueueCreateInfos = queueInfos.data();
+			createInfo.enabledLayerCount = 0;
+			createInfo.ppEnabledLayerNames = nullptr;
+			createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+			createInfo.ppEnabledExtensionNames = extensions.data();
+			createInfo.pEnabledFeatures = &enabledFeatures;
+
+			result = vkCreateDevice(physicalDevice, &createInfo, nullptr, &_device);
+		}
+
+		if (result != VK_SUCCESS)
+			break;
+
+		vkGetDeviceQueue(_device, graphicsFamilyIndex, 0, &graphicsQueue);
+		vkGetDeviceQueue(_device, transferFamilyIndex, 0, &transferQueue);
+		vkGetDeviceQueue(_device, presentFamilyIndex, 0, &presentQueue);
 
 		{
-			std::vector<VkBool32> requiredQueueFamilies(queueFamilyCount, VK_FALSE);
+			VmaAllocatorCreateInfo createInfo{};
+			createInfo.flags = 0;
+			createInfo.physicalDevice = physicalDevice;
+			createInfo.device = _device;
+			createInfo.preferredLargeHeapBlockSize = 0;
+			createInfo.pAllocationCallbacks = nullptr;
+			createInfo.pDeviceMemoryCallbacks = nullptr;
+			createInfo.pHeapSizeLimit = nullptr;
+			createInfo.pVulkanFunctions = nullptr;
+			createInfo.instance = instance;
+			createInfo.vulkanApiVersion = VK_API_VERSION_1_3;
+			createInfo.pTypeExternalMemoryHandleTypes = nullptr;
 
-			requiredQueueFamilies[graphicsFamilyIndex] = VK_TRUE;
-			requiredQueueFamilies[transferFamilyIndex] = VK_TRUE;
-			requiredQueueFamilies[presentFamilyIndex] = VK_TRUE;
-
-			queueInfos.reserve(queueFamilyCount);
-
-			constexpr float queuePriority = 1.0f;
-
-			for (uint32_t i = 0; i < queueFamilyCount; ++i) {
-				if (!requiredQueueFamilies[i])
-					continue;
-
-				VkDeviceQueueCreateInfo& info = queueInfos.emplace_back();
-
-				info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-				info.pNext = nullptr;
-				info.flags = 0;
-				info.queueFamilyIndex = i;
-				info.queueCount = 1;
-				info.pQueuePriorities = &queuePriority;
-			}
-
+			result = vmaCreateAllocator(&createInfo, &_allocator);
 		}
 
-		constexpr std::array<const char*, 1> extensions{
-			"VK_KHR_swapchain"
-		};
+		if (result != VK_SUCCESS)
+			break;
 
-		VkPhysicalDeviceFeatures enabledFeatures{};
+		{
+			rndr::PresentationStageQueueInfo queueInfo{};
+			queueInfo.graphicsFamilyIndex = graphicsFamilyIndex;
+			queueInfo.graphicsQueue = graphicsQueue;
+			queueInfo.presentFamilyIndex = presentFamilyIndex;
+			queueInfo.presentQueue = presentQueue;
 
-		if (m_physicalDevices[physicalDeviceIndex].features.samplerAnisotropy)
-			enabledFeatures.samplerAnisotropy = VK_TRUE;
-
-		VkDeviceCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-		createInfo.pNext = nullptr;
-		createInfo.flags = 0;
-		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueInfos.size());
-		createInfo.pQueueCreateInfos = queueInfos.data();
-		createInfo.enabledLayerCount = 0;
-		createInfo.ppEnabledLayerNames = nullptr;
-		createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-		createInfo.ppEnabledExtensionNames = extensions.data();
-		createInfo.pEnabledFeatures = &enabledFeatures;
-
-		result = vkCreateDevice(physicalDevice, &createInfo, nullptr, &device);
-		if (result != VK_SUCCESS) {
-			vkDestroySurfaceKHR(m_instance, surface, nullptr);
-
-			throw std::runtime_error("FAILURE : device_creation!");
+			result = presentation.root(_device, physicalDevice, _surface, &queueInfo);
 		}
 
-		vkGetDeviceQueue(device, graphicsFamilyIndex, 0, &graphicsQueue);
-		vkGetDeviceQueue(device, transferFamilyIndex, 0, &transferQueue);
-		vkGetDeviceQueue(device, presentFamilyIndex, 0, &presentQueue);
-	}
+		vkDestroySurfaceKHR(instance, _surface, nullptr);
 
-	VmaAllocator allocator;
+	} while (false);
 
-	{
-		VmaAllocatorCreateInfo createInfo{};
-		createInfo.flags = 0;
-		createInfo.physicalDevice = physicalDevice;
-		createInfo.device = device;
-		createInfo.preferredLargeHeapBlockSize = 0;
-		createInfo.pAllocationCallbacks = nullptr;
-		createInfo.pDeviceMemoryCallbacks = nullptr;
-		createInfo.pHeapSizeLimit = nullptr;
-		createInfo.pVulkanFunctions = nullptr;
-		createInfo.instance = m_instance;
-		createInfo.vulkanApiVersion = VK_API_VERSION_1_3;
-		createInfo.pTypeExternalMemoryHandleTypes = nullptr;
+	if (result == VK_SUCCESS) {
+		if (allocator)
+			vmaDestroyAllocator(allocator);
 
-		result = vmaCreateAllocator(&createInfo, &allocator);
-		if (result != VK_SUCCESS) {
+		if (device)
 			vkDestroyDevice(device, nullptr);
-			vkDestroySurfaceKHR(m_instance, surface, nullptr);
 
-			throw std::runtime_error("FAILURE : allocator_creation!");
-		}
+		device = _device;
+
+		execution.graphicsFamilyIndex = graphicsFamilyIndex;
+		execution.graphicsQueue = graphicsQueue;
+		execution.transferFamilyIndex = transferFamilyIndex;
+		execution.transferQueue = transferQueue;
+		execution.presentFamilyIndex = presentFamilyIndex;
+		execution.presentQueue = presentQueue;
+
+		allocator = _allocator;
 	}
 
-	{
-		rndr::PresentationStageQueueInfo queueInfo{};
-		queueInfo.graphicsFamilyIndex = graphicsFamilyIndex;
-		queueInfo.graphicsQueue = graphicsQueue;
-		queueInfo.presentFamilyIndex = presentFamilyIndex;
-		queueInfo.presentQueue = presentQueue;
+	if (_allocator)
+		vmaDestroyAllocator(_allocator);
 
-		result = presentation.root(device, physicalDevice, surface, &queueInfo);
-		if (result != VK_SUCCESS) {
-			vkDestroyDevice(device, nullptr);
-			vkDestroySurfaceKHR(m_instance, surface, nullptr);
-			
-			throw std::runtime_error("FAILURE : presentation_stage_initialization!");
-		}
-	}
+	if (_device)
+		vkDestroyDevice(_device, nullptr);
 
-	vkDestroySurfaceKHR(m_instance, surface, nullptr);
+	if (_surface)
+		vkDestroySurfaceKHR(instance, _surface, nullptr);
 
-	if (m_allocator)
-		vmaDestroyAllocator(m_allocator);
-
-	if (m_device)
-		vkDestroyDevice(m_device, nullptr);
-
-	m_device = device;
-
-	execution.graphicsFamilyIndex = graphicsFamilyIndex;
-	execution.graphicsQueue = graphicsQueue;
-	execution.transferFamilyIndex = transferFamilyIndex;
-	execution.transferQueue = transferQueue;
-	execution.presentFamilyIndex = presentFamilyIndex;
-	execution.presentQueue = presentQueue;
-
-	{
-		VkSurfaceKHR presentationSurface;
-
-		const size_t renderTargetCount = renderTargets.size();
-
-		for (size_t i = 0; i < renderTargetCount; ++i) {
-			presentation.releaseSurface(renderTargets[i], &presentationSurface);
-			vkDestroySurfaceKHR(m_instance, presentationSurface, nullptr);
-		}
-	}
+	throw std::runtime_error("FAILURE : device_creation!");
 }
 
 int Renderer::pushRenderTarget(HINSTANCE hinstance, HWND hwnd) noexcept {
@@ -358,7 +335,7 @@ int Renderer::pushRenderTarget(HINSTANCE hinstance, HWND hwnd) noexcept {
 		createinfo.hinstance = hinstance;
 		createinfo.hwnd = hwnd;
 
-		result = vkCreateWin32SurfaceKHR(m_instance, &createinfo, nullptr, &surface);
+		result = vkCreateWin32SurfaceKHR(instance, &createinfo, nullptr, &surface);
 		if (result != VK_SUCCESS)
 			return -1;
 	}
@@ -368,7 +345,7 @@ int Renderer::pushRenderTarget(HINSTANCE hinstance, HWND hwnd) noexcept {
 	{
 		result = presentation.targetSurface(surface, &targetIndex);
 		if (result != VK_SUCCESS) {
-			vkDestroySurfaceKHR(m_instance, surface, nullptr);
+			vkDestroySurfaceKHR(instance, surface, nullptr);
 
 			return -1;
 		}
@@ -376,7 +353,7 @@ int Renderer::pushRenderTarget(HINSTANCE hinstance, HWND hwnd) noexcept {
 
 	result = presentation.configurePresentation(targetIndex, 2);
 	if (result != VK_SUCCESS) {
-		vkDestroySurfaceKHR(m_instance, surface, nullptr);
+		vkDestroySurfaceKHR(instance, surface, nullptr);
 
 		return -1;
 	}
@@ -421,7 +398,7 @@ int Renderer::createImageInstance(uint32_t width, uint32_t height) {
 		allocationInfo.pUserData = nullptr;
 		allocationInfo.priority = 0;
 
-		result = vmaCreateImage(m_allocator, &createInfo, &allocationInfo, &image, &allocation, nullptr);
+		result = vmaCreateImage(allocator, &createInfo, &allocationInfo, &image, &allocation, nullptr);
 	}
 
 
@@ -435,20 +412,20 @@ void Renderer::reset() noexcept {
 
 		for (size_t i = 0; i < renderTargetCount; ++i) {
 			presentation.releaseSurface(renderTargets[i], &surface);
-			vkDestroySurfaceKHR(m_instance, surface, nullptr);
+			vkDestroySurfaceKHR(instance, surface, nullptr);
 		}
 	}
 
 	presentation.reset();
 
-	if (m_allocator)
-		vmaDestroyAllocator(m_allocator);
+	if (allocator)
+		vmaDestroyAllocator(allocator);
 
-	if (m_device)
-		vkDestroyDevice(m_device, nullptr);
+	if (device)
+		vkDestroyDevice(device, nullptr);
 }
 
 Renderer::~Renderer() noexcept {
-	if (m_instance)
-		vkDestroyInstance(m_instance, nullptr);
+	if (instance)
+		vkDestroyInstance(instance, nullptr);
 }

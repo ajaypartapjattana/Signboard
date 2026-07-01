@@ -9,7 +9,7 @@
 
 class Renderer {
 private:
-	VkInstance m_instance = VK_NULL_HANDLE;
+	VkInstance instance = VK_NULL_HANDLE;
 
 	struct PhysicalDevice {
 		VkPhysicalDeviceProperties properties{};
@@ -23,7 +23,7 @@ private:
 	size_t activePhysicalDeviceIndex = 0;
 	VkPhysicalDevice activePhysicalDevice = VK_NULL_HANDLE;
 
-	VkDevice m_device = VK_NULL_HANDLE;
+	VkDevice device = VK_NULL_HANDLE;
 
 	struct {
 		uint32_t graphicsFamilyIndex{};
@@ -36,7 +36,9 @@ private:
 		VkQueue presentQueue = VK_NULL_HANDLE;
 	} execution;
 
-	VmaAllocator m_allocator = VK_NULL_HANDLE;
+	VmaAllocator allocator = VK_NULL_HANDLE;
+
+	rndr::TransferStage transferStage;
 
 	rndr::presentationStage presentation;
 
