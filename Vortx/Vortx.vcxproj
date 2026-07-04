@@ -267,6 +267,7 @@
     <ClInclude Include="Signboard\Core\Logging\quickLog.h" />
     <ClInclude Include="Signboard\Core\Math\search.h" />
     <ClInclude Include="Signboard\Core\Memory\memory.h" />
+    <ClInclude Include="Signboard\Core\Memory\ScratchAllocator.h" />
     <ClInclude Include="Signboard\Core\Threading\threadPool.h" />
     <ClInclude Include="Signboard\Core\Threading\threads.h" />
     <ClInclude Include="Signboard\Assets\configLoader\ConfigLoader.h" />

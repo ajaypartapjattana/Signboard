@@ -300,14 +300,98 @@ namespace rndr {
 		return (_offset + _alignment - 1) & ~(_alignment - 1);
 	}
 
-	VkResult TransferStage::stageBufferUpload(const BufferTransferInfo* pTransferInfos, uint32_t infoCount, TransferMode mode) {
-		if (!pTransferInfos)
+	VkResult TransferStage::stageBufferUpload(const TransferSizeInfo* pSizeInfos, const TargetBufferInfo* pBufferInfos, uint32_t infoCount, TransferMode mode) {
+		VkResult result{};
+
+		if (!pSizeInfos || !pBufferInfos)
 			return VK_ERROR_INVALID_EXTERNAL_HANDLE;
 
-		const size_t bufferCount = stages.size();
+		Allocation allocation;
 
-		size_t bufferIndex = SIZE_MAX;
+		switch (mode) {
+		case TRANSFER_MODE_IMMEDIATE: {
+			for (uint32_t i{}; i < infoCount; ++i) {
+				unsigned long index;
+				_BitScanReverse64(&index, pSizeInfos[i].size - 1);
 
+				const uint32_t classIndex = (index < baseClassOffset) ? 0u : uint32_t(index + 1) - baseClassOffset;
+
+				const VkDeviceSize classSize = VkDeviceSize(1) << (classIndex + baseClassOffset);
+
+				const uint32_t classBegin = classIndex ? sizeClassRanges[size_t(classIndex) - 1ull] : 0;
+				const uint32_t classEnd = sizeClassRanges[classIndex];
+
+				for (uint32_t j{ classBegin }; j < classEnd; ++j) {
+					if (availableStageSizes[j] < pSizeInfos[i].size)
+						continue;
+					
+					if (stageFences[j]) {
+						result = vkGetFenceStatus(r_device, stageFences[j]);
+						switch (result) {
+						case VK_SUCCESS:
+							stages[j].currentOffset = 0;
+							stages[j].flushStart = classSize;
+
+							availableStageSizes[j] = classSize;
+							stageFences[j] = VK_NULL_HANDLE;
+
+							break;
+
+						case VK_NOT_READY:
+							continue;
+
+						default:
+							return result;
+
+						}
+					}
+
+					Stage& stage = stages[j];
+
+					const VkDeviceSize alignedOffest = (VkDeviceSize)alignUp(stage.currentOffset, pSizeInfos[i].alignment);
+
+					if (classSize - alignedOffest < pSizeInfos[i].size)
+						continue;
+
+					allocation.buffer = stage.buffer;
+					allocation.offset = alignedOffest;
+					allocation.size = pSizeInfos[i].size;
+
+					stage.currentOffset = alignedOffest + pSizeInfos[i].size;
+					stage.flushStart = std::min(stage.flushStart, alignedOffest);
+
+					availableStageSizes[j] -= pSizeInfos[i].size;
+
+					break;
+				}
+			}
+
+			break;
+
+		case TRANSFER_MODE_BATCH: {
+			for (uint32_t i{}; i < infoCount; ++i) {
+
+			}
+		}
+			
+			break;
+
+		case TRANSFER_MODE_STREAM: {
+
+		}
+
+			break;
+
+		default:
+			return VK_ERROR_INVALID_EXTERNAL_HANDLE;
+
+		}
+
+
+
+		}
+
+		
 
 		for (size_t i = 0; i < bufferCount; ++i) {
 			size_t index = (freeBufferHint + i) % bufferCount;

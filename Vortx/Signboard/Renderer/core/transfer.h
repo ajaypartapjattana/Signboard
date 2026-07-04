@@ -7,20 +7,18 @@
 
 namespace rndr {
 
-	struct BufferTransferInfo {
+	struct TransferSizeInfo {
 		const void* pData;
 		size_t size;
 		size_t alignment;
+	};
 
+	struct TargetBufferInfo {
 		VkBuffer buffer;
 		VkDeviceSize dstOffset;
 	};
 
 	struct ImageTransferInfo {
-		const void* pData;
-		size_t size;
-		size_t alignment;
-
 		VkImage image;
 
 		VkImageSubresourceLayers subresources;
@@ -63,19 +61,18 @@ namespace rndr {
 
 		std::vector<TransferJob> jobs;
 
-
 		struct Stage {
 			VkBuffer buffer;
 			VmaAllocation allocation;
 			void* pMapped;
 
-			size_t currentOffset = 0;
-			size_t flushStart = SIZE_MAX;
-			size_t flushEnd = 0;
-
-			VkFence fence;
+			VkDeviceSize currentOffset = 0;
+			VkDeviceSize flushStart = SIZE_MAX;
+			VkDeviceSize flushEnd = 0;
 		};
+
 		std::vector<Stage> stages;
+		std::vector<VkFence> stageFences;
 		std::vector<VkDeviceSize> availableStageSizes;
 		
 		std::vector<uint32_t> sizeClassRanges;
@@ -87,7 +84,7 @@ namespace rndr {
 			uint32_t size;
 		};
 
-		std::vector<Allocation> allcoations;
+		std::vector<Allocation> allocations;
 
 		enum TransferType {
 			TRANSFER_TYPE_BUFFER,
@@ -153,7 +150,7 @@ namespace rndr {
 
 		VkResult root(VkDevice device, VmaAllocator allocator, const TransferStageCreateInfo* pCreateInfo) noexcept;
 
-		VkResult stageBufferUpload(const BufferTransferInfo* pTransferInfos, uint32_t infoCount, TransferMode mode);
+		VkResult stageBufferUpload(const TransferSizeInfo* pSizeInfos, const TargetBufferInfo* pTransferInfos, uint32_t infoCount, TransferMode mode);
 		VkResult stageImageUpload(const void* pData, size_t size, size_t alignment, const VkImage target, const VkDeviceSize offset);
 
 		VkResult submitUploads(VkCommandBuffer commandBuffer, VkFence fence) noexcept;
