@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Signboard/RHI/rhi.h"
+#include <vulkan/vulkan.h>
 
 namespace rndr {
 
@@ -75,7 +75,7 @@ namespace rndr {
 		};
 
 		std::vector<PresentStageJob> jobs;
-		size_t oldJobHint = 0;
+		size_t acquireHint = 0;
 
 		uint32_t maxConcurrentPresentations = 3;
 

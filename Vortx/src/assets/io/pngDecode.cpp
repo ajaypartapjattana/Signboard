@@ -327,13 +327,13 @@ namespace io {
 		PNG_CHUNK_IEND_BIT = 0x00020000
 	};
 
-	Result ImageFile::loadPNGw(const wchar_t* path) {
+	Result ImageFile::loadPNGw(mem::stack& _Alloc, const wchar_t* _Path) {
 		std::vector<uint8_t> dataA;
 
 		{
 			BOOL result;
 
-			HANDLE file = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+			HANDLE file = CreateFileW(_Path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 			if (file == INVALID_HANDLE_VALUE)
 				return FAILURE;
 		

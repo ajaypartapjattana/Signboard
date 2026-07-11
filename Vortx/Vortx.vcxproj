@@ -155,201 +155,170 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;_ITERATOR_DEBUG_LEVEL=2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);C:\Ext_Libraries\json-develop;C:\Users\ajayp\source\repos\imgui;C:\Ext_Libraries\tinyobjloader;C:\Ext_Libraries\glm-master;C:\Ext_Libraries\glfw-3.4.bin.WIN64\include;C:\VulkanSDK\1.4.321.1\Include;C:\Ext_Libraries\stb_Image;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.4.350.0\Include;$(ProjectDir)\src;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\ajayp\source\repos\imgui;C:\Ext_Libraries\glfw-3.4.bin.WIN64\lib-vc2015;C:\VulkanSDK\1.4.321.1\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\VulkanSDK\1.4.350.0\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <Profile>true</Profile>
       <GenerateMapFile>true</GenerateMapFile>
+      <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Validate|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>_VALIDATE;_CONSOLE;_ITERATOR_DEBUG_LEVEL=2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);C:\Ext_Libraries\json-develop;C:\Users\ajayp\source\repos\imgui;C:\Ext_Libraries\tinyobjloader;C:\Ext_Libraries\glm-master;C:\Ext_Libraries\glfw-3.4.bin.WIN64\include;C:\VulkanSDK\1.4.321.1\Include;C:\Ext_Libraries\stb_Image;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.4.350.0\Include;$(ProjectDir)\src;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\ajayp\source\repos\imgui;C:\Ext_Libraries\glfw-3.4.bin.WIN64\lib-vc2015;C:\VulkanSDK\1.4.321.1\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\VulkanSDK\1.4.350.0\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <Profile>true</Profile>
       <GenerateMapFile>true</GenerateMapFile>
+      <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir);C:\Users\ajayp\source\repos\imgui;C:\Ext_Libraries\tinyobjloader;C:\Ext_Libraries\glfw-3.4.bin.WIN64\include;C:\VulkanSDK\1.4.321.1\Include;C:\Ext_Libraries\stb_Image;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.4.350.0\Include;$(ProjectDir)\src;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <Optimization>MaxSpeed</Optimization>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\ajayp\source\repos\imgui;C:\Ext_Libraries\glfw-3.4.bin.WIN64\lib-vc2015;C:\VulkanSDK\1.4.321.1\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\VulkanSDK\1.4.350.0\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <Profile>true</Profile>
       <GenerateMapFile>false</GenerateMapFile>
+      <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="external\SPIRV_cross\spirv_cfg.cpp" />
-    <ClCompile Include="external\SPIRV_cross\spirv_cpp.cpp" />
-    <ClCompile Include="external\SPIRV_cross\spirv_cross.cpp" />
-    <ClCompile Include="external\SPIRV_cross\spirv_cross_c.cpp" />
-    <ClCompile Include="external\SPIRV_cross\spirv_cross_parsed_ir.cpp" />
-    <ClCompile Include="external\SPIRV_cross\spirv_cross_util.cpp" />
-    <ClCompile Include="external\SPIRV_cross\spirv_glsl.cpp" />
-    <ClCompile Include="external\SPIRV_cross\spirv_hlsl.cpp" />
-    <ClCompile Include="external\SPIRV_cross\spirv_msl.cpp" />
-    <ClCompile Include="external\SPIRV_cross\spirv_parser.cpp" />
-    <ClCompile Include="external\SPIRV_cross\spirv_reflect.cpp" />
     <ClCompile Include="external\VMA\vma.cpp" />
-    <ClCompile Include="Signboard\Assets\configLoader\ConfigLoader.cpp" />
-    <ClCompile Include="Signboard\Assets\configLoader\XMLLoader\XMLConfigLoader.cpp" />
-    <ClCompile Include="Signboard\Assets\io\pngDecode.cpp" />
-    <ClCompile Include="Signboard\Assets\Utility\convStr.cpp" />
-    <ClCompile Include="Signboard\Core\Logging\logger.cpp" />
-    <ClCompile Include="Signboard\Core\Threading\threadPool.cpp" />
-    <ClCompile Include="Signboard\Core\Time\Time.cpp" />
-    <ClCompile Include="Signboard\Core\Frame\Frame_event.h" />
-    <ClCompile Include="Signboard\Platform\platform.cpp" />
-    <ClCompile Include="Signboard\Platform\primitive\window_eventState.cpp" />
-    <ClCompile Include="Signboard\Platform\primitive\glfw_window.cpp" />
-    <ClCompile Include="Signboard\Renderer\core\presentation.cpp" />
-    <ClCompile Include="Signboard\Renderer\Mesh\mesher.cpp" />
-    <ClCompile Include="Signboard\Renderer\core\transfer.cpp" />
-    <ClCompile Include="Signboard\Renderer\renderer.cpp" />
-    <ClCompile Include="Signboard\RHI\core\physicalDevice.cpp" />
-    <ClCompile Include="Signboard\RHI\core\device.cpp" />
-    <ClCompile Include="Signboard\RHI\core\instance.cpp" />
-    <ClCompile Include="Signboard\RHI\core\allocator.cpp" />
-    <ClCompile Include="Signboard\RHI\core\surface.cpp" />
+    <ClCompile Include="src\assets\configLoader\ConfigLoader.cpp" />
+    <ClCompile Include="src\assets\configLoader\XMLLoader\XMLConfigLoader.cpp" />
+    <ClCompile Include="src\assets\io\pngDecode.cpp" />
+    <ClCompile Include="src\assets\Utility\convStr.cpp" />
+    <ClCompile Include="src\core\Logging\logger.cpp" />
+    <ClCompile Include="src\core\Threading\threadPool.cpp" />
+    <ClCompile Include="src\core\Time\Time.cpp" />
+    <ClCompile Include="src\core\Frame\Frame_event.h" />
+    <ClCompile Include="src\Platform\platform.cpp" />
+    <ClCompile Include="src\Platform\primitive\window_eventState.cpp" />
+    <ClCompile Include="src\Platform\primitive\glfw_window.cpp" />
+    <ClCompile Include="src\Renderer\core\presentation.cpp" />
+    <ClCompile Include="src\Renderer\core\render.cpp" />
+    <ClCompile Include="src\Renderer\core\resources.cpp" />
+    <ClCompile Include="src\Renderer\Mesh\mesher.cpp" />
+    <ClCompile Include="src\Renderer\core\transfer.cpp" />
+    <ClCompile Include="src\Renderer\renderer.cpp" />
+    <ClCompile Include="src\RHI\core\physicalDevice.cpp" />
+    <ClCompile Include="src\RHI\core\device.cpp" />
+    <ClCompile Include="src\RHI\core\instance.cpp" />
+    <ClCompile Include="src\RHI\core\allocator.cpp" />
+    <ClCompile Include="src\RHI\core\surface.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="external\SPIRV_cross\GLSL.std.450.h" />
-    <ClInclude Include="external\SPIRV_cross\NonSemanticShaderDebugInfo100.h" />
-    <ClInclude Include="external\SPIRV_cross\spirv.h" />
-    <ClInclude Include="external\SPIRV_cross\spirv.hpp" />
-    <ClInclude Include="external\SPIRV_cross\spirv_cfg.hpp" />
-    <ClInclude Include="external\SPIRV_cross\spirv_common.hpp" />
-    <ClInclude Include="external\SPIRV_cross\spirv_cpp.hpp" />
-    <ClInclude Include="external\SPIRV_cross\spirv_cross.hpp" />
-    <ClInclude Include="external\SPIRV_cross\spirv_cross_c.h" />
-    <ClInclude Include="external\SPIRV_cross\spirv_cross_containers.hpp" />
-    <ClInclude Include="external\SPIRV_cross\spirv_cross_error_handling.hpp" />
-    <ClInclude Include="external\SPIRV_cross\spirv_cross_parsed_ir.hpp" />
-    <ClInclude Include="external\SPIRV_cross\spirv_cross_util.hpp" />
-    <ClInclude Include="external\SPIRV_cross\spirv_glsl.hpp" />
-    <ClInclude Include="external\SPIRV_cross\spirv_hlsl.hpp" />
-    <ClInclude Include="external\SPIRV_cross\spirv_msl.hpp" />
-    <ClInclude Include="external\SPIRV_cross\spirv_parser.hpp" />
-    <ClInclude Include="external\SPIRV_cross\spirv_reflect.hpp" />
-    <ClInclude Include="external\VMA\vma.h" />
-    <ClInclude Include="Signboard\Core\core.h" />
-    <ClInclude Include="Signboard\Core\Logging\logger.h" />
-    <ClInclude Include="Signboard\Core\Logging\quickLog.h" />
-    <ClInclude Include="Signboard\Core\Math\search.h" />
-    <ClInclude Include="Signboard\Core\Memory\memory.h" />
-    <ClInclude Include="Signboard\Core\Memory\ScratchAllocator.h" />
-    <ClInclude Include="Signboard\Core\Threading\threadPool.h" />
-    <ClInclude Include="Signboard\Core\Threading\threads.h" />
-    <ClInclude Include="Signboard\Assets\configLoader\ConfigLoader.h" />
-    <ClInclude Include="Signboard\Assets\configLoader\ReadTypes\ApplicationReadTypes.h" />
-    <ClInclude Include="Signboard\Assets\io\io.h" />
-    <ClInclude Include="Signboard\Assets\io\ResourceLoaders\file_loader.h" />
-    <ClInclude Include="Signboard\Assets\io\ResourceLoaders\loader.h" />
-    <ClInclude Include="Signboard\Assets\shaderReflect\shaderReflect.h" />
-    <ClInclude Include="Signboard\Core\Containers\span\span.h" />
-    <ClInclude Include="Signboard\Core\Containers\containers.h" />
-    <ClInclude Include="Signboard\Core\Containers\storage\vault.h" />
-    <ClInclude Include="Signboard\Core\Frame\Frame.h" />
-    <ClInclude Include="Signboard\Core\Frame\Frame_command.h" />
-    <ClInclude Include="Signboard\Core\Frame\Frame_routine.h" />
-    <ClInclude Include="Signboard\Core\Interfaces\appInterfaceTypes.h" />
-    <ClInclude Include="Signboard\Core\Interfaces\KeyMappingConfigType.h" />
-    <ClInclude Include="Signboard\Core\Interfaces\renderer\UBOs\cameraSet.h" />
-    <ClInclude Include="Signboard\Core\Interfaces\renderer\rendererINF.h" />
-    <ClInclude Include="Signboard\Core\Interfaces\renderer\model\model.h" />
-    <ClInclude Include="Signboard\Core\Interfaces\renderer\model\Vertex.h" />
-    <ClInclude Include="Signboard\Core\Memory\casting.h" />
-    <ClInclude Include="Signboard\Core\Time\Time.h" />
-    <ClInclude Include="Signboard\Core\Interfaces\startupConfigType.h" />
-    <ClInclude Include="Signboard\Assets\configLoader\XMLLoader\XMLConfigLoader.h" />
-    <ClInclude Include="Signboard\Assets\Utility\convStr.h" />
-    <ClInclude Include="Signboard\Platform\primitive\window_eventState.h" />
-    <ClInclude Include="Signboard\Platform\platform.h" />
-    <ClInclude Include="Signboard\Platform\primitive\glfw_instance.h" />
-    <ClInclude Include="Signboard\Platform\primitive\platform_primitive.h" />
-    <ClInclude Include="Signboard\Core\Interfaces\renderer\mesh\mesh.h" />
-    <ClInclude Include="Signboard\Renderer\core\presentation.h" />
-    <ClInclude Include="Signboard\Renderer\core\renderer_core.h" />
-    <ClInclude Include="Signboard\Renderer\Mesh\mesher.h" />
-    <ClInclude Include="Signboard\Renderer\primitive\rndr_primitive.h" />
-    <ClInclude Include="Signboard\Renderer\core\transfer.h" />
-    <ClInclude Include="Signboard\Renderer\renderer.h" />
-    <ClInclude Include="Signboard\Renderer\Vertex\vertex.hh" />
-    <ClInclude Include="Signboard\RHI\core\physicalDevice.hh" />
-    <ClInclude Include="Signboard\RHI\detail\core_t\allocation_pool_t.hh" />
-    <ClInclude Include="Signboard\RHI\detail\core_t\core_t.hh" />
-    <ClInclude Include="Signboard\RHI\detail\core_t\fungible_pool_t.hh" />
-    <ClInclude Include="Signboard\RHI\detail\core_t\contextual_pool_t.hh" />
-    <ClInclude Include="Signboard\RHI\detail\core_t\resource_pool_t.h" />
-    <ClInclude Include="Signboard\RHI\detail\core_t\resource_registry_t.h" />
-    <ClInclude Include="Signboard\RHI\detail\core_t\contextual_registry_t.hh" />
-    <ClInclude Include="Signboard\RHI\primitive\commandBuffer.h" />
-    <ClInclude Include="Signboard\RHI\primitive\commandPool.h" />
-    <ClInclude Include="Signboard\RHI\core\device.hh" />
-    <ClInclude Include="Signboard\RHI\core\allocator.hh" />
-    <ClInclude Include="Signboard\RHI\core\rhi_core.h" />
-    <ClInclude Include="Signboard\RHI\core\surface.hh" />
-    <ClInclude Include="Signboard\RHI\detail\rhi_detail.h" />
-    <ClInclude Include="Signboard\RHI\primitive\descriptorPool.h" />
-    <ClInclude Include="Signboard\RHI\primitive\descriptorSet.h" />
-    <ClInclude Include="Signboard\RHI\primitive\fence.h" />
-    <ClInclude Include="Signboard\RHI\primitive\framebuffer.h" />
-    <ClInclude Include="Signboard\RHI\primitive\imageView.h" />
-    <ClInclude Include="Signboard\RHI\primitive\swapchain.h" />
-    <ClInclude Include="Signboard\RHI\detail\vkexcept.h" />
+    <ClInclude Include="src\core\core.h" />
+    <ClInclude Include="src\core\Logging\logger.h" />
+    <ClInclude Include="src\core\Logging\quickLog.h" />
+    <ClInclude Include="src\core\Math\search.h" />
+    <ClInclude Include="src\core\Memory\memory.h" />
+    <ClInclude Include="src\core\Threading\threadPool.h" />
+    <ClInclude Include="src\core\Threading\threads.h" />
+    <ClInclude Include="src\assets\configLoader\ConfigLoader.h" />
+    <ClInclude Include="src\assets\configLoader\ReadTypes\ApplicationReadTypes.h" />
+    <ClInclude Include="src\assets\io\io.h" />
+    <ClInclude Include="src\assets\io\ResourceLoaders\file_loader.h" />
+    <ClInclude Include="src\assets\io\ResourceLoaders\loader.h" />
+    <ClInclude Include="src\assets\shaderReflect\shaderReflect.h" />
+    <ClInclude Include="src\core\Containers\span\span.h" />
+    <ClInclude Include="src\core\Containers\containers.h" />
+    <ClInclude Include="src\core\Containers\storage\vault.h" />
+    <ClInclude Include="src\core\Frame\Frame.h" />
+    <ClInclude Include="src\core\Frame\Frame_command.h" />
+    <ClInclude Include="src\core\Frame\Frame_routine.h" />
+    <ClInclude Include="src\core\Interfaces\appInterfaceTypes.h" />
+    <ClInclude Include="src\core\Interfaces\KeyMappingConfigType.h" />
+    <ClInclude Include="src\core\Interfaces\renderer\UBOs\cameraSet.h" />
+    <ClInclude Include="src\core\Interfaces\renderer\rendererINF.h" />
+    <ClInclude Include="src\core\Interfaces\renderer\model\model.h" />
+    <ClInclude Include="src\core\Interfaces\renderer\model\Vertex.h" />
+    <ClInclude Include="src\core\Memory\casting.h" />
+    <ClInclude Include="src\core\Time\Time.h" />
+    <ClInclude Include="src\core\Interfaces\startupConfigType.h" />
+    <ClInclude Include="src\assets\configLoader\XMLLoader\XMLConfigLoader.h" />
+    <ClInclude Include="src\assets\Utility\convStr.h" />
+    <ClInclude Include="src\Platform\primitive\window_eventState.h" />
+    <ClInclude Include="src\Platform\platform.h" />
+    <ClInclude Include="src\Platform\primitive\glfw_instance.h" />
+    <ClInclude Include="src\Platform\primitive\platform_primitive.h" />
+    <ClInclude Include="src\core\Interfaces\renderer\mesh\mesh.h" />
+    <ClInclude Include="src\Renderer\core\presentation.h" />
+    <ClInclude Include="src\Renderer\core\render.h" />
+    <ClInclude Include="src\Renderer\core\renderer_core.h" />
+    <ClInclude Include="src\Renderer\core\resources.h" />
+    <ClInclude Include="src\Renderer\Mesh\mesher.h" />
+    <ClInclude Include="src\Renderer\primitive\rndr_primitive.h" />
+    <ClInclude Include="src\Renderer\core\transfer.h" />
+    <ClInclude Include="src\Renderer\renderer.h" />
+    <ClInclude Include="src\Renderer\Vertex\vertex.hh" />
+    <ClInclude Include="src\RHI\core\physicalDevice.hh" />
+    <ClInclude Include="src\RHI\detail\core_t\allocation_pool_t.hh" />
+    <ClInclude Include="src\RHI\detail\core_t\core_t.hh" />
+    <ClInclude Include="src\RHI\detail\core_t\fungible_pool_t.hh" />
+    <ClInclude Include="src\RHI\detail\core_t\contextual_pool_t.hh" />
+    <ClInclude Include="src\RHI\detail\core_t\resource_pool_t.h" />
+    <ClInclude Include="src\RHI\detail\core_t\resource_registry_t.h" />
+    <ClInclude Include="src\RHI\detail\core_t\contextual_registry_t.hh" />
+    <ClInclude Include="src\RHI\primitive\commandBuffer.h" />
+    <ClInclude Include="src\RHI\primitive\commandPool.h" />
+    <ClInclude Include="src\RHI\core\device.hh" />
+    <ClInclude Include="src\RHI\core\allocator.hh" />
+    <ClInclude Include="src\RHI\core\rhi_core.h" />
+    <ClInclude Include="src\RHI\core\surface.hh" />
+    <ClInclude Include="src\RHI\detail\rhi_detail.h" />
+    <ClInclude Include="src\RHI\primitive\descriptorPool.h" />
+    <ClInclude Include="src\RHI\primitive\descriptorSet.h" />
+    <ClInclude Include="src\RHI\primitive\fence.h" />
+    <ClInclude Include="src\RHI\primitive\framebuffer.h" />
+    <ClInclude Include="src\RHI\primitive\imageView.h" />
+    <ClInclude Include="src\RHI\primitive\swapchain.h" />
+    <ClInclude Include="src\RHI\detail\vkexcept.h" />
     <ClInclude Include="Signboard\RHI\primitives\image.h" />
     <ClInclude Include="Signboard\RHI\primitives\image_vk.h" />
-    <ClInclude Include="Signboard\RHI\primitive\buffer.h" />
-    <ClInclude Include="Signboard\RHI\primitive\descriptorSetLayout.h" />
-    <ClInclude Include="Signboard\RHI\primitive\image.h" />
-    <ClInclude Include="Signboard\RHI\primitive\pipeline.h" />
-    <ClInclude Include="Signboard\RHI\primitive\pipelineLayout.h" />
-    <ClInclude Include="Signboard\RHI\primitive\renderPass.h" />
-    <ClInclude Include="Signboard\RHI\primitive\rhi_primitive.h" />
-    <ClInclude Include="Signboard\RHI\primitive\sampler.h" />
-    <ClInclude Include="Signboard\RHI\primitive\semaphore.h" />
-    <ClInclude Include="Signboard\RHI\primitive\shader.h" />
-    <ClInclude Include="Signboard\Core\Math\bitops.h" />
-    <ClInclude Include="Signboard\RHI\primitive\vma_trait_base.h" />
-    <ClInclude Include="Signboard\RHI\primitive\vulkan_trait_base.hh" />
-    <ClInclude Include="external\VMA\vk_mem_alloc.h" />
-    <ClInclude Include="Signboard\RHI\rhi.h" />
-    <ClInclude Include="Signboard\RHI\core\instance.hh" />
-    <ClInclude Include="Signboard\Core\Containers\threadSafe\queue.h" />
+    <ClInclude Include="src\RHI\primitive\buffer.h" />
+    <ClInclude Include="src\RHI\primitive\descriptorSetLayout.h" />
+    <ClInclude Include="src\RHI\primitive\image.h" />
+    <ClInclude Include="src\RHI\primitive\pipeline.h" />
+    <ClInclude Include="src\RHI\primitive\pipelineLayout.h" />
+    <ClInclude Include="src\RHI\primitive\renderPass.h" />
+    <ClInclude Include="src\RHI\primitive\rhi_primitive.h" />
+    <ClInclude Include="src\RHI\primitive\sampler.h" />
+    <ClInclude Include="src\RHI\primitive\semaphore.h" />
+    <ClInclude Include="src\RHI\primitive\shader.h" />
+    <ClInclude Include="src\core\Math\bitops.h" />
+    <ClInclude Include="src\RHI\primitive\vma_trait_base.h" />
+    <ClInclude Include="src\RHI\primitive\vulkan_trait_base.hh" />
+    <ClInclude Include="src\RHI\rhi.h" />
+    <ClInclude Include="src\RHI\core\instance.hh" />
+    <ClInclude Include="src\core\Containers\threadSafe\queue.h" />
     <ClInclude Include="external\FastNoiseLite.h" />
-    <ClInclude Include="Signboard\Scene\Scene.h" />
-    <ClInclude Include="Signboard\Platform\primitive\glfw_window.h" />
-    <ClInclude Include="Signboard\Signboard.h" />
+    <ClInclude Include="src\Scene\Scene.h" />
+    <ClInclude Include="src\Platform\primitive\glfw_window.h" />
+    <ClInclude Include="src\Signboard.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ShaderBuild.targets" />

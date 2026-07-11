@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Signboard/Core/Memory/memory.h"
+
 #include <vector>
 #include <stdint.h>
 
@@ -35,7 +37,7 @@ namespace io {
 		std::vector<uint8_t> bin;
 
 	public:
-		Result loadPNGw(const wchar_t* path);
+		Result loadPNGw(mem::stack& _Alloc, const wchar_t* _Path);
 
 	};
 

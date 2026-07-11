@@ -1,10 +1,11 @@
 #pragma once
 
+#include <vulkan/vulkan.h>
+
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
-#include <vulkan/vulkan.h>
-
+#include "core/Memory/memory.h"
 #include "core/renderer_core.h"
 
 class Renderer {

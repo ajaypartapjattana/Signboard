@@ -1,10 +1,14 @@
-#include "Signboard/Signboard.h"
+#include "assets/io/io.h"
+#include "core/Memory/memory.h"
 
-#include "Signboard/Assets/io/io.h"
+#include "Renderer/renderer.h"
+#include "Platform/platform.h"
 
 int main() {
+    mem::stack mainAlloc{ 32 << 10 };
+
     io::ImageFile image;
-    io::Result result = image.loadPNGw(L"assets_data/textures/seaside.png");
+    io::Result result = image.loadPNGw(mainAlloc, L"assets_data/textures/seaside.png");
 
     return EXIT_SUCCESS;
 

@@ -1,7 +1,8 @@
 #include "presentation.h"
 
-#include "Signboard/Core/Math/search.h"
-#include "Signboard/Assets/io/ResourceLoaders/file_loader.h"
+#include "core/Math/search.h"
+#include "assets/io/ResourceLoaders/file_loader.h"
+
 #include <array>
 #include <vector>
 
@@ -463,7 +464,7 @@ namespace rndr {
 			jobs.reserve(maxConcurrentPresentations);
 			jobs.emplace_back(job);
 
-			oldJobHint = 0;
+			acquireHint = 0;
 
 			if (execution.commandPool)
 				vkDestroyCommandPool(r_device, execution.commandPool, nullptr);
@@ -886,18 +887,24 @@ namespace rndr {
 		size_t jobIndex;
 
 		{
-			PresentStageJob& oldJob = jobs[oldJobHint];
+			PresentStageJob& oldJob = jobs[acquireHint];
 			
 			result = vkGetFenceStatus(r_device, oldJob.inFlight);
 			switch (result) {
+			case VK_SUCCESS:
+				jobIndex = acquireHint;
+				acquireHint = (acquireHint + 1) % jobs.size();
+
+				break;
+
 			case VK_NOT_READY: {
 				if (jobs.size() >= maxConcurrentPresentations) {
 					result = vkWaitForFences(r_device, 1, &oldJob.inFlight, VK_TRUE, UINT32_MAX);
 					if (result != VK_SUCCESS)
 						return result;
 
-					jobIndex = oldJobHint;
-					oldJobHint = (oldJobHint + 1) % jobs.size();
+					jobIndex = acquireHint;
+					acquireHint = (acquireHint + 1) % jobs.size();
 
 					break;
 				}
@@ -959,12 +966,6 @@ namespace rndr {
 
 				break;
 			}
-
-			case VK_SUCCESS:
-				jobIndex = oldJobHint;
-				oldJobHint = (oldJobHint + 1) % jobs.size();
-
-				break;
 
 			default:
 				return result;
