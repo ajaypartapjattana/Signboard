@@ -14,7 +14,7 @@ namespace rndr {
 		mem::span<VkCommandBuffer> _commandBuffers;
 
 		mem::span<VkFence> _transferFences;
-		mem::span<VkDeviceSize> _transferOffsets;
+		mem::span<uint8_t*> _transferOffsets;
 
 		VkBuffer _stage = VK_NULL_HANDLE;
 		VmaAllocation _allocation = VK_NULL_HANDLE;
@@ -76,7 +76,7 @@ namespace rndr {
 			if (result != VK_SUCCESS)
 				break;
 
-			_transferOffsets = _stack.alloc<VkDeviceSize>((VkDeviceSize)pCreateInfo->maxConcurrentTransferJobs);
+			_transferOffsets = _stack.alloc<uint8_t*>(pCreateInfo->maxConcurrentTransferJobs);
 			_transferOffsets.defaultConstruct();
 
 			{
@@ -134,12 +134,17 @@ namespace rndr {
 			commandPool = _commandPool;
 
 			transferFences = _transferFences;
-			transferOffsets = _transferOffsets;
+			transferMarks = _transferOffsets;
+
+			jobBuffers.reserve(8);
 
 			stage = _stage;
 			allocation = _allocation;
-			bufferSize = _allocSize;
-			pMapped = _pMapped;
+			pMapped = static_cast<uint8_t*>(_pMapped);
+			pEnd = pMapped + _allocSize;
+
+			pHead = static_cast<uint8_t*>(_pMapped);
+			pTail = static_cast<uint8_t*>(_pMapped);
 
 			transferFamilyIndex = pCreateInfo->transferFamilyIndex;
 			transferQueue = pCreateInfo->transferQueue;
@@ -166,10 +171,10 @@ namespace rndr {
 		return result;
 	}
 
-	VkResult TransferStage::acquireTransferJob(size_t* pIndex) noexcept {
+	VkResult TransferStage::waitTransferJob(size_t _Index) noexcept {
 		VkResult result;
 
-		result = vkGetFenceStatus(r_device, transferFences[acquireHint]);
+		result = vkGetFenceStatus(r_device, transferFences[_Index]);
 		switch (result) {
 		case VK_SUCCESS:
 
@@ -178,7 +183,7 @@ namespace rndr {
 		case VK_NOT_READY:
 			stats.stalls++;
 
-			result = vkWaitForFences(r_device, 1, &transferFences[acquireHint], VK_TRUE, UINT64_MAX);
+			result = vkWaitForFences(r_device, 1, &transferFences[_Index], VK_TRUE, UINT64_MAX);
 
 			if (result != VK_SUCCESS)
 				return result;
@@ -190,197 +195,244 @@ namespace rndr {
 
 		}
 
-		result = vkResetFences(r_device, 1, &transferFences[acquireHint]);
+		return VK_SUCCESS;
+	}
 
-		if (result != VK_SUCCESS)
+	VkResult TransferStage::createUniqueBuffer(size_t _Size, UniqueBuffer* pUniqueBuffer, uint8_t** pBufferData) const noexcept {
+		VkResult result;
+		
+		assert(pUniqueBuffer && pBufferData);
+
+		VkBuffer _buffer;
+		VmaAllocation _allocation;
+		VmaAllocationInfo _info;
+
+		{
+			VkBufferCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+			createInfo.pNext = nullptr;
+			createInfo.flags = 0;
+			createInfo.size = _Size;
+			createInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+			createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			createInfo.queueFamilyIndexCount = 0;
+			createInfo.pQueueFamilyIndices = nullptr;
+
+			VmaAllocationCreateInfo allocationCreateInfo{};
+			allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+			allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+			allocationCreateInfo.requiredFlags = 0;
+			allocationCreateInfo.preferredFlags = 0;
+			allocationCreateInfo.memoryTypeBits = 0;
+			allocationCreateInfo.pool = VK_NULL_HANDLE;
+			allocationCreateInfo.pUserData = nullptr;
+			allocationCreateInfo.priority = 0.0f;
+
+			result = vmaCreateBuffer(r_allocator, &createInfo, &allocationCreateInfo, &_buffer, &_allocation, &_info);
+		}
+		
+		if (result != VK_SUCCESS) {
+			*pBufferData = nullptr;
+
 			return result;
+		}
 
-		result = vkResetCommandBuffer(commandBuffers[acquireHint], 0);
+		*pBufferData = static_cast<uint8_t*>(_info.pMappedData);
 
-		if (result != VK_SUCCESS)
-			return result;
-
-		*pIndex = acquireHint;
-
-		acquireHint++;
-		acquireHint %= transferFences.size();
+		pUniqueBuffer->buffer = _buffer;
+		pUniqueBuffer->allocation = _allocation;
 
 		return VK_SUCCESS;
 	}
 
-	mem::span<uint8_t> TransferStage::allocate(const size_t _Size, const size_t _Align) noexcept {
-		if (_Size > bufferSize)
-			return {};
-		
-		VkDeviceSize baseOff = mem::alignUp(head, _Align);
-		VkDeviceSize endOff = baseOff + _Size;
 
-		if (head >= tail) {
-			if (endOff <= bufferSize) {
-				head = endOff;
-
-				return { static_cast<uint8_t*>(pMapped) + baseOff , static_cast<uint8_t*>(pMapped) + endOff };
-			}
-
-			baseOff = 0;
-			endOff = _Size;
-		}
-		
-		if (endOff <= tail) {
-			head = endOff;
-
-			return { static_cast<uint8_t*>(pMapped) + baseOff , static_cast<uint8_t*>(pMapped) + endOff };
-		}
-
-		const size_t fenceCount = transferFences.size();
-
-		while (endOff > tail) {
-			VkResult result = vkGetFenceStatus(r_device, transferFences[reclaimHint]);
-			switch (result) {
-			case VK_SUCCESS:
-
-				break;
-
-			case VK_NOT_READY:
-				stats.stalls++;
-
-				result = vkWaitForFences(r_device, 1, &transferFences[reclaimHint], VK_TRUE, UINT32_MAX);
-
-				if (result != VK_SUCCESS)
-					return {};
-
-				break;
-
-			default:
-				return {};
-
-			}
-
-			tail = transferOffsets[reclaimHint];
-
-			reclaimHint++;
-			reclaimHint %= fenceCount;
-		}
-
-		head = endOff;
-
-		return { static_cast<uint8_t*>(pMapped) + baseOff , static_cast<uint8_t*>(pMapped) + endOff };
-	}
-
-	VkResult TransferStage::stageBufferUpload(const TransferSizeInfo* pSizeInfos, const TargetBufferInfo* pBufferInfos, uint32_t _TransferCount, VkSemaphore _Signal) {
+	VkResult TransferStage::stageBufferUpload(const TransferSizeInfo* pSource, const TargetBufferInfo* pBufferInfos, uint32_t _TransferCount, VkSemaphore _Signal) noexcept {
 		VkResult result;
 
-		assert(pSizeInfos && pBufferInfos);
+		assert(pSource && pBufferInfos);
 
-		size_t jobIndex;
-		result = acquireTransferJob(&jobIndex);
+		size_t transferIndex = 0;
 
-		if (result != VK_SUCCESS)
-			return result;
+		while (transferFamilyIndex < _TransferCount) {
+			result = waitTransferJob(acquireHint);
 
-		VkCommandBuffer CMD = commandBuffers[jobIndex];
+			if (result != VK_SUCCESS)
+				return result;
 
-		{
-			VkCommandBufferBeginInfo beginInfo{};
-			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-			beginInfo.pNext = nullptr;
-			beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-			beginInfo.pInheritanceInfo = nullptr;
+			size_t jobIndex = acquireHint;
 
-			result = vkBeginCommandBuffer(CMD, &beginInfo);
-		}
+			const size_t jobCount = transferFences.size();
 
-		if (result != VK_SUCCESS)
-			return result;
+			acquireHint++;
+			acquireHint %= jobCount;
 
-		VkDeviceSize flushBase = UINT64_MAX;
-		VkDeviceSize flushEnd = 0;
+			pTail = transferMarks[jobIndex];
 
-		for (size_t i{}; i < _TransferCount; ++i) {
-			mem::span alloc = allocate(pSizeInfos[i].size, pSizeInfos[i].alignment);
+			result = vkResetFences(r_device, 1, &transferFences[jobIndex]);
 
-			if (!alloc) {
+			if (result != VK_SUCCESS)
+				return result;
 
-				continue;
+			result = vkResetCommandBuffer(commandBuffers[jobIndex], 0);
+
+			if (result != VK_SUCCESS)
+				return result;
+
+			{
+				VkCommandBufferBeginInfo beginInfo{};
+				beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+				beginInfo.pNext = nullptr;
+				beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+				beginInfo.pInheritanceInfo = nullptr;
+
+				result = vkBeginCommandBuffer(commandBuffers[jobIndex], &beginInfo);
 			}
 
-			memcpy(alloc.data(), pSizeInfos[i].pData, pSizeInfos[i].size);
+			if (result != VK_SUCCESS)
+				return result;
 
-			const VkDeviceSize allocBase = static_cast<VkDeviceSize>(static_cast<uint8_t*>(alloc.begin()) - static_cast<uint8_t*>(pMapped));
-			flushBase = flushBase < allocBase ? flushBase : allocBase;
+			VkDeviceSize flushBase = UINT64_MAX;
+			VkDeviceSize flushEnd = 0;
 
-			const VkDeviceSize allocEnd = static_cast<VkDeviceSize>(static_cast<uint8_t*>(alloc.end()) - static_cast<uint8_t*>(pMapped));
-			flushEnd = flushEnd < allocEnd ? allocEnd : flushEnd;
+			while (transferIndex < _TransferCount) {
+				uint8_t* pAllocBase = mem::alignUp<uint8_t>(pHead, pSource[transferIndex].alignment);
+				uint8_t* pAllocEnd = pAllocBase + pSource[transferIndex].size;
 
-			VkBufferCopy copy = { allocBase, pBufferInfos[i].dstOffset, pSizeInfos[i].size };
+				if (pAllocEnd > pEnd) {
+					
+					pAllocBase = mem::alignUp<uint8_t>(pMapped, pSource[transferIndex].alignment);
+					pAllocEnd = pAllocBase + pSource[transferIndex].size;
 
-			vkCmdCopyBuffer(CMD, stage, pBufferInfos[i].buffer, 1, &copy);
+					if (pAllocEnd < pEnd) {
+						pHead = pMapped;
+
+						break;
+					}
+
+					UniqueBuffer& jobBuffer = jobBuffers.emplace_back();
+					uint8_t* jobBufferData;
+
+					result = createUniqueBuffer(pSource[transferIndex].size, &jobBuffer, &jobBufferData);
+
+					if (result != VK_SUCCESS)
+						return result;
+
+					memcpy(jobBufferData, pSource[transferIndex].pData, pSource[transferIndex].size);
+
+					result = vmaFlushAllocation(r_allocator, jobBuffer.allocation, 0, pSource[transferIndex].size);
+
+					if (result != VK_SUCCESS) {
+						return result;
+					}
+
+					VkBufferCopy copy = { 0, pBufferInfos[transferIndex].dstOffset, pSource[transferIndex].size };
+					
+					vkCmdCopyBuffer(commandBuffers[jobIndex], jobBuffer.buffer, pBufferInfos[transferIndex].buffer, 1, &copy);
+
+					jobBufferFences.push_back(transferFences[jobIndex]);
+				}
+
+				if (pHead < pTail && pAllocEnd > pTail) {
+					size_t i = acquireHint;
+
+					do {
+						result = waitTransferJob(i);
+
+						if (result != VK_SUCCESS)
+							return result;
+
+						pTail = transferMarks[i % jobCount];
+
+						if (pAllocEnd < pTail)
+							break;
+
+						i++;
+						i %= jobCount;
+
+					} while (i != jobIndex);
+
+					if (pAllocEnd > pTail) {
+						break;
+					}
+				}
+
+				pHead = pAllocEnd;
+
+				memcpy(pAllocBase, pSource[transferIndex].pData, pSource[transferIndex].size);
+
+				const VkDeviceSize allocBase = static_cast<VkDeviceSize>(pAllocBase - pMapped);
+				flushBase = flushBase < allocBase ? flushBase : allocBase;
+
+				const VkDeviceSize allocEnd = static_cast<VkDeviceSize>(pAllocEnd - pMapped);
+				flushEnd = flushEnd < allocEnd ? allocEnd : flushEnd;
+
+				VkBufferCopy copy = { allocBase, pBufferInfos[transferIndex].dstOffset, pSource[transferIndex].size };
+
+				vkCmdCopyBuffer(commandBuffers[jobIndex], stage, pBufferInfos[transferIndex].buffer, 1, &copy);
+
+				transferIndex++;
+			}
+
+			result = vkEndCommandBuffer(commandBuffers[jobIndex]);
+
+			if (result != VK_SUCCESS)
+				return result;
+
+			stats.current = pHead >= pTail ? static_cast<size_t>(pHead - pTail) : static_cast<size_t>(pEnd - pTail + pHead - pMapped);
+			stats.peak = stats.current > stats.peak ? stats.current : stats.peak;
+
+			if (!flushEnd)
+				continue;
+
+			const VkDeviceSize flushSize = flushEnd - flushBase;
+
+			result = vmaFlushAllocation(r_allocator, allocation, flushBase, flushSize);
+
+			if (result != VK_SUCCESS)
+				return result;
+
+			{
+				VkSubmitInfo submitInfo{};
+				submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+				submitInfo.pNext = nullptr;
+				submitInfo.waitSemaphoreCount = 0;
+				submitInfo.pWaitSemaphores = nullptr;
+				submitInfo.commandBufferCount = 1;
+				submitInfo.pCommandBuffers = &commandBuffers[jobIndex];
+				submitInfo.signalSemaphoreCount = _Signal ? 1 : 0;
+				submitInfo.pSignalSemaphores = _Signal ? &_Signal : nullptr;
+
+				result = vkQueueSubmit(transferQueue, 1, &submitInfo, transferFences[jobIndex]);
+			}
+
+			if (result != VK_SUCCESS)
+				return result;
+
+			transferMarks[jobIndex] = pMapped + flushEnd;
 		}
-
-		result = vkEndCommandBuffer(CMD);
-
-		if (result != VK_SUCCESS)
-			return result;
-
-		const VkDeviceSize flushSize = flushEnd - flushBase;
-
-		result = vmaFlushAllocation(r_allocator, allocation, flushBase, flushSize);
-
-		if (result != VK_SUCCESS)
-			return result;
-
-		{
-			VkSubmitInfo submitInfo{};
-			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-			submitInfo.pNext = nullptr;
-			submitInfo.waitSemaphoreCount = 0;
-			submitInfo.pWaitSemaphores = nullptr;
-			submitInfo.commandBufferCount = 1;
-			submitInfo.pCommandBuffers = &CMD;
-			submitInfo.signalSemaphoreCount = _Signal ? 1 : 0;
-			submitInfo.pSignalSemaphores = _Signal ? &_Signal : nullptr;
-
-			result = vkQueueSubmit(transferQueue, 1, &submitInfo, transferFences[jobIndex]);
-		}
-
-		if (result != VK_SUCCESS)
-			return result;
-
-		transferOffsets[jobIndex] = flushEnd;
-
-		stats.current = head >= tail ? static_cast<size_t>(head - tail) : static_cast<size_t>(bufferSize - tail + head);
-		stats.peak = stats.current > stats.peak ? stats.current : stats.peak;
 
 		return VK_SUCCESS;
 	}
 
-	VkResult TransferStage::submitUploads(VkCommandBuffer commandBuffer, VkFence fence) noexcept {
-		const size_t bufferCount = stagingBufferStates.size();
+	VkResult TransferStage::dumpUniqueBuffers() noexcept {
+		VkResult result;
 
-		for (size_t i = 0; i < bufferCount; ++i) {
-			stagingBufferState& bufferState = stagingBufferStates[i];
+		if (jobBuffers.empty())
+			return VK_SUCCESS;
 
-			if (bufferState.regions.empty())
-				continue;
+		result = vkWaitForFences(r_device, static_cast<uint32_t>(jobBufferFences.size()), jobBufferFences.data(), VK_TRUE, UINT64_MAX);
+		
+		if (result != VK_SUCCESS)
+			return result;
 
-			std::unordered_map<VkBuffer, std::vector<VkBufferCopy>> batches;
+		UniqueBuffer* const pLast = jobBuffers.end()._Ptr;
 
-			for (const auto& r : bufferState.regions) {
-				batches[r.dstBuffer].push_back(r.copyInfo);
-			}
-
-			VkBuffer stagingBuffer = stagingBuffers[i].buffer;
-
-			size_t flushSize = bufferState.flushEnd - bufferState.flushStart;
-			vmaFlushAllocation(r_allocator, stagingBuffers.allocation(i), bufferState.flushStart, flushSize);
-
-			for (auto& [dstBuffer, copyRegionInfo] : batches) {
-				uint32_t copyRegionCount = static_cast<uint32_t>(copyRegionInfo.size());
-				vkCmdCopyBuffer(commandBuffer, stagingBuffer, dstBuffer, copyRegionCount, copyRegionInfo.data());
-			}
-
-			bufferState.fence = fence;
+		for (UniqueBuffer* pBuffer{ jobBuffers.data() }; pBuffer != pLast; ++pBuffer) {
+			vmaDestroyBuffer(r_allocator, pBuffer->buffer, pBuffer->allocation);
 		}
+
+		jobBuffers.clear();
+		jobBufferFences.clear();
 
 		return VK_SUCCESS;
 	}

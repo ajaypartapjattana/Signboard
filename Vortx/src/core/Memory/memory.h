@@ -167,7 +167,7 @@ namespace mem {
 				(size_t)info.dwPageSize,
 				(size_t)info.dwAllocationGranularity
 			};
-		}();
+			}();
 
 	};
 
@@ -382,7 +382,7 @@ namespace mem {
 				ensure(pLast);
 			}
 			catch (const std::exception& _Except) {
-				return {};
+				return{};
 			}
 
 			AllocHead* pNewHead = locateHead(pFirst);
@@ -396,22 +396,53 @@ namespace mem {
 		}
 
 		template <typename _Ty>
-		span<_Ty> shrinkLast(_Ty* _pLast) {
-			assert(pOldHead);
+		void realloc(size_t _Count, span<_Ty>& _Span) noexcept {
+			assert(_Span && pOldHead);
 
 			span<_Ty> lastAlloc = getAlloc<_Ty>(pOldHead);
 
-			assert(lastAlloc.contains(_pLast));
+			assert(_Span.data() == lastAlloc.data());
 
-			pCurrent = reinterpret_cast<uint8_t*>(_pLast);
+			uint8_t* const pLast = reinterpret_cast<uint8_t*>(_Span.data() + _Count);
+
+			try {
+				ensure(pLast);
+			}
+			catch (const std::exception& _Except) {
+				return;
+			}
+
+			pCurrent = pLast;
+			pOldHead->extent = static_cast<uint32_t>(pCurrent - reinterpret_cast<uint8_t*>(pOldHead));
+
+			_Span = { _Span.data(), reinterpret_cast<_Ty*>(pCurrent) };
+		}
+
+		template <typename _Ty>
+		void realloc(_Ty* _pLast, span<_Ty> _Span) noexcept {
+			assert(_Span && pOldHead);
+
+			span<_Ty> lastAlloc = getAlloc<_Ty>(pOldHead);
+
+			assert(_Span.data() == lastAlloc.data() && _pLast >= _Span.data());
+
+			uint8_t* const pLast = reinterpret_cast<uint8_t*>(_pLast);
+
+			try {
+				ensure(pLast);
+			}
+			catch (const std::exception& _Except) {
+				return;
+			}
+
+			pCurrent = pLast;
 			pOldHead->extent = static_cast<uint32_t>(pCurrent - reinterpret_cast<uint8_t*>(pOldHead));
 			
-			return { lastAlloc.data(), reinterpret_cast<_Ty*>(pCurrent) };
+			_Span = { _Span.data(), reinterpret_cast<_Ty*>(pCurrent) };
 		}
 
 		void pop() noexcept {
-			if (!pOldHead)
-				return;
+			assert(pOldHead);
 
 			pOldHead = pOldHead->prevHead ? pOldHead - pOldHead->prevHead : nullptr;
 			pCurrent = pOldHead ? reinterpret_cast<uint8_t*>(pOldHead) + pOldHead->extent : pBase;
