@@ -7,7 +7,6 @@
 #include <cstring>
 #include <cstdint>
 #include <utility>
-#include <stdexcept>
 #include <cassert>
 #include <type_traits>
 
@@ -22,26 +21,20 @@ namespace mem {
 	}
 
 	template <typename T>
-	constexpr T* alignUp(T* _pAddr, size_t _Align) noexcept {
-		return reinterpret_cast<T*>((reinterpret_cast<size_t>(_pAddr) + _Align - 1) & ~(_Align - 1));
+	constexpr T* alignUp(T* _Addr, size_t _Align) noexcept {
+		return reinterpret_cast<T*>((reinterpret_cast<size_t>(_Addr) + _Align - 1) & ~(_Align - 1));
 	}
 
 	template <typename T>
-	constexpr T* alignDown(T* _pAddr, size_t _Align) noexcept {
-		return reinterpret_cast<T*>(reinterpret_cast<size_t>(_pAddr) & ~(_Align - 1));
+	constexpr T* alignDown(T* _Addr, size_t _Align) noexcept {
+		return reinterpret_cast<T*>(reinterpret_cast<size_t>(_Addr) & ~(_Align - 1));
 	}
 
 	template <typename _Ty = uint8_t>
-	class span {
-	protected:
+	struct span {
 		_Ty* pBegin = nullptr;
 		_Ty* pEnd = nullptr;
 
-		bool adjacent(const span& _Other) const noexcept {
-			return pEnd == _Other.pBegin || pBegin == _Other.pEnd;
-		}
-
-	public:
 		span() noexcept = default;
 		span(_Ty* _pBegin, _Ty* _pEnd) noexcept
 			:
@@ -67,19 +60,19 @@ namespace mem {
 		}
 
 		_Ty* begin() noexcept {
-			return pBegin; 
+			return pBegin;
 		}
 
-		const _Ty* begin() const noexcept { 
-			return pBegin; 
+		const _Ty* begin() const noexcept {
+			return pBegin;
 		}
 
-		_Ty* end() noexcept { 
-			return pEnd; 
+		_Ty* end() noexcept {
+			return pEnd;
 		}
 
-		const _Ty* end() const noexcept { 
-			return pEnd; 
+		const _Ty* end() const noexcept {
+			return pEnd;
 		}
 
 		_Ty* data() noexcept {
@@ -94,20 +87,16 @@ namespace mem {
 			return static_cast<size_t>(pEnd - pBegin);
 		}
 
-		size_t index(_Ty* const _pAddr) const noexcept {
-			return static_cast<size_t>(_pAddr - pBegin);
+		size_t index(_Ty* const _Addr) const noexcept {
+			return static_cast<size_t>(_Addr - pBegin);
 		}
 
-		operator bool() const noexcept {
+		explicit operator bool() const noexcept {
 			return pBegin && pEnd;
 		}
 
 		bool empty() const noexcept {
 			return pBegin == pEnd;
-		}
-
-		bool contains(_Ty* _Addr) const noexcept {
-			return _Addr >= pBegin && _Addr < pEnd;
 		}
 
 		bool contains(const span& _Other) const noexcept {
@@ -118,18 +107,42 @@ namespace mem {
 			return pBegin < _Other.pEnd && _Other.pBegin < pEnd;
 		}
 
+		void remove_prefix(size_t _Count) noexcept {
+			assert(_Count <= size());
+
+			pBegin += _Count;
+		}
+
+		void remove_suffix(size_t _Count) noexcept {
+			assert(_Count <= size());
+
+			pEnd -= _Count;
+		}
+
+		void set_begin(_Ty* const _Addr) noexcept {
+			pBegin = _Addr;
+		}
+
+		void set_end(_Ty* const _Addr) noexcept {
+			pEnd = _Addr;
+		}
+
 		void assign(const _Ty& _Val) const noexcept(std::is_nothrow_copy_assignable_v<_Ty>) {
 			std::fill(pBegin, pEnd, _Val);
 		}
 
-		void defaultConstruct() const noexcept {
+		void assign_default() const noexcept {
 			if constexpr (std::is_trivially_constructible_v<_Ty> && std::is_trivially_destructible_v<_Ty>) {
-				memset(pBegin, 0, static_cast<size_t>(pEnd - pBegin));
+				memset(pBegin, 0, static_cast<size_t>(pEnd - pBegin) * sizeof(_Ty));
 			}
 			else {
-				for (_Ty* ptr{ pBegin }; ptr != pEnd; ++p)
+				for (_Ty* ptr{ pBegin }; ptr != pEnd; ++ptr)
 					::new (ptr) _Ty{};
 			}
+		}
+
+		bool adjacent(const span& _Other) const noexcept {
+			return pEnd == _Other.pBegin || pBegin == _Other.pEnd;
 		}
 
 		_NODISCARD span slice(size_t _Size) noexcept {
@@ -143,11 +156,81 @@ namespace mem {
 		}
 
 		void merge(const span& _Other) noexcept {
-			if (!adjacent(_Other) && !overlaps(_Other))
-				return;
+			assert(adjacent(_Other) || overlaps(_Other));
 
 			pBegin = pBegin < _Other.pBegin ? pBegin : _Other.pBegin;
 			pEnd = pEnd > _Other.pEnd ? pEnd : _Other.pEnd;
+		}
+
+	};
+
+	template <typename _Ty>
+	class static_vector {
+	private:
+		span<_Ty> storage;
+		_Ty* pCurrent = nullptr;
+
+	public:
+		static_vector() noexcept = default;
+		static_vector(const span<_Ty>& _Span) noexcept 
+			:
+			storage(_Span),
+			pCurrent(_Span.pBegin)
+		{
+
+		}
+
+		static_vector& operator=(const span<_Ty>& _Span) noexcept {
+			storage = _Span;
+			pCurrent = storage.begin();
+
+			return *this;
+		}
+
+		span<_Ty> view() const noexcept {
+			return { storage.pBegin, pCurrent };
+		}
+
+		size_t size() const noexcept {
+			return static_cast<size_t>(pCurrent - storage.pBegin);
+		}
+
+		size_t capacity() const noexcept {
+			return storage.size();
+		}
+
+		bool empty() const noexcept {
+			return pCurrent == storage.pBegin;
+		}
+
+		void clear() noexcept {
+			if constexpr (!std::is_trivially_destructible_v<_Ty>)
+				while (pCurrent != storage.pBegin)
+					(--pCurrent)->~_Ty();
+			else
+				pCurrent = storage.pBegin;
+		}
+
+		void push_back(_Ty&& _Val) noexcept {
+			assert(pCurrent != storage.pEnd);
+
+			*(pCurrent++) = _Val;
+		}
+
+		template <class... Args>
+		_Ty* emplace_back(Args&&... args) noexcept {
+			assert(pCurrent != pEnd);
+			::new (pCurrent) _Ty(std::forward<Args>(args)...);
+
+			return pCurrent++;
+		}
+
+		void pop_back() noexcept {
+			assert(pCurrent != storage.pBegin);
+			--pCurrent;
+
+			if constexpr (!std::is_trivially_destructible_v<_Ty>)
+				pCurrent->~Ty();
 		}
 
 	};
@@ -156,116 +239,112 @@ namespace mem {
 	protected:
 		struct SystemMemoryInfo {
 			size_t pageSize;
-			size_t reservationGranularity;
+			size_t allocationGranularity;
 		};
 
 		inline static const SystemMemoryInfo memInfo = [] {
 			SYSTEM_INFO info;
 			GetSystemInfo(&info);
-
+			
 			return SystemMemoryInfo{
 				(size_t)info.dwPageSize,
 				(size_t)info.dwAllocationGranularity
 			};
-			}();
+		}();
+
+		void* reserve(void* _AllocHint, size_t* pCapacity) const noexcept {
+			assert(pCapacity);
+
+			size_t allocSize = *pCapacity;
+			allocSize = allocSize ? alignUp(allocSize, memInfo.allocationGranularity) : memInfo.allocationGranularity;
+
+			void* const pAlloc = VirtualAlloc(_AllocHint, allocSize, MEM_RESERVE, PAGE_READWRITE);
+
+			if (pAlloc) {
+				*pCapacity = allocSize;
+
+				return pAlloc;
+			}
+
+			*pCapacity = 0ull;
+
+			return nullptr;
+		}
+
+		void* commit(void* _Hint, size_t* pSize) const noexcept {
+			assert(_Hint && pSize);
+
+			size_t allocSize = *pSize;
+			allocSize = allocSize ? alignUp(allocSize, memInfo.pageSize) : memInfo.pageSize;
+
+			void* const pAlloc = VirtualAlloc(_Hint, allocSize, MEM_COMMIT, PAGE_READWRITE);
+
+			if (pAlloc) {
+				*pSize = allocSize;
+
+				return pAlloc;
+			}
+
+			*pSize = 0ull;
+
+			return nullptr;
+		}
+
+		void* decommit(void* _Hint, size_t* pSize) const noexcept {
+			assert(_Hint && pSize);
+
+			uint8_t* pBase = alignDown<uint8_t>(reinterpret_cast<uint8_t*>(_Hint), memInfo.pageSize);
+			uint8_t* pEnd = alignUp<uint8_t>(reinterpret_cast<uint8_t*>(_Hint) + *pSize, memInfo.pageSize);
+
+			const size_t releaseSize = static_cast<size_t>(pEnd - pBase);
+
+			BOOL result = VirtualFree((void*)pBase, releaseSize, MEM_DECOMMIT);
+
+			if (result) {
+				*pSize = releaseSize;
+
+				return _Hint;
+			}
+
+			*pSize = 0;
+
+			return nullptr;
+		}
+
+		void free(void* const pAlloc) const noexcept {
+			assert(pAlloc);
+
+			VirtualFree(pAlloc, 0, MEM_RELEASE);
+		}
 
 	};
 
 	class stack : memBase {
 	private:
 		uint8_t* pBase = nullptr;
-		uint8_t* pMark = nullptr;
 		uint8_t* pCurrent = nullptr;
 		uint8_t* pEnd = nullptr;
 		uint8_t* pCap = nullptr;
 
-		struct AllocHead {
-			uint32_t prevHead;
-			uint32_t extent;
+		struct Marker {
+			size_t prevMark;
 		};
 
-		constexpr static uint32_t headRatio = sizeof(AllocHead) / alignof(AllocHead);
+		uint8_t* pMark = nullptr;
 
-		AllocHead* pOldHead = nullptr;
-
-		template <typename _Ty>
-		AllocHead* locateHead(_Ty* pAlloc) const noexcept {
-			return reinterpret_cast<AllocHead*>(alignDown(reinterpret_cast<uint8_t>(pAlloc) - sizeof(AllocHead), sizeof(AllocHead)));
-		}
-
-		template <typename _Ty>
-		span<_Ty> getAlloc(AllocHead* _pHead) const noexcept {
-			uint8_t* pHead = reinterpret_cast<uint8_t*>(_pHead);
-
-			_Ty* pFirst = reinterpret_cast<_Ty*>(alignUp<uint8_t>(pHead + sizeof(AllocHead), alignof(_Ty)));
-			_Ty* pLast = reinterpret_cast<_Ty*>(reinterpret_cast<uint8_t*>(_pHead) + _pHead->extent);
-
-			return { pFirst, pLast };
-		}
-
-		void reserve(size_t _Capacity) {
-			if (pBase)
-				VirtualFree(pBase, 0, MEM_RELEASE);
-
-			_Capacity = _Capacity ? alignUp(_Capacity, memInfo.reservationGranularity) : memInfo.reservationGranularity;
-
-			void* const pAlloc = VirtualAlloc(nullptr, _Capacity, MEM_RESERVE, PAGE_READWRITE);
-
-			if (!pAlloc)
-				throw std::bad_alloc();
-
-			pBase = reinterpret_cast<uint8_t*>(pAlloc);
-			pCurrent = reinterpret_cast<uint8_t*>(pAlloc);
-			pEnd = reinterpret_cast<uint8_t*>(pAlloc);
-			pCap = reinterpret_cast<uint8_t*>(pAlloc) + _Capacity;
-		}
-
-		void commit(size_t _Size) {
-			_Size = _Size ? alignUp(_Size, memInfo.pageSize) : memInfo.pageSize;
-			
-			const size_t m_cap = static_cast<size_t>(pCap - pEnd);
-
-			if (_Size > m_cap) {
-				reserve(_Size);
-			}
-
-			void* const pAlloc = VirtualAlloc(pEnd, _Size, MEM_COMMIT, PAGE_READWRITE);
-
-			if (!pAlloc)
-				throw std::bad_alloc();
-
-			pEnd += _Size;
-		}
-
-		void decommit(size_t _Size) {
-			const size_t m_size = pEnd - pBase;
-
-			if (!m_size)
+		void ensure(uint8_t* const _Addr) {
+			if (_Addr <= pEnd)
 				return;
 
-			void* _pEnd = _Size < m_size ? pEnd - _Size : pEnd;
-			_pEnd = alignDown<void>(_pEnd, memInfo.pageSize);
+			if (_Addr < pCap) {
+				size_t commitSize = _Addr - pEnd;
 
-			size_t releaseSize = static_cast<size_t>(pEnd - _pEnd);
-
-			VirtualFree(_pEnd, releaseSize, MEM_DECOMMIT);
-
-			pEnd = reinterpret_cast<uint8_t*>(_pEnd);
-		}
-
-		void ensure(uint8_t* _pAddr) {
-			if (_pAddr <= pEnd)
-				return;
-
-			if (_pAddr < pCap) {
-				const size_t allocSize = alignUp(static_cast<size_t>(_pAddr - pEnd), memInfo.pageSize);
-
-				void* pAlloc = VirtualAlloc(pEnd, allocSize, MEM_COMMIT, PAGE_READWRITE);
+				void* pAlloc = commit(pEnd, &commitSize);
 
 				if (!pAlloc)
 					throw std::bad_alloc();
 
-				pEnd += allocSize;
+				pEnd += commitSize;
 
 				return;
 			}
@@ -274,29 +353,35 @@ namespace mem {
 		}
 
 	public:
+
 		stack() noexcept = default;
 		stack(size_t _Size) {
-			reserve(_Size);
+			size_t allocSize = _Size;
 
-			_Size = alignUp(_Size, memInfo.pageSize);
-
-			void* pAlloc = VirtualAlloc(pBase, _Size, MEM_COMMIT, PAGE_READWRITE);
+			void* pAlloc = reserve(nullptr, &allocSize);
 
 			if (!pAlloc)
 				throw std::bad_alloc();
 
+			pBase = reinterpret_cast<uint8_t*>(pAlloc);
 			pCurrent = reinterpret_cast<uint8_t*>(pAlloc);
+			pCap = reinterpret_cast<uint8_t*>(pAlloc) + allocSize;
+
+			pAlloc = commit(pBase, &_Size);
+
+			if (!pAlloc)
+				throw std::bad_alloc();
+
 			pEnd = reinterpret_cast<uint8_t*>(pAlloc) + _Size;
 		}
 		stack(const stack&) = delete;
-		stack(stack&& _Other) noexcept 
+		stack(stack&& _Other) noexcept
 			:
 			pBase(std::exchange(_Other.pBase, nullptr)),
 			pMark(std::exchange(_Other.pMark, nullptr)),
 			pCurrent(std::exchange(_Other.pCurrent, nullptr)),
 			pEnd(std::exchange(_Other.pEnd, nullptr)),
-			pCap(std::exchange(_Other.pCap, nullptr)),
-			pOldHead(std::exchange(_Other.pOldHead, nullptr))
+			pCap(std::exchange(_Other.pCap, nullptr))
 		{
 
 		}
@@ -311,14 +396,268 @@ namespace mem {
 			pCurrent = std::exchange(_Other.pCurrent, nullptr);
 			pEnd = std::exchange(_Other.pEnd, nullptr);
 			pCap = std::exchange(_Other.pCap, nullptr);
-			pOldHead = std::exchange(_Other.pOldHead, nullptr);
 
 			return *this;
 		}
 
 		~stack() noexcept {
-			if (pBase)
-				VirtualFree(pBase, 0, MEM_RELEASE);
+			if (!pBase)
+				return;
+
+			free(pBase);
+		}
+
+		size_t size() const noexcept {
+			return static_cast<size_t>(pCurrent - pBase);
+		}
+
+		size_t committed() const noexcept {
+			return static_cast<size_t>(pEnd - pBase);
+		}
+
+		size_t capacity() const noexcept {
+			return static_cast<size_t>(pCap - pBase);
+		}
+
+		void resize(size_t _Size) {
+			if (!pCap) {
+				size_t capacity = _Size;
+
+				void* pAlloc = reserve(nullptr, &capacity);
+
+				if (!pAlloc)
+					throw std::bad_alloc();
+
+				pBase = reinterpret_cast<uint8_t*>(pAlloc);
+				pCurrent = reinterpret_cast<uint8_t*>(pAlloc);
+				pEnd = reinterpret_cast<uint8_t*>(pAlloc);
+				pCap = reinterpret_cast<uint8_t*>(pAlloc) + capacity;
+			}
+
+			uint8_t* const pReq = pBase + _Size;
+
+			ensure(pReq);
+		}
+
+		void reset() noexcept {
+			if (!pBase)
+				return;
+
+			free(pBase);
+
+			pBase = nullptr;
+			pCurrent = nullptr;
+			pEnd = nullptr;
+			pCap = nullptr;
+
+			pMark = nullptr;
+		}
+
+		void clear() noexcept {
+			pCurrent = pBase;
+			pMark = nullptr;
+		}
+
+		bool mark() noexcept {
+			if (!pBase) {
+				try {
+					resize(0);
+				}
+				catch (const std::exception& _Except) {
+					return false;
+				}
+			}
+
+			if (pCurrent == pBase)
+				return true;
+
+			const size_t markerOffset = pMark ? static_cast<size_t>(pMark - pBase) : 0;
+
+			uint8_t* const pAligned = alignUp<uint8_t>(pCurrent, alignof(Marker));
+			uint8_t* const pLast = pAligned + sizeof(Marker);
+
+			try {
+				ensure(pLast);
+			}
+			catch (const std::exception& _Except) {
+				return false;
+			}
+
+			memcpy(pAligned, &markerOffset, sizeof(Marker));
+
+			pMark = pAligned;
+			pCurrent = pLast;
+
+			return true;
+		}
+
+		void restore() noexcept {
+			assert(pCurrent != pBase);
+
+			if (!pMark) {
+				pCurrent = pBase;
+
+				return;
+			}
+
+			size_t markerOffset;
+			memcpy(&markerOffset, pMark, sizeof(Marker));
+
+			pCurrent = pMark;
+
+			pMark = markerOffset ? pBase + markerOffset : nullptr;
+		}
+
+		template <typename _Ty>
+		span<_Ty> alloc(size_t _Count) noexcept {
+			const size_t allocSize = _Count * sizeof(_Ty);
+
+			if (!pBase) {
+				try {
+					resize(allocSize);
+				}
+				catch (const std::exception& _Except) {
+					return {};
+				}
+			}
+
+			uint8_t* pFirst = alignUp<uint8_t>(pCurrent, alignof(_Ty));
+			uint8_t* pLast = pFirst + allocSize;
+
+			try {
+				ensure(pLast);
+			}
+			catch (const std::exception& _Except) {
+				return{};
+			}
+
+			pCurrent = pLast;
+
+			return { reinterpret_cast<_Ty*>(pFirst), reinterpret_cast<_Ty*>(pLast) };
+		}
+
+		template <typename _Ty>
+		span<_Ty> realloc(const span<_Ty>& _Last, size_t _NewCount) noexcept {
+			//assert(span{ pBase, pCurrent }.contains(_Last) && _Last.end() == pCurrent);
+
+			_Ty* pFirst = _Last.begin();
+			_Ty* pLast = pFirst + _NewCount;
+
+			try {
+				ensure(reinterpret_cast<uint8_t*>(pLast));
+			}
+			catch (const std::exception& _Except) {
+				return {};
+			}
+
+			pCurrent = reinterpret_cast<uint8_t*>(pLast);
+
+			return { pFirst, pLast };
+		}
+
+	};
+
+	class smartStack : memBase {
+	private:
+		uint8_t* pBase = nullptr;
+		uint8_t* pCurrent = nullptr;
+		uint8_t* pEnd = nullptr;
+		uint8_t* pCap = nullptr;
+
+		struct AllocHead {
+			uint32_t prevHead;
+			uint32_t extent;
+		};
+
+		AllocHead* pOldHead = nullptr;
+
+		template <typename _Ty>
+		AllocHead* locateHead(_Ty* pAlloc) const noexcept {
+			return reinterpret_cast<AllocHead*>(alignDown(reinterpret_cast<uint8_t*>(pAlloc) - sizeof(AllocHead), sizeof(AllocHead)));
+		}
+
+		template <typename _Ty>
+		span<_Ty> getAlloc(AllocHead* _pHead) const noexcept {
+			uint8_t* pHead = reinterpret_cast<uint8_t*>(_pHead);
+
+			_Ty* pFirst = reinterpret_cast<_Ty*>(alignUp<uint8_t>(pHead + sizeof(AllocHead), alignof(_Ty)));
+			_Ty* pLast = reinterpret_cast<_Ty*>(reinterpret_cast<uint8_t*>(_pHead) + _pHead->extent);
+
+			return { pFirst, pLast };
+		}
+
+		void ensure(uint8_t* const _Addr) {
+			if (_Addr <= pEnd)
+				return;
+
+			if (_Addr < pCap) {
+				size_t commitSize = _Addr - pEnd;
+
+				void* pAlloc = commit(pEnd, &commitSize);
+
+				if (!pAlloc)
+					throw std::bad_alloc();
+
+				pEnd += commitSize;
+
+				return;
+			}
+
+			throw std::bad_alloc();
+		}
+
+	public:
+		smartStack() noexcept = default;
+		smartStack(size_t _Size) {
+			size_t allocSize = _Size;
+
+			void* pAlloc = reserve(nullptr, &allocSize);
+
+			if (!pAlloc)
+				throw std::bad_alloc();
+
+			pBase = reinterpret_cast<uint8_t*>(pAlloc);
+			pCurrent = reinterpret_cast<uint8_t*>(pAlloc);
+			pCap = reinterpret_cast<uint8_t*>(pAlloc) + allocSize;
+
+			pAlloc = commit(pBase, &_Size);
+
+			if (!pAlloc)
+				throw std::bad_alloc();
+
+			pEnd = reinterpret_cast<uint8_t*>(pAlloc) + _Size;
+		}
+		smartStack(const smartStack&) = delete;
+		smartStack(smartStack&& _Other) noexcept
+			:
+			pBase(std::exchange(_Other.pBase, nullptr)),
+			pCurrent(std::exchange(_Other.pCurrent, nullptr)),
+			pEnd(std::exchange(_Other.pEnd, nullptr)),
+			pCap(std::exchange(_Other.pCap, nullptr)),
+			pOldHead(std::exchange(_Other.pOldHead, nullptr))
+		{
+
+		}
+
+		smartStack& operator=(const smartStack&) = delete;
+		smartStack& operator=(smartStack&& _Other) noexcept {
+			if (this == &_Other)
+				return *this;
+
+			pBase = std::exchange(_Other.pBase, nullptr);
+			pCurrent = std::exchange(_Other.pCurrent, nullptr);
+			pEnd = std::exchange(_Other.pEnd, nullptr);
+			pCap = std::exchange(_Other.pCap, nullptr);
+			pOldHead = std::exchange(_Other.pOldHead, nullptr);
+
+			return *this;
+		}
+
+		~smartStack() noexcept {
+			if (!pBase)
+				return;
+
+			free(pBase);
 		}
 
 		size_t size() const noexcept {
@@ -337,36 +676,41 @@ namespace mem {
 			if (!pBase)
 				return;
 
-			VirtualFree(pBase, pEnd - pBase, MEM_DECOMMIT);
+			free(pBase);
 
-			pMark = nullptr;
-			pCurrent = pBase;
-			pEnd = pBase;
+			pBase = nullptr;
+			pCurrent = nullptr;
+			pEnd = nullptr;
+			pCap = nullptr;
+
+			pOldHead = nullptr;
 		}
 
 		void resize(size_t _Size) {
-			if (pCurrent != pBase)
-				throw std::logic_error("stack_not_empty!");
+			if (!pCap) {
+				size_t capacity = _Size;
 
-			const size_t m_size = static_cast<size_t>(pEnd - pBase);
+				void* pAlloc = reserve(nullptr, &capacity);
 
-			_Size = alignUp(_Size, memInfo.pageSize);
-			
-			if (_Size < m_size) {
-				decommit(m_size - _Size);
+				if (!pAlloc)
+					throw std::bad_alloc();
+
+				pBase = reinterpret_cast<uint8_t*>(pAlloc);
+				pCurrent = reinterpret_cast<uint8_t*>(pAlloc);
+				pEnd = reinterpret_cast<uint8_t*>(pAlloc);
+				pCap = reinterpret_cast<uint8_t*>(pAlloc) + capacity;
 			}
-			else {
-				commit(_Size - m_size);
-			}
 
-			pEnd = pBase + _Size;
+			uint8_t* const pReq = pBase + _Size;
+
+			ensure(pReq);
 		}
 
 		template <typename _Ty>
 		span<_Ty> alloc(size_t _Count) noexcept {
 			if (!pBase) {
 				try {
-					commit(0);
+					resize(0);
 				}
 				catch (const std::exception& _Except) {
 					return {};
@@ -387,7 +731,7 @@ namespace mem {
 
 			AllocHead* pNewHead = locateHead(pFirst);
 
-			*pNewHead = { static_cast<uint32_t>(pOldHead ? pNewHead - pOldHead : 0), static_cast<uint32_t>(pLast - reinterpret_cast<uint8_t*>(pNewHead))};
+			*pNewHead = { static_cast<uint32_t>(pOldHead ? pNewHead - pOldHead : 0), static_cast<uint32_t>(pLast - reinterpret_cast<uint8_t*>(pNewHead)) };
 
 			pCurrent = pLast;
 			pOldHead = pNewHead;
@@ -437,7 +781,7 @@ namespace mem {
 
 			pCurrent = pLast;
 			pOldHead->extent = static_cast<uint32_t>(pCurrent - reinterpret_cast<uint8_t*>(pOldHead));
-			
+
 			_Span = { _Span.data(), reinterpret_cast<_Ty*>(pCurrent) };
 		}
 
@@ -448,45 +792,9 @@ namespace mem {
 			pCurrent = pOldHead ? reinterpret_cast<uint8_t*>(pOldHead) + pOldHead->extent : pBase;
 		}
 
-		void mark() {
-			if (!pBase) {
-				commit(0);
-			}
-
-			if (pCurrent == pBase)
-				return;
-
-			const size_t markerOffset = pMark ? static_cast<size_t>(pMark - pBase) : 0;
-
-			uint8_t* const pAligned = alignUp<uint8_t>(pCurrent, alignof(size_t));
-			uint8_t* const pLast = pAligned + sizeof(size_t);
-
-			ensure(pLast);
-
-			memcpy(pAligned, &markerOffset, sizeof(size_t));
-
-			pMark = pAligned;
-			pCurrent = pLast;
-		}
-
-		void restore() noexcept {
-			if (!pMark) {
-				pCurrent = pBase;
-
-				return;
-			}
-
-			size_t markerOffset;
-			memcpy(&markerOffset, pMark, sizeof(size_t));
-
-			pCurrent = pMark;
-
-			pMark = markerOffset ? pBase + markerOffset : nullptr;
-		}
-
 		void clear() noexcept {
 			pCurrent = pBase;
-			pMark = nullptr;
+			pOldHead = nullptr;
 		}
 
 	};
@@ -494,4 +802,3 @@ namespace mem {
 	thread_local static stack scratch;
 
 }
-
