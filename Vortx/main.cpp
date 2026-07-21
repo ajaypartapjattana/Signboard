@@ -4,14 +4,9 @@
 #include "Renderer/renderer.h"
 #include "Platform/platform.h"
 
+#include <iostream>
+
 int main() {
-    mem::stack mainAlloc{ 32 << 10 };
-
-    io::ImageFile image;
-    io::Result result = image.loadPNGw(mainAlloc, L"assets_data/textures/seaside.png");
-
-    return EXIT_SUCCESS;
-
     Platform platform;
 
     platform.createWindowClass();
@@ -63,6 +58,16 @@ int main() {
     }
 
     renderer.pushRenderTarget(instance, window);
+
+    io::ImageFile image;
+    io::Result result = image.loadPNGw(L"assets_data/textures/seaside.png");
+
+    if (result != io::Result::SUCCESS) {
+        std::cerr << "Failed to load PNG image." << std::endl;
+        return EXIT_FAILURE;
+    }
+    
+	renderer.createImage(image.data(), image.size(), image.width, image.height);
 
     while (platform.pollEvents()) {
 

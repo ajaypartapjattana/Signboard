@@ -39,9 +39,9 @@ private:
 
 	VmaAllocator allocator = VK_NULL_HANDLE;
 
-	rndr::TransferStage transferStage;
+	rndr::PresentationStage presentationStage;
 
-	rndr::presentationStage presentation;
+	rndr::TransferStage transferStage;
 
 	std::vector<size_t> renderTargets;
 
@@ -59,7 +59,7 @@ public:
 
 	int pushRenderTarget(HINSTANCE hinstance, HWND hwnd) noexcept;
 
-	int createImageInstance(uint32_t width, uint32_t height);
+	int createImage(const void* const pData, size_t _Size, uint32_t _Width, uint32_t _Height) noexcept;
 
 	void reset() noexcept;
 

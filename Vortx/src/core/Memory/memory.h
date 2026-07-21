@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <utility>
 #include <cassert>
+#include <stdexcept>
 #include <type_traits>
 
 namespace mem {

@@ -2,8 +2,6 @@
 
 namespace rndr {
 
-	constexpr size_t UNIQUE_BUFFERS_PER_JOB = 8;
-
 	VkResult TransferStage::root(VkDevice _Device, VmaAllocator _Allocator, const TransferStageCreateInfo* const pCreateInfo) noexcept {
 		VkResult result = VK_ERROR_INITIALIZATION_FAILED;
 
@@ -306,10 +304,11 @@ namespace rndr {
 
 			switch (result) {
 			case VK_SUCCESS:
-			case VK_INCOMPLETE:
+			case VK_INCOMPLETE: {
 				VkBufferCopy region = { chunk.offset, *pOffset, chunk.size };
 
 				vkCmdCopyBuffer(commandBuffers[recorder], stage, _DstBuffer, 1, &region);
+			}
 
 				*pOffset += chunk.size;
 				
@@ -336,7 +335,7 @@ namespace rndr {
 		}
 	}
 
-	VkResult TransferStage::streamImageUpload(const DataSource* const pSource, VkImage _DstImage, const TransferImageAttributes* const pImageInfo, VkOffset3D* const pOffset) {
+	VkResult TransferStage::streamImageUpload(const DataSource* const pSource, VkImage _DstImage, const TransferImageAttributes* const pImageInfo, VkOffset3D* const pOffset) noexcept {
 		assert(pSource && _DstImage && pImageInfo);
 
 		VkResult result;

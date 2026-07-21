@@ -327,7 +327,7 @@ namespace io {
 		PNG_CHUNK_IEND_BIT = 0x00020000
 	};
 
-	Result ImageFile::loadPNGw(mem::stack& _Alloc, const wchar_t* _Path) {
+	Result ImageFile::loadPNGw(const wchar_t* _Path) {
 		std::vector<uint8_t> dataA;
 
 		{
@@ -384,9 +384,10 @@ namespace io {
 			CloseHandle(file);
 		}
 		
-		uint32_t width;
-		uint32_t height;
-		uint8_t bitDepth;
+		uint32_t _width;
+		uint32_t _height;
+		uint8_t _bitDepth;
+
 		uint8_t colorType;
 
 		std::vector<uint8_t> dataB;
@@ -434,8 +435,8 @@ namespace io {
 					if (gatheredChunkTypes & PNG_CHUNK_IHDR_BIT)
 						return VALIDITY_CHECK_FAILURE;
 
-					width = read_U32_BE(chunkData);
-					height = read_U32_BE(chunkData + 4);
+					_width = read_U32_BE(chunkData);
+					_height = read_U32_BE(chunkData + 4);
 
 					if (chunkData[12] != 0)
 						return UNSUPPORTED_FEATURE;
@@ -443,7 +444,8 @@ namespace io {
 					if (chunkData[10] != 0 || chunkData[11] != 0)
 						return VALIDITY_CHECK_FAILURE;
 
-					bitDepth = chunkData[8];
+					_bitDepth = chunkData[8];
+					
 					colorType = chunkData[9];
 
 					break;
@@ -795,7 +797,7 @@ namespace io {
 
 		dataB.clear();
 		
-		ImageType type;
+		ImageType _type;
 
 		{
 			const uint8_t* pGet = dataA.data();
@@ -805,31 +807,31 @@ namespace io {
 
 			switch (colorType) {
 			case 0:
-				type = IMAGE_TYPE_GRAYSCALE;
+				_type = IMAGE_TYPE_GRAYSCALE;
 				channels = 1;
 
 				break;
 
 			case 2:
-				type = IMAGE_TYPE_RGB;
+				_type = IMAGE_TYPE_RGB;
 				channels = 3;
 				
 				break;
 
 			case 3:
-				type = IMAGE_TYPE_INDEXED;
+				_type = IMAGE_TYPE_INDEXED;
 				channels = 1;
 				
 				break;
 
 			case 4:
-				type = IMAGE_TYPE_GRAYSCALE_ALPHA;
+				_type = IMAGE_TYPE_GRAYSCALE_ALPHA;
 				channels = 2;
 				
 				break;
 
 			case 6:
-				type = IMAGE_TYPE_RGB_ALPHA;
+				_type = IMAGE_TYPE_RGB_ALPHA;
 				channels = 4;
 				
 				break;
@@ -840,13 +842,13 @@ namespace io {
 			}
 
 
-			uint32_t rowByteCount = width * channels;
+			uint32_t rowByteCount = _width * channels;
 
-			dataB.resize(size_t(height) * rowByteCount);
+			dataB.resize(size_t(_height) * rowByteCount);
 
 			uint8_t* pPut = dataB.data();
 
-			for (uint32_t i = 0; i < height; ++i) {
+			for (uint32_t i = 0; i < _height; ++i) {
 				uint8_t filter = *pGet++;
 
 				switch (filter) {
@@ -920,10 +922,10 @@ namespace io {
 			}
 		}
 
-		description.width = width;
-		description.height = height;
-		description.bitDepth = bitDepth;
-		description.type = type;
+		width = _width;
+		height = _height;
+		bitDepth = _bitDepth;
+		type = _type;
 
 		bin = std::move(dataB);
 

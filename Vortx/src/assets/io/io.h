@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Signboard/Core/Memory/memory.h"
-
 #include <vector>
 #include <stdint.h>
 
@@ -25,19 +23,23 @@ namespace io {
 		IMAGE_TYPE_RGB_ALPHA
 	};
 
-	class ImageFile {
-	private:
-		struct {
-			uint32_t width;
-			uint32_t height;
-			uint16_t bitDepth;
-			ImageType type;
-		} description;
+	struct ImageFile {
+		uint32_t width;
+		uint32_t height;
+		uint16_t bitDepth;
+		ImageType type;
 
 		std::vector<uint8_t> bin;
 
-	public:
-		Result loadPNGw(mem::stack& _Alloc, const wchar_t* _Path);
+		Result loadPNGw(const wchar_t* _Path);
+
+		const uint8_t* data() const noexcept {
+			return bin.data();
+		}
+
+		size_t size() const noexcept {
+			return bin.size();
+		}
 
 	};
 

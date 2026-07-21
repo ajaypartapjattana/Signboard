@@ -1,5 +1,9 @@
 #include "presentation.h"
 
+#include <cassert>
+
+#include "core/Memory/memory.h"
+
 #include "core/Math/search.h"
 #include "assets/io/ResourceLoaders/file_loader.h"
 
@@ -14,23 +18,23 @@ namespace rndr {
 		}
 	};
 
-	VkResult presentationStage::root(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, const PresentationStageQueueInfo* pQueueInfo) noexcept {
+	VkResult PresentationStage::root(VkDevice _Device, VkPhysicalDevice _PhysicalDevice, VkSurfaceKHR _Surface, const PresentationStageCreateInfo* const pCreateInfo) noexcept {
 		VkResult result;
 		
 		if (!presentationTargets.empty()) {
 			return VK_ERROR_NOT_PERMITTED;
 		}
 
-		VkSurfaceFormatKHR surfaceFormat;
+		VkSurfaceFormatKHR _surfaceFormat;
 
 		{
 			uint32_t supportedFormatCount = 0;
-			result = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &supportedFormatCount, nullptr);
+			result = vkGetPhysicalDeviceSurfaceFormatsKHR(_PhysicalDevice, _Surface, &supportedFormatCount, nullptr);
 			if (result != VK_SUCCESS)
 				return result;
 
 			std::vector<VkSurfaceFormatKHR> supportedFormats(supportedFormatCount);
-			vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &supportedFormatCount, supportedFormats.data());
+			vkGetPhysicalDeviceSurfaceFormatsKHR(_PhysicalDevice, _Surface, &supportedFormatCount, supportedFormats.data());
 
 			constexpr std::array preferredSurfaceFormats {
 				VkSurfaceFormatKHR{ VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR },
@@ -42,29 +46,23 @@ namespace rndr {
 			size_t index = 0;
 			std::findEarly_basic<VkSurfaceFormatKHR, SurfaceFormatEq>(preferredSurfaceFormats.data(), preferredSurfaceFormats.size(), supportedFormats.data(), supportedFormats.size(), &index);
 
-			surfaceFormat = supportedFormats[index];
+			_surfaceFormat = supportedFormats[index];
 		}
 		
-		struct {
-			VkRenderPass renderPass;
-			VkSampler sampler;
-			VkDescriptorSetLayout descriptorSetLayout;
-			VkPipelineLayout pipelineLayout;
-			VkPipeline pipeline;
-			VkCommandPool commandPool;
-		} local;
-
-		memset(&local, 0, sizeof(local));
+		VkRenderPass _renderPass = VK_NULL_HANDLE;
+		VkSampler _sampler = VK_NULL_HANDLE;
+		VkDescriptorSetLayout _descriptorSetLayout = VK_NULL_HANDLE;
+		VkPipelineLayout _pipelineLayout = VK_NULL_HANDLE;
+		VkPipeline _pipeline = VK_NULL_HANDLE;
+		VkCommandPool _commandPool = VK_NULL_HANDLE;
 
 		PresentStageJob job;
-
-		memset(&job, 0, sizeof(job));
 
 		do {
 
 			{
 				VkAttachmentDescription output{};
-				output.format = surfaceFormat.format;
+				output.format = _surfaceFormat.format;
 				output.samples = VK_SAMPLE_COUNT_1_BIT;
 				output.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 				output.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -109,7 +107,7 @@ namespace rndr {
 				createInfo.dependencyCount = 1;
 				createInfo.pDependencies = &dependency;
 
-				result = vkCreateRenderPass(device, &createInfo, nullptr, &local.renderPass);
+				result = vkCreateRenderPass(_Device, &createInfo, nullptr, &_renderPass);
 			}
 
 			if (result != VK_SUCCESS)
@@ -136,7 +134,7 @@ namespace rndr {
 				createInfo.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 				createInfo.unnormalizedCoordinates = VK_FALSE;
 
-				result = vkCreateSampler(device, &createInfo, nullptr, &local.sampler);
+				result = vkCreateSampler(_Device, &createInfo, nullptr, &_sampler);
 			}
 
 			if (result != VK_SUCCESS)
@@ -148,7 +146,7 @@ namespace rndr {
 				image.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 				image.descriptorCount = 1;
 				image.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-				image.pImmutableSamplers = &local.sampler;
+				image.pImmutableSamplers = &_sampler;
 
 				VkDescriptorSetLayoutCreateInfo createInfo{};
 				createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -157,7 +155,7 @@ namespace rndr {
 				createInfo.bindingCount = 1;
 				createInfo.pBindings = &image;
 
-				result = vkCreateDescriptorSetLayout(device, &createInfo, nullptr, &local.descriptorSetLayout);
+				result = vkCreateDescriptorSetLayout(_Device, &createInfo, nullptr, &_descriptorSetLayout);
 			}
 
 			if (result != VK_SUCCESS)
@@ -169,11 +167,11 @@ namespace rndr {
 				createInfo.pNext = nullptr;
 				createInfo.flags = 0;
 				createInfo.setLayoutCount = 1;
-				createInfo.pSetLayouts = &local.descriptorSetLayout;
+				createInfo.pSetLayouts = &_descriptorSetLayout;
 				createInfo.pushConstantRangeCount = 0;
 				createInfo.pPushConstantRanges = nullptr;
 
-				result = vkCreatePipelineLayout(device, &createInfo, nullptr, &local.pipelineLayout);
+				result = vkCreatePipelineLayout(_Device, &createInfo, nullptr, &_pipelineLayout);
 			}
 
 			if (result != VK_SUCCESS)
@@ -183,7 +181,7 @@ namespace rndr {
 				VkShaderModule vertexModule;
 
 				{
-					std::vector<uint32_t> spirv = io::loader::file_loader::load_SPIRV("shaders/presentation.vert.spv");
+					std::vector<uint32_t> spirv = io::loader::load_SPIRV("shaders/presentation.vert.spv");
 
 					VkShaderModuleCreateInfo createInfo{};
 					createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -192,7 +190,7 @@ namespace rndr {
 					createInfo.codeSize = spirv.size() * sizeof(uint32_t);
 					createInfo.pCode = spirv.data();
 
-					result = vkCreateShaderModule(device, &createInfo, nullptr, &vertexModule);
+					result = vkCreateShaderModule(_Device, &createInfo, nullptr, &vertexModule);
 				}
 
 				if (result != VK_SUCCESS)
@@ -201,7 +199,7 @@ namespace rndr {
 				VkShaderModule fragmentModule;
 
 				{
-					std::vector<uint32_t> spirv = io::loader::file_loader::load_SPIRV("shaders/presentation.frag.spv");
+					std::vector<uint32_t> spirv = io::loader::load_SPIRV("shaders/presentation.frag.spv");
 
 					VkShaderModuleCreateInfo createInfo{};
 					createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -210,11 +208,11 @@ namespace rndr {
 					createInfo.codeSize = spirv.size() * sizeof(uint32_t);
 					createInfo.pCode = spirv.data();
 
-					result = vkCreateShaderModule(device, &createInfo, nullptr, &fragmentModule);
+					result = vkCreateShaderModule(_Device, &createInfo, nullptr, &fragmentModule);
 				}
 
 				if (result != VK_SUCCESS) {
-					vkDestroyShaderModule(device, vertexModule, nullptr);
+					vkDestroyShaderModule(_Device, vertexModule, nullptr);
 
 					break;
 				}
@@ -368,16 +366,16 @@ namespace rndr {
 				createInfo.pDepthStencilState = &depthStencilState;
 				createInfo.pColorBlendState = &colorBlendState;
 				createInfo.pDynamicState = &dynamicState;
-				createInfo.layout = local.pipelineLayout;
-				createInfo.renderPass = local.renderPass;
+				createInfo.layout = _pipelineLayout;
+				createInfo.renderPass = _renderPass;
 				createInfo.subpass = 0;
 				createInfo.basePipelineHandle = VK_NULL_HANDLE;
 				createInfo.basePipelineIndex = 0;
 
-				result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &createInfo, nullptr, &local.pipeline);
+				result = vkCreateGraphicsPipelines(_Device, VK_NULL_HANDLE, 1, &createInfo, nullptr, &_pipeline);
 
-				vkDestroyShaderModule(device, fragmentModule, nullptr);
-				vkDestroyShaderModule(device, vertexModule, nullptr);
+				vkDestroyShaderModule(_Device, fragmentModule, nullptr);
+				vkDestroyShaderModule(_Device, vertexModule, nullptr);
 			}
 
 			if (result != VK_SUCCESS)
@@ -388,9 +386,9 @@ namespace rndr {
 				createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 				createInfo.pNext = nullptr;
 				createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-				createInfo.queueFamilyIndex = pQueueInfo->graphicsFamilyIndex;
+				createInfo.queueFamilyIndex = pCreateInfo->graphicsFamilyIndex;
 
-				result = vkCreateCommandPool(device, &createInfo, nullptr, &local.commandPool);
+				result = vkCreateCommandPool(_Device, &createInfo, nullptr, &_commandPool);
 			}
 
 			if (result != VK_SUCCESS)
@@ -402,7 +400,7 @@ namespace rndr {
 				createInfo.pNext = nullptr;
 				createInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-				result = vkCreateFence(device, &createInfo, nullptr, &job.inFlight);
+				result = vkCreateFence(_Device, &createInfo, nullptr, &job.inFlight);
 			}
 
 			if (result != VK_SUCCESS)
@@ -414,7 +412,7 @@ namespace rndr {
 				createInfo.pNext = nullptr;
 				createInfo.flags = 0;
 
-				result = vkCreateSemaphore(device, &createInfo, nullptr, &job.imageAvailable);
+				result = vkCreateSemaphore(_Device, &createInfo, nullptr, &job.imageAvailable);
 			}
 
 			if (result != VK_SUCCESS)
@@ -426,7 +424,7 @@ namespace rndr {
 				createInfo.pNext = nullptr;
 				createInfo.flags = 0;
 
-				result = vkCreateSemaphore(device, &createInfo, nullptr, &job.renderComplete);
+				result = vkCreateSemaphore(_Device, &createInfo, nullptr, &job.renderComplete);
 			}
 
 			if (result != VK_SUCCESS)
@@ -436,11 +434,11 @@ namespace rndr {
 				VkCommandBufferAllocateInfo allocateInfo{};
 				allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 				allocateInfo.pNext = nullptr;
-				allocateInfo.commandPool = local.commandPool;
+				allocateInfo.commandPool = _commandPool;
 				allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 				allocateInfo.commandBufferCount = 1;
 
-				result = vkAllocateCommandBuffers(device, &allocateInfo, &job.commandBuffer);
+				result = vkAllocateCommandBuffers(_Device, &allocateInfo, &job.commandBuffer);
 			}
 
 			if (result != VK_SUCCESS)
@@ -466,89 +464,88 @@ namespace rndr {
 
 			acquireHint = 0;
 
-			if (execution.commandPool)
-				vkDestroyCommandPool(r_device, execution.commandPool, nullptr);
+			if (commandPool)
+				vkDestroyCommandPool(r_device, commandPool, nullptr);
 
-			execution.commandPool = local.commandPool;
+			commandPool = _commandPool;
 
-			execution.graphicsFamily = pQueueInfo->graphicsFamilyIndex;
-			execution.graphicsQueue = pQueueInfo->graphicsQueue;
-			execution.presentFamily = pQueueInfo->presentFamilyIndex;
-			execution.presentQueue = pQueueInfo->presentQueue;
+			execution.graphicsFamily = pCreateInfo->graphicsFamilyIndex;
+			execution.graphicsQueue = pCreateInfo->graphicsQueue;
+			execution.presentFamily = pCreateInfo->presentFamilyIndex;
+			execution.presentQueue = pCreateInfo->presentQueue;
 
-			if (rendering.pipeline)
-				vkDestroyPipeline(r_device, rendering.pipeline, nullptr);
+			if (pipeline)
+				vkDestroyPipeline(r_device, pipeline, nullptr);
 
-			rendering.pipeline = local.pipeline;
+			pipeline = _pipeline;
 
-			if (rendering.pipelineLayout)
-				vkDestroyPipelineLayout(r_device, rendering.pipelineLayout, nullptr);
+			if (pipelineLayout)
+				vkDestroyPipelineLayout(r_device, pipelineLayout, nullptr);
 
-			rendering.pipelineLayout = local.pipelineLayout;
+			pipelineLayout = _pipelineLayout;
 
-			if (bindings.descriptorSetLayout)
-				vkDestroyDescriptorSetLayout(r_device, bindings.descriptorSetLayout, nullptr);
+			if (descriptorSetLayout)
+				vkDestroyDescriptorSetLayout(r_device, descriptorSetLayout, nullptr);
 
-			bindings.descriptorSetLayout = local.descriptorSetLayout;
+			descriptorSetLayout = _descriptorSetLayout;
 
-			if (bindings.sampler)
-				vkDestroySampler(r_device, bindings.sampler, nullptr);
+			if (sampler)
+				vkDestroySampler(r_device, sampler, nullptr);
 
-			bindings.sampler = local.sampler;
+			sampler = _sampler;
 
-			if (passes.compositionPass)
-				vkDestroyRenderPass(r_device, passes.compositionPass, nullptr);
+			if (compositionPass)
+				vkDestroyRenderPass(r_device, compositionPass, nullptr);
 
-			passes.compositionPass = local.renderPass;
+			compositionPass = _renderPass;
 
-			configuration.surfaceFormat = surfaceFormat;
+			surfaceFormat = _surfaceFormat;
 
-			r_device = device;
-			r_physicalDevice = physicalDevice;
+			r_device = _Device;
+			r_physicalDevice = _PhysicalDevice;
 
 			return VK_SUCCESS;
 
 		} while (false);
 
 		if (job.renderComplete)
-			vkDestroySemaphore(device, job.renderComplete, nullptr);
+			vkDestroySemaphore(_Device, job.renderComplete, nullptr);
 
 		if(job.imageAvailable)
-			vkDestroySemaphore(device, job.imageAvailable, nullptr);
+			vkDestroySemaphore(_Device, job.imageAvailable, nullptr);
 
 		if (job.inFlight)
-			vkDestroyFence(device, job.inFlight, nullptr);
+			vkDestroyFence(_Device, job.inFlight, nullptr);
 
-		if (local.commandPool)
-			vkDestroyCommandPool(device, local.commandPool, nullptr);
+		if (_commandPool)
+			vkDestroyCommandPool(_Device, _commandPool, nullptr);
 
-		if (local.pipeline)
-			vkDestroyPipeline(device, local.pipeline, nullptr);
+		if (_pipeline)
+			vkDestroyPipeline(_Device, _pipeline, nullptr);
 
-		if (local.pipelineLayout)
-			vkDestroyPipelineLayout(device, local.pipelineLayout, nullptr);
+		if (_pipelineLayout)
+			vkDestroyPipelineLayout(_Device, _pipelineLayout, nullptr);
 
-		if (local.descriptorSetLayout)
-			vkDestroyDescriptorSetLayout(device, local.descriptorSetLayout, nullptr);
+		if (_descriptorSetLayout)
+			vkDestroyDescriptorSetLayout(_Device, _descriptorSetLayout, nullptr);
 
-		if (local.sampler)
-			vkDestroySampler(device, local.sampler, nullptr);
+		if (_sampler)
+			vkDestroySampler(_Device, _sampler, nullptr);
 
-		if (local.renderPass)
-			vkDestroyRenderPass(device, local.renderPass, nullptr);
+		if (_renderPass)
+			vkDestroyRenderPass(_Device, _renderPass, nullptr);
 
 		return result;
 	}
 
-	VkResult presentationStage::targetSurface(VkSurfaceKHR surface, size_t* pIndex) noexcept {
-		VkResult result;
+	VkResult PresentationStage::targetSurface(VkSurfaceKHR _Surface, size_t* const pIndex) noexcept {
+		assert(_Surface && pIndex);
 
-		if (!pIndex)
-			return VK_ERROR_INVALID_EXTERNAL_HANDLE;
+		VkResult result;
 
 		{
 			VkBool32 surfaceSupport;
-			result = vkGetPhysicalDeviceSurfaceSupportKHR(r_physicalDevice, execution.presentFamily, surface, &surfaceSupport);
+			result = vkGetPhysicalDeviceSurfaceSupportKHR(r_physicalDevice, execution.presentFamily, _Surface, &surfaceSupport);
 			if (result != VK_SUCCESS)
 				return result;
 				
@@ -558,14 +555,14 @@ namespace rndr {
 
 		{
 			uint32_t supportedFormatCount = 0;
-			result = vkGetPhysicalDeviceSurfaceFormatsKHR(r_physicalDevice, surface, &supportedFormatCount, nullptr);
+			result = vkGetPhysicalDeviceSurfaceFormatsKHR(r_physicalDevice, _Surface, &supportedFormatCount, nullptr);
 			if (result != VK_SUCCESS)
 				return result;
 
 			std::vector<VkSurfaceFormatKHR> supportedFormats(supportedFormatCount);
-			vkGetPhysicalDeviceSurfaceFormatsKHR(r_physicalDevice, surface, &supportedFormatCount, supportedFormats.data());
+			vkGetPhysicalDeviceSurfaceFormatsKHR(r_physicalDevice, _Surface, &supportedFormatCount, supportedFormats.data());
 
-			bool support = std::contain<VkSurfaceFormatKHR, SurfaceFormatEq>(configuration.surfaceFormat, supportedFormats.data(), supportedFormats.size());
+			bool support = std::contain<VkSurfaceFormatKHR, SurfaceFormatEq>(surfaceFormat, supportedFormats.data(), supportedFormats.size());
 			if (!support)
 				return VK_ERROR_FORMAT_NOT_SUPPORTED;
 		}
@@ -574,12 +571,12 @@ namespace rndr {
 
 		{
 			uint32_t supportedPresentModeCount = 0;
-			result = vkGetPhysicalDeviceSurfacePresentModesKHR(r_physicalDevice, surface, &supportedPresentModeCount, nullptr);
+			result = vkGetPhysicalDeviceSurfacePresentModesKHR(r_physicalDevice, _Surface, &supportedPresentModeCount, nullptr);
 			if (result != VK_SUCCESS)
 				return result;
 
 			std::vector<VkPresentModeKHR> supportedPresentModes(supportedPresentModeCount);
-			vkGetPhysicalDeviceSurfacePresentModesKHR(r_physicalDevice, surface, &supportedPresentModeCount, supportedPresentModes.data());
+			vkGetPhysicalDeviceSurfacePresentModesKHR(r_physicalDevice, _Surface, &supportedPresentModeCount, supportedPresentModes.data());
 
 			if (std::contain(VK_PRESENT_MODE_MAILBOX_KHR, supportedPresentModes.data(), supportedPresentModes.size())) {
 				surfacePresentMode = VK_PRESENT_MODE_MAILBOX_KHR;
@@ -590,13 +587,13 @@ namespace rndr {
 
 		PresentationTarget& target = presentationTargets.emplace_back();
 
-		target.surface = surface;
+		target.surface = _Surface;
 		target.presentMode = surfacePresentMode;
 
 		return VK_SUCCESS;
 	}
 
-	void presentationStage::releaseSurface(size_t index, VkSurfaceKHR* pSurface) noexcept {
+	void PresentationStage::releaseSurface(size_t index, VkSurfaceKHR* pSurface) noexcept {
 		if (!pSurface)
 			return;
 
@@ -628,7 +625,7 @@ namespace rndr {
 		*pSurface = target.surface;
 	}
 
-	VkResult presentationStage::configurePresentation(size_t targetIndex, uint32_t minImageCount) noexcept {
+	VkResult PresentationStage::configurePresentation(size_t targetIndex, uint32_t minImageCount) noexcept {
 		VkResult result;
 
 		VkExtent2D extent;
@@ -659,8 +656,8 @@ namespace rndr {
 				createInfo.flags = 0;
 				createInfo.surface = target.surface;
 				createInfo.minImageCount = surfaceCapabilities.maxImageCount ? std::clamp(minImageCount, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount) : std::max(minImageCount, surfaceCapabilities.minImageCount);
-				createInfo.imageFormat = configuration.surfaceFormat.format;
-				createInfo.imageColorSpace = configuration.surfaceFormat.colorSpace;
+				createInfo.imageFormat = surfaceFormat.format;
+				createInfo.imageColorSpace = surfaceFormat.colorSpace;
 				createInfo.imageExtent = surfaceCapabilities.currentExtent;
 				createInfo.imageArrayLayers = 1;
 				createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
@@ -703,7 +700,7 @@ namespace rndr {
 				createInfo.flags = 0;
 				createInfo.image = VK_NULL_HANDLE;
 				createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-				createInfo.format = configuration.surfaceFormat.format;
+				createInfo.format = surfaceFormat.format;
 				createInfo.components.r = VK_COMPONENT_SWIZZLE_R;
 				createInfo.components.g = VK_COMPONENT_SWIZZLE_G;
 				createInfo.components.b = VK_COMPONENT_SWIZZLE_B;
@@ -730,7 +727,7 @@ namespace rndr {
 			createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 			createInfo.pNext = nullptr;
 			createInfo.flags = 0;
-			createInfo.renderPass = passes.compositionPass;
+			createInfo.renderPass = compositionPass;
 			createInfo.attachmentCount = 1;
 			createInfo.pAttachments = nullptr;
 			createInfo.width = extent.width;
@@ -796,12 +793,12 @@ namespace rndr {
 		return result;
 	}
 
-	VkResult presentationStage::presentationImagePool(const VkImageView* pImageViews, uint32_t count) {
+	VkResult PresentationStage::presentationImagePool(const VkImageView* pImageViews, uint32_t count) {
 		VkResult result;
 		
-		VkDescriptorPool descriptorPool = nullptr;
+		VkDescriptorPool _descriptorPool = nullptr;
 		
-		std::vector<VkDescriptorSet> descriptorSets(count, VK_NULL_HANDLE);
+		std::vector<VkDescriptorSet> _descriptorSets(count, VK_NULL_HANDLE);
 
 		do {
 
@@ -828,9 +825,9 @@ namespace rndr {
 				VkDescriptorSetAllocateInfo allocateInfo{};
 				allocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 				allocateInfo.pNext = nullptr;
-				allocateInfo.descriptorPool = bindings.descriptorPool;
+				allocateInfo.descriptorPool = descriptorPool;
 				allocateInfo.descriptorSetCount = count;
-				allocateInfo.pSetLayouts = &bindings.descriptorSetLayout;
+				allocateInfo.pSetLayouts = &descriptorSetLayout;
 
 				result = vkAllocateDescriptorSets(r_device, &allocateInfo, descriptorSets.data());
 			}
@@ -858,30 +855,30 @@ namespace rndr {
 
 				for (uint32_t i = 0; i < count; ++i) {
 					imageInfo.imageView = pImageViews[i];
-					write.dstSet = bindings.descriptorSets[i];
+					write.dstSet = descriptorSets[i];
 
 					vkUpdateDescriptorSets(r_device, 1, &write, 0, nullptr);
 				}
 			}
 
-			if (bindings.descriptorPool)
-				vkDestroyDescriptorPool(r_device, bindings.descriptorPool, nullptr);
+			if (descriptorPool)
+				vkDestroyDescriptorPool(r_device, descriptorPool, nullptr);
 
-			bindings.descriptorPool = descriptorPool;
+			descriptorPool = _descriptorPool;
 
-			bindings.descriptorSets = std::move(descriptorSets);
+			descriptorSets = std::move(_descriptorSets);
 
 			return VK_SUCCESS;
 
 		} while (true);
 
-		if (descriptorPool)
-			vkDestroyDescriptorPool(r_device, descriptorPool, nullptr);
+		if (_descriptorPool)
+			vkDestroyDescriptorPool(r_device, _descriptorPool, nullptr);
 		
 		return VK_SUCCESS;
 	}
 
-	VkResult presentationStage::stagePresentation(uint32_t imageIndex, uint32_t targetIndex, VkSemaphore waitSemaphore) {
+	VkResult PresentationStage::stagePresentation(uint32_t imageIndex, uint32_t targetIndex, VkSemaphore waitSemaphore) {
 		VkResult result;
 
 		size_t jobIndex;
@@ -947,7 +944,7 @@ namespace rndr {
 					VkCommandBufferAllocateInfo allocateInfo{};
 					allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 					allocateInfo.pNext = nullptr;
-					allocateInfo.commandPool = execution.commandPool;
+					allocateInfo.commandPool = commandPool;
 					allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 					allocateInfo.commandBufferCount = 1;
 
@@ -1008,7 +1005,7 @@ namespace rndr {
 			VkRenderPassBeginInfo pass{};
 			pass.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			pass.pNext = nullptr;
-			pass.renderPass = passes.compositionPass;
+			pass.renderPass = compositionPass;
 			pass.framebuffer = target.framebuffers[availableImageIndex];
 			pass.renderArea = renderArea;
 			pass.clearValueCount = 0;
@@ -1017,7 +1014,7 @@ namespace rndr {
 			vkCmdBeginRenderPass(commandBuffer, &pass, VK_SUBPASS_CONTENTS_INLINE);
 		}
 		
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, rendering.pipeline);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
 		{
 			VkViewport viewport{};
@@ -1037,9 +1034,9 @@ namespace rndr {
 			vkCmdSetScissor(commandBuffer, 0, 1, &scissors);
 		}
 
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, rendering.pipelineLayout, 0, 1, &bindings.descriptorSets[imageIndex], 0, nullptr);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[imageIndex], 0, nullptr);
 
-		job.descriptorSet = bindings.descriptorSets[imageIndex];
+		job.descriptorSet = descriptorSets[imageIndex];
 
 		vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
@@ -1092,7 +1089,7 @@ namespace rndr {
 		return VK_SUCCESS;
 	}
 	
-	void presentationStage::reset() noexcept {
+	void PresentationStage::reset() noexcept {
 		{
 			const size_t jobCount = jobs.size();
 			for (size_t i = 0; i < jobCount; ++i) {
@@ -1108,26 +1105,26 @@ namespace rndr {
 			}
 		}
 
-		if (execution.commandPool) {
-			vkDestroyCommandPool(r_device, execution.commandPool, nullptr);
+		if (commandPool) {
+			vkDestroyCommandPool(r_device, commandPool, nullptr);
 		}
 
-		if (rendering.pipeline) {
-			vkDestroyPipeline(r_device, rendering.pipeline, nullptr);
-			vkDestroyPipelineLayout(r_device, rendering.pipelineLayout, nullptr);
+		if (pipeline) {
+			vkDestroyPipeline(r_device, pipeline, nullptr);
+			vkDestroyPipelineLayout(r_device, pipelineLayout, nullptr);
 		}
 
-		if (bindings.descriptorPool) {
-			vkDestroyDescriptorPool(r_device, bindings.descriptorPool, nullptr);
+		if (descriptorPool) {
+			vkDestroyDescriptorPool(r_device, descriptorPool, nullptr);
 		}
 
-		if (bindings.descriptorSetLayout) {
-			vkDestroyDescriptorSetLayout(r_device, bindings.descriptorSetLayout, nullptr);
-			vkDestroySampler(r_device, bindings.sampler, nullptr);
+		if (descriptorSetLayout) {
+			vkDestroyDescriptorSetLayout(r_device, descriptorSetLayout, nullptr);
+			vkDestroySampler(r_device, sampler, nullptr);
 		}
 
-		if (passes.compositionPass) {
-			vkDestroyRenderPass(r_device, passes.compositionPass, nullptr);
+		if (compositionPass) {
+			vkDestroyRenderPass(r_device, compositionPass, nullptr);
 		}
 	}
 

@@ -116,8 +116,6 @@ void Renderer::enumeratePhysicalDevices(size_t* count, const char** deviceNames)
 void Renderer::createDevice(HINSTANCE hinstance, HWND hwnd, size_t physicalDeviceIndex) {
 	VkResult result;
 	
-	VkPhysicalDevice physicalDevice = m_physicalDevices[physicalDeviceIndex].handle;
-	
 	VkSurfaceKHR _surface = VK_NULL_HANDLE;
 
 	uint32_t graphicsFamilyIndex = UINT32_MAX;
@@ -132,6 +130,8 @@ void Renderer::createDevice(HINSTANCE hinstance, HWND hwnd, size_t physicalDevic
 	VkDevice _device = VK_NULL_HANDLE;
 
 	VmaAllocator _allocator = VK_NULL_HANDLE;
+	
+	VkPhysicalDevice physicalDevice = m_physicalDevices[physicalDeviceIndex].handle;
 
 	do {
 		{
@@ -278,20 +278,33 @@ void Renderer::createDevice(HINSTANCE hinstance, HWND hwnd, size_t physicalDevic
 			break;
 
 		{
-			rndr::PresentationStageQueueInfo queueInfo{};
-			queueInfo.graphicsFamilyIndex = graphicsFamilyIndex;
-			queueInfo.graphicsQueue = graphicsQueue;
-			queueInfo.presentFamilyIndex = presentFamilyIndex;
-			queueInfo.presentQueue = presentQueue;
+			rndr::PresentationStageCreateInfo createInfo{};
+			createInfo.graphicsFamilyIndex = graphicsFamilyIndex;
+			createInfo.graphicsQueue = graphicsQueue;
+			createInfo.presentFamilyIndex = presentFamilyIndex;
+			createInfo.presentQueue = presentQueue;
 
-			result = presentation.root(_device, physicalDevice, _surface, &queueInfo);
+			result = presentationStage.root(_device, physicalDevice, _surface, &createInfo);
 		}
+
+		if (result != VK_SUCCESS)
+			break;
+
+		{
+			rndr::TransferStageCreateInfo createInfo{};
+			createInfo.transferFamilyIndex = transferFamilyIndex;
+			createInfo.transferQueue = transferQueue;
+			createInfo.maxConcurrentTransferJobs = 4;
+			createInfo.stagingMemoryBudget = 64ull << 20; // 64 MB
+
+			result = transferStage.root(_device, _allocator, &createInfo);
+		}
+
+		if (result != VK_SUCCESS)
+			break;
 
 		vkDestroySurfaceKHR(instance, _surface, nullptr);
 
-	} while (false);
-
-	if (result == VK_SUCCESS) {
 		if (allocator)
 			vmaDestroyAllocator(allocator);
 
@@ -308,7 +321,10 @@ void Renderer::createDevice(HINSTANCE hinstance, HWND hwnd, size_t physicalDevic
 		execution.presentQueue = presentQueue;
 
 		allocator = _allocator;
-	}
+
+		return;
+
+	} while (false);
 
 	if (_allocator)
 		vmaDestroyAllocator(_allocator);
@@ -343,7 +359,7 @@ int Renderer::pushRenderTarget(HINSTANCE hinstance, HWND hwnd) noexcept {
 	size_t targetIndex;
 
 	{
-		result = presentation.targetSurface(surface, &targetIndex);
+		result = presentationStage.targetSurface(surface, &targetIndex);
 		if (result != VK_SUCCESS) {
 			vkDestroySurfaceKHR(instance, surface, nullptr);
 
@@ -351,7 +367,7 @@ int Renderer::pushRenderTarget(HINSTANCE hinstance, HWND hwnd) noexcept {
 		}
 	}
 
-	result = presentation.configurePresentation(targetIndex, 2);
+	result = presentationStage.configurePresentation(targetIndex, 2);
 	if (result != VK_SUCCESS) {
 		vkDestroySurfaceKHR(instance, surface, nullptr);
 
@@ -363,45 +379,77 @@ int Renderer::pushRenderTarget(HINSTANCE hinstance, HWND hwnd) noexcept {
 	return 1;
 }
 
-int Renderer::createImageInstance(uint32_t width, uint32_t height) {
+int Renderer::createImage(const void* const pData, size_t _Size, uint32_t _Width, uint32_t _Height) noexcept {
 	VkResult result;
 
-	VkImage image;
+	VkImage _image = VK_NULL_HANDLE;
+	VmaAllocation _allocation = VK_NULL_HANDLE;
 
-	VmaAllocation allocation;
+	do {
+		{
+			VkImageCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+			createInfo.pNext = nullptr;
+			createInfo.flags = 0;
+			createInfo.imageType = VK_IMAGE_TYPE_2D;
+			createInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+			createInfo.extent = { _Width, _Height, 1 };
+			createInfo.mipLevels = 1;
+			createInfo.arrayLayers = 1;
+			createInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+			createInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+			createInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+			createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			createInfo.queueFamilyIndexCount = 0;
+			createInfo.pQueueFamilyIndices = nullptr;
+			createInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-	{
-		VkImageCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		createInfo.pNext = nullptr;
-		createInfo.flags = 0;
-		createInfo.imageType = VK_IMAGE_TYPE_2D;
-		createInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
-		createInfo.extent = { width, height, 1 };
-		createInfo.mipLevels = 1;
-		createInfo.arrayLayers = 1;
-		createInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		createInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		createInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-		createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		createInfo.queueFamilyIndexCount = 0;
-		createInfo.pQueueFamilyIndices = nullptr;
-		createInfo.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			VmaAllocationCreateInfo allocationInfo{};
+			allocationInfo.flags = 0;
+			allocationInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+			allocationInfo.requiredFlags = 0;
+			allocationInfo.preferredFlags = 0;
+			allocationInfo.memoryTypeBits = 0;
+			allocationInfo.pool = nullptr;
+			allocationInfo.pUserData = nullptr;
+			allocationInfo.priority = 0;
 
-		VmaAllocationCreateInfo allocationInfo{};
-		allocationInfo.flags = 0;
-		allocationInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
-		allocationInfo.requiredFlags = 0;
-		allocationInfo.preferredFlags = 0;
-		allocationInfo.memoryTypeBits = 0;
-		allocationInfo.pool = nullptr;
-		allocationInfo.pUserData = nullptr;
-		allocationInfo.priority = 0;
+			result = vmaCreateImage(allocator, &createInfo, &allocationInfo, &_image, &_allocation, nullptr);
+		}
 
-		result = vmaCreateImage(allocator, &createInfo, &allocationInfo, &image, &allocation, nullptr);
-	}
+		if (result != VK_SUCCESS)
+			break;
 
+		result = transferStage.beginStream();
 
+		if (result != VK_SUCCESS)
+			break;
+
+		{
+			rndr::DataSource source = { pData, _Size };
+			rndr::TransferImageAttributes imageAttribs = { VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 }, { _Width, _Height, 1 }, 4 };
+
+			VkOffset3D offset{ 0, 0, 0 };
+
+			result = transferStage.streamImageUpload(&source, _image, &imageAttribs, &offset);
+		}
+
+		if (result != VK_SUCCESS)
+			break;
+
+		result = transferStage.flushStream(VK_TRUE, VK_NULL_HANDLE);
+
+		if (result != VK_SUCCESS)
+			break;
+
+		images.push_back(_image);
+
+	} while (false);
+
+	if(_allocation)
+		vmaDestroyImage(allocator, _image, _allocation);
+	
+	return -1;
 }
 
 void Renderer::reset() noexcept {
@@ -411,12 +459,12 @@ void Renderer::reset() noexcept {
 		const size_t renderTargetCount = renderTargets.size();
 
 		for (size_t i = 0; i < renderTargetCount; ++i) {
-			presentation.releaseSurface(renderTargets[i], &surface);
+			presentationStage.releaseSurface(renderTargets[i], &surface);
 			vkDestroySurfaceKHR(instance, surface, nullptr);
 		}
 	}
 
-	presentation.reset();
+	presentationStage.reset();
 
 	if (allocator)
 		vmaDestroyAllocator(allocator);

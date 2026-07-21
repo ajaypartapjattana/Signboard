@@ -47,11 +47,11 @@ namespace rndr {
 		VmaAllocation allocation = VK_NULL_HANDLE;
 		mem::span<uint8_t> stageSpan;
 
-		uint8_t* pAllocBase;
+		uint8_t* pAllocBase = nullptr;
 		size_t recorder = 0;
 
-		uint8_t* pAllocTail;
-		uint8_t* pAllocHead;
+		uint8_t* pAllocTail = nullptr;
+		uint8_t* pAllocHead = nullptr;
 
 		struct {
 			size_t current;

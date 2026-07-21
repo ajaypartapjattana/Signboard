@@ -5,40 +5,34 @@
 
 namespace rndr {
 
-	struct PresentationStageQueueInfo {
+	struct PresentationStageCreateInfo {
 		uint32_t graphicsFamilyIndex;
 		VkQueue graphicsQueue;
 		uint32_t presentFamilyIndex;
 		VkQueue presentQueue;
 	};
 
-	class presentationStage {
+	class PresentationStage {
 	private:
 		VkDevice r_device = VK_NULL_HANDLE;
 		VkPhysicalDevice r_physicalDevice = VK_NULL_HANDLE;
 
-		struct {
-			VkSurfaceFormatKHR surfaceFormat{};
+		VkSurfaceFormatKHR surfaceFormat{};
 
-		} configuration;
+		VkRenderPass compositionPass = VK_NULL_HANDLE;
 
-		struct {
-			VkRenderPass compositionPass = VK_NULL_HANDLE;
-		} passes;
+		VkSampler sampler = VK_NULL_HANDLE;
+		VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
+		
+		VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+		VkPipeline pipeline = VK_NULL_HANDLE;
+		
+		VkCommandPool commandPool = VK_NULL_HANDLE;
+		
+		std::vector<VkCommandBuffer> commandBuffers;
 
-		struct {
-			VkSampler sampler = VK_NULL_HANDLE;
-			VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
-
-			VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
-			std::vector<VkDescriptorSet> descriptorSets;
-			
-		} bindings;
-
-		struct {
-			VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
-			VkPipeline pipeline = VK_NULL_HANDLE;
-		} rendering;
+		VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+		std::vector<VkDescriptorSet> descriptorSets;
 
 		struct {
 			uint32_t graphicsFamily = 0;
@@ -46,8 +40,6 @@ namespace rndr {
 			uint32_t presentFamily = 0;
 			VkQueue presentQueue = VK_NULL_HANDLE;
 
-			VkCommandPool commandPool = VK_NULL_HANDLE;
-			std::vector<VkCommandBuffer> commandBuffers;
 		} execution;
 
 		struct PresentationTarget {
@@ -81,18 +73,18 @@ namespace rndr {
 		uint32_t maxConcurrentPresentations = 3;
 
 	public:
-		presentationStage() = default;
-		presentationStage(const presentationStage&) = delete;
-		presentationStage(presentationStage&& other) = delete;
+		PresentationStage() = default;
+		PresentationStage(const PresentationStage&) = delete;
+		PresentationStage(PresentationStage&& other) = delete;
 		
-		presentationStage& operator=(const presentationStage&) = delete;
-		presentationStage& operator=(presentationStage&& other) = delete;
+		PresentationStage& operator=(const PresentationStage&) = delete;
+		PresentationStage& operator=(PresentationStage&& other) = delete;
 
-		~presentationStage() noexcept = default;
+		~PresentationStage() noexcept = default;
 
-		VkResult root(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR primarySurface, const PresentationStageQueueInfo* pQueueInfo) noexcept;
+		VkResult root(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR primarySurface, const PresentationStageCreateInfo* const pQueueInfo) noexcept;
 
-		VkResult targetSurface(VkSurfaceKHR surface, size_t* index) noexcept;
+		VkResult targetSurface(VkSurfaceKHR _Surface, size_t* const pIndex) noexcept;
 		void releaseSurface(size_t index, VkSurfaceKHR* pSurface) noexcept;
 
 		VkResult configurePresentation(size_t targetIndex, uint32_t minImageCount) noexcept;
