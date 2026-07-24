@@ -34,10 +34,10 @@ int main() {
 
     {
         size_t deviceCount;
-        renderer.enumeratePhysicalDevices(&deviceCount, nullptr);
+        renderer.enumeratePhysicalDeviceNames(&deviceCount, nullptr);
 
         std::vector<const char*> devices(deviceCount);
-        renderer.enumeratePhysicalDevices(&deviceCount, devices.data());
+        renderer.enumeratePhysicalDeviceNames(&deviceCount, devices.data());
 
         for (size_t i = 0; i < deviceCount; ++i) {
             std::cout << "[" << i << "] : " << devices[i] << std::endl;

@@ -6,101 +6,126 @@
 
 #include <vulkan/vulkan_win32.h>
 
-void Renderer::deploy() {
+constexpr uint32_t INVALID_QUEUE_FAMILY = UINT32_MAX;
+
+std::error_code Renderer::deploy() noexcept {
+	std::error_code error;
+
 	VkResult result;
 
-	VkInstance _instance;
+	mem::stack _stash(16 << 20);
 
-	{
-		VkApplicationInfo appInfo{};
-		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-		appInfo.pNext = nullptr;
-		appInfo.pApplicationName = "My Application";
-		appInfo.applicationVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
-		appInfo.pEngineName = "My Engine";
-		appInfo.engineVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
-		appInfo.apiVersion = VK_API_VERSION_1_3;
+	VkInstance _instance = VK_NULL_HANDLE;
+	mem::span<PhysicalDevice> _physicalDevices;
+
+	do {
+
+		mem::scratch.mark();
+
+		{
+			VkApplicationInfo appInfo{};
+			appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+			appInfo.pNext = nullptr;
+			appInfo.pApplicationName = "My Application";
+			appInfo.applicationVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
+			appInfo.pEngineName = "My Engine";
+			appInfo.engineVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
+			appInfo.apiVersion = VK_API_VERSION_1_3;
 
 #ifdef _DEBUG
-		constexpr std::array<const char*, 1> instanceLayers{
-			"VK_LAYER_KHRONOS_validation"
-		};
+			constexpr std::array<const char*, 1> instanceLayers{
+				"VK_LAYER_KHRONOS_validation"
+			};
 
-		constexpr std::array<const char*, 3> instanceExtensions{
-			"VK_KHR_surface",
-			"VK_KHR_win32_surface",
-			"VK_EXT_debug_utils"
-		};
-
+			constexpr std::array<const char*, 3> instanceExtensions{
+				"VK_KHR_surface",
+				"VK_KHR_win32_surface",
+				"VK_EXT_debug_utils"
+			};
 #else
-		constexpr std::array<const char*, 0> instanceLayers{
+			constexpr std::array<const char*, 0> instanceLayers{
 
-		};
+			};
 
-		constexpr std::array<const char*, 2> instanceExtensions{
-			"VK_KHR_surface",
-			"VK_KHR_win32_surface"
-		};
-
+			constexpr std::array<const char*, 2> instanceExtensions{
+				"VK_KHR_surface",
+				"VK_KHR_win32_surface"
+			};
 #endif
 
-		VkInstanceCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-		createInfo.pNext = nullptr;
-		createInfo.flags = 0;
-		createInfo.pApplicationInfo = &appInfo;
-		createInfo.enabledLayerCount = static_cast<uint32_t>(instanceLayers.size());
-		createInfo.ppEnabledLayerNames = instanceLayers.data();
-		createInfo.enabledExtensionCount = static_cast<uint32_t>(instanceExtensions.size());
-		createInfo.ppEnabledExtensionNames = instanceExtensions.data();
+			VkInstanceCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+			createInfo.pNext = nullptr;
+			createInfo.flags = 0;
+			createInfo.pApplicationInfo = &appInfo;
+			createInfo.enabledLayerCount = static_cast<uint32_t>(instanceLayers.size());
+			createInfo.ppEnabledLayerNames = instanceLayers.data();
+			createInfo.enabledExtensionCount = static_cast<uint32_t>(instanceExtensions.size());
+			createInfo.ppEnabledExtensionNames = instanceExtensions.data();
 
-		result = vkCreateInstance(&createInfo, nullptr, &_instance);
-		if (result != VK_SUCCESS)
-			throw std::runtime_error("FAILURE : instance_creation!");
-	}
+			result = vkCreateInstance(&createInfo, nullptr, &_instance);
+		}
 
-	std::vector<PhysicalDevice> physicalDevices;
+		if (result != VK_SUCCESS) {
+			error = make_error_code(RCode::NOT_SUPPORTED);
+			break;
+		}
 
-	{
 		uint32_t physicalDeviceCount;
 
-		VkResult result = vkEnumeratePhysicalDevices(_instance, &physicalDeviceCount, nullptr);
-		if (result != VK_SUCCESS) {
-			vkDestroyInstance(_instance, nullptr);
+		result = vkEnumeratePhysicalDevices(_instance, &physicalDeviceCount, nullptr);
 
-			throw std::runtime_error("FAILURE : physical_device_enumeration!");
+		if (result != VK_SUCCESS) {
+			error = std::make_error_code(std::errc::not_supported);
+			break;
 		}
 
-		std::vector<VkPhysicalDevice> physicalDeviceHandles(physicalDeviceCount);
+		_physicalDevices = _stash.alloc<PhysicalDevice>(physicalDeviceCount);
 
-		vkEnumeratePhysicalDevices(_instance, &physicalDeviceCount, physicalDeviceHandles.data());
-
-		physicalDevices.reserve(physicalDeviceCount);
+		mem::span<VkPhysicalDevice> devicehandles = mem::scratch.alloc<VkPhysicalDevice>(physicalDeviceCount);
+		
+		result = vkEnumeratePhysicalDevices(_instance, &physicalDeviceCount, devicehandles);
+		
+		if (result != VK_SUCCESS) {
+			error = make_error_code(RCode::HARDWARE_INCAPABILITY);
+			break;
+		}
 
 		for (uint32_t i = 0; i < physicalDeviceCount; ++i) {
-			VkPhysicalDevice handle = physicalDeviceHandles[i];
+			VkPhysicalDevice handle = devicehandles[i];
 
-			PhysicalDevice& device = physicalDevices.emplace_back();
+			vkGetPhysicalDeviceProperties(handle, &_physicalDevices[i].properties);
+			vkGetPhysicalDeviceMemoryProperties(handle, &_physicalDevices[i].memory);
+			vkGetPhysicalDeviceFeatures(handle, &_physicalDevices[i].features);
 
-			vkGetPhysicalDeviceProperties(handle, &device.properties);
-			vkGetPhysicalDeviceMemoryProperties(handle, &device.memory);
-			vkGetPhysicalDeviceFeatures(handle, &device.features);
-
-			device.handle = handle;
+			_physicalDevices[i].handle = handle;
 		}
-	}
 
-	if (instance) {
-		vkDestroyInstance(instance, nullptr);
-	}
+		mem::scratch.restore();
 
-	m_physicalDevices = std::move(physicalDevices);
+		if(instance)
+			vkDestroyInstance(instance, nullptr);
 
-	instance = _instance;
+		stash = std::move(_stash);
+		
+		physicalDevices = _physicalDevices;
+
+		instance = _instance;
+
+		return {};
+
+	} while (false);
+
+	mem::scratch.restore();
+
+	if(_instance)
+		vkDestroyInstance(_instance, nullptr);
+
+	return error;
 }
 
-void Renderer::enumeratePhysicalDevices(size_t* count, const char** deviceNames) noexcept {
-	const size_t physicalDeviceCount = m_physicalDevices.size();
+void Renderer::enumeratePhysicalDeviceNames(size_t* count, const char** const deviceNames) noexcept {
+	const size_t physicalDeviceCount = physicalDevices.size();
 
 	if (count)
 		*count = physicalDeviceCount;
@@ -109,31 +134,31 @@ void Renderer::enumeratePhysicalDevices(size_t* count, const char** deviceNames)
 		return;
 
 	for (size_t i = 0; i < physicalDeviceCount; ++i) {
-		deviceNames[i] = m_physicalDevices[i].properties.deviceName;
+		deviceNames[i] = physicalDevices[i].properties.deviceName;
 	}
 }
 
-void Renderer::createDevice(HINSTANCE hinstance, HWND hwnd, size_t physicalDeviceIndex) {
-	VkResult result;
+std::error_code Renderer::createDevice(HINSTANCE hinstance, HWND hwnd, size_t physicalDeviceIndex) {
+	std::error_code error{};
 	
 	VkSurfaceKHR _surface = VK_NULL_HANDLE;
 
-	uint32_t graphicsFamilyIndex = UINT32_MAX;
-	VkQueue graphicsQueue;
-
-	uint32_t transferFamilyIndex = UINT32_MAX;
-	VkQueue transferQueue;
-
-	uint32_t presentFamilyIndex = UINT32_MAX;
-	VkQueue presentQueue;
+	VkPhysicalDevice physicalDevice = physicalDevices[physicalDeviceIndex].handle;
 
 	VkDevice _device = VK_NULL_HANDLE;
-
 	VmaAllocator _allocator = VK_NULL_HANDLE;
-	
-	VkPhysicalDevice physicalDevice = m_physicalDevices[physicalDeviceIndex].handle;
+
+	VkBuffer _stagingBuffer = VK_NULL_HANDLE;
+	VmaAllocation _stagingAllocation;
+
+	mem::span<uint8_t> _stagingSpan;
 
 	do {
+
+		VkResult result;
+
+		mem::scratch.mark();
+
 		{
 			VkWin32SurfaceCreateInfoKHR createinfo{};
 			createinfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
@@ -145,16 +170,21 @@ void Renderer::createDevice(HINSTANCE hinstance, HWND hwnd, size_t physicalDevic
 			result = vkCreateWin32SurfaceKHR(instance, &createinfo, nullptr, &_surface);
 		}
 
-		if (result != VK_SUCCESS)
-			throw std::runtime_error("FAILURE : win32_surface_creation!");
+		if (result != VK_SUCCESS) {
+			error = std::make_error_code(std::errc::not_supported);
+			break;
+		}
 
-		uint32_t queueFamilyCount;
+		mem::static_vector<uint32_t> uniqueQueueFamilies = mem::scratch.alloc<uint32_t>(3);
+
+		QueueFamilyIndices _familyIndex = { INVALID_QUEUE_FAMILY, INVALID_QUEUE_FAMILY, INVALID_QUEUE_FAMILY };
 
 		{
+			uint32_t queueFamilyCount;
 			vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
 
-			std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-			vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
+			mem::span<VkQueueFamilyProperties> queueFamilies = mem::scratch.alloc<VkQueueFamilyProperties>(queueFamilyCount);
+			vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies);
 
 			std::vector<uint32_t> familyRoles(queueFamilyCount, 0);
 
@@ -168,62 +198,64 @@ void Renderer::createDevice(HINSTANCE hinstance, HWND hwnd, size_t physicalDevic
 			uint32_t min = UINT32_MAX;
 
 			for (uint32_t i = 0; i < queueFamilyCount; ++i) {
-				if ((queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) && familyRoles[i] < min) {
-					min = familyRoles[i];
-					graphicsFamilyIndex = i;
-				}
+				if((queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0)
+					continue;
+
+				if (familyRoles[i] >= min)
+					continue;
+
+				min = familyRoles[i];
+				_familyIndex.graphics = i;
+				uniqueQueueFamilies.push_back_unique(i);
 			}
 
 			min = UINT32_MAX;
 
 			for (uint32_t i = 0; i < queueFamilyCount; ++i) {
-				if ((queueFamilies[i].queueFlags & VK_QUEUE_TRANSFER_BIT) && familyRoles[i] < min) {
-					min = familyRoles[i];
-					transferFamilyIndex = i;
-				}
+				if ((queueFamilies[i].queueFlags & VK_QUEUE_TRANSFER_BIT) == 0)
+					continue;
+
+				if (familyRoles[i] >= min)
+					continue;
+
+				min = familyRoles[i];
+				_familyIndex.transfer = i;
+				uniqueQueueFamilies.push_back_unique(i);
 			}
 
 			VkBool32 presentSupport = VK_FALSE;
 
 			for (uint32_t i = 0; i < queueFamilyCount; ++i) {
 				vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, _surface, &presentSupport);
-				if (presentSupport) {
-					presentFamilyIndex = i;
-					break;
-				}
+				if (!presentSupport)
+					continue;
+				
+				_familyIndex.present = i;
+				uniqueQueueFamilies.push_back_unique(i);
 			}
 		}
 
-		if (graphicsFamilyIndex == UINT32_MAX || transferFamilyIndex == UINT32_MAX || presentFamilyIndex == UINT32_MAX)
+		if (uniqueQueueFamilies.empty()) {
+			error = make_error_code(RCode::HARDWARE_INCAPABILITY);
 			break;
-		
+		}
+
 		{
-			std::vector<VkDeviceQueueCreateInfo> queueInfos;
+			const size_t queueInfoCount = uniqueQueueFamilies.size();
 
-			{
-				std::vector<VkBool32> requiredQueueFamilies(queueFamilyCount, VK_FALSE);
+			mem::span<VkDeviceQueueCreateInfo> queueInfos = mem::scratch.alloc<VkDeviceQueueCreateInfo>(queueInfoCount);
 
-				requiredQueueFamilies[graphicsFamilyIndex] = VK_TRUE;
-				requiredQueueFamilies[transferFamilyIndex] = VK_TRUE;
-				requiredQueueFamilies[presentFamilyIndex] = VK_TRUE;
+			constexpr float queuePriority = 1.0f;
 
-				queueInfos.reserve(queueFamilyCount);
+			for (size_t i = 0; i < queueInfoCount; ++i) {
+				VkDeviceQueueCreateInfo* pInfo = &queueInfos[i];
 
-				constexpr float queuePriority = 1.0f;
-
-				for (uint32_t i = 0; i < queueFamilyCount; ++i) {
-					if (!requiredQueueFamilies[i])
-						continue;
-
-					VkDeviceQueueCreateInfo& info = queueInfos.emplace_back();
-
-					info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-					info.pNext = nullptr;
-					info.flags = 0;
-					info.queueFamilyIndex = i;
-					info.queueCount = 1;
-					info.pQueuePriorities = &queuePriority;
-				}
+				pInfo->sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+				pInfo->pNext = nullptr;
+				pInfo->flags = 0;
+				pInfo->queueFamilyIndex = uniqueQueueFamilies[i];
+				pInfo->queueCount = 1;
+				pInfo->pQueuePriorities = &queuePriority;
 			}
 
 			constexpr std::array<const char*, 1> extensions{
@@ -232,7 +264,7 @@ void Renderer::createDevice(HINSTANCE hinstance, HWND hwnd, size_t physicalDevic
 
 			VkPhysicalDeviceFeatures enabledFeatures{};
 
-			if (m_physicalDevices[physicalDeviceIndex].features.samplerAnisotropy)
+			if (physicalDevices[physicalDeviceIndex].features.samplerAnisotropy)
 				enabledFeatures.samplerAnisotropy = VK_TRUE;
 
 			VkDeviceCreateInfo createInfo{};
@@ -240,7 +272,7 @@ void Renderer::createDevice(HINSTANCE hinstance, HWND hwnd, size_t physicalDevic
 			createInfo.pNext = nullptr;
 			createInfo.flags = 0;
 			createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueInfos.size());
-			createInfo.pQueueCreateInfos = queueInfos.data();
+			createInfo.pQueueCreateInfos = queueInfos;
 			createInfo.enabledLayerCount = 0;
 			createInfo.ppEnabledLayerNames = nullptr;
 			createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
@@ -250,12 +282,16 @@ void Renderer::createDevice(HINSTANCE hinstance, HWND hwnd, size_t physicalDevic
 			result = vkCreateDevice(physicalDevice, &createInfo, nullptr, &_device);
 		}
 
-		if (result != VK_SUCCESS)
+		if (result != VK_SUCCESS) {
+			error = make_error_code(RCode::FAILURE);
 			break;
+		}
 
-		vkGetDeviceQueue(_device, graphicsFamilyIndex, 0, &graphicsQueue);
-		vkGetDeviceQueue(_device, transferFamilyIndex, 0, &transferQueue);
-		vkGetDeviceQueue(_device, presentFamilyIndex, 0, &presentQueue);
+		DeviceQueues _deviceQueue{};
+
+		vkGetDeviceQueue(_device, _familyIndex.graphics, 0, &_deviceQueue.graphics);
+		vkGetDeviceQueue(_device, _familyIndex.transfer, 0, &_deviceQueue.transfer);
+		vkGetDeviceQueue(_device, _familyIndex.present, 0, &_deviceQueue.present);
 
 		{
 			VmaAllocatorCreateInfo createInfo{};
@@ -274,8 +310,43 @@ void Renderer::createDevice(HINSTANCE hinstance, HWND hwnd, size_t physicalDevic
 			result = vmaCreateAllocator(&createInfo, &_allocator);
 		}
 
-		if (result != VK_SUCCESS)
+		if (result != VK_SUCCESS) {
+			error = make_error_code(RCode::FAILURE);
 			break;
+		}
+
+		{
+			VkBufferCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+			createInfo.pNext = nullptr;
+			createInfo.flags = 0;
+			createInfo.size = VkDeviceSize(64) << 20;
+			createInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+			createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			createInfo.queueFamilyIndexCount = 0;
+			createInfo.pQueueFamilyIndices = nullptr;
+
+			VmaAllocationCreateInfo allocationCreateInfo{};
+			allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+			allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+			allocationCreateInfo.requiredFlags = 0;
+			allocationCreateInfo.preferredFlags = 0;
+			allocationCreateInfo.memoryTypeBits = 0;
+			allocationCreateInfo.pool = VK_NULL_HANDLE;
+			allocationCreateInfo.pUserData = nullptr;
+			allocationCreateInfo.priority = 0.0f;
+
+			VmaAllocationInfo allocationInfo;
+
+			result = vmaCreateBuffer(_allocator, &createInfo, &allocationCreateInfo, &_stagingBuffer, &_stagingAllocation, &allocationInfo);
+
+			_stagingSpan = mem::span<uint8_t>{ reinterpret_cast<uint8_t*>(allocationInfo.pMappedData), static_cast<size_t>(allocationInfo.size) };
+		}
+
+		if (result != VK_SUCCESS) {
+			error = make_error_code(RCode::FAILURE);
+			break;
+		}
 
 		{
 			rndr::PresentationStageCreateInfo createInfo{};
@@ -290,20 +361,8 @@ void Renderer::createDevice(HINSTANCE hinstance, HWND hwnd, size_t physicalDevic
 		if (result != VK_SUCCESS)
 			break;
 
-		{
-			rndr::TransferStageCreateInfo createInfo{};
-			createInfo.transferFamilyIndex = transferFamilyIndex;
-			createInfo.transferQueue = transferQueue;
-			createInfo.maxConcurrentTransferJobs = 4;
-			createInfo.stagingMemoryBudget = 64ull << 20; // 64 MB
-
-			result = transferStage.root(_device, _allocator, &createInfo);
-		}
-
-		if (result != VK_SUCCESS)
-			break;
-
-		vkDestroySurfaceKHR(instance, _surface, nullptr);
+		if (stagingBuffer)
+			vmaDestroyBuffer(allocator, stagingBuffer, stagingAllocation);
 
 		if (allocator)
 			vmaDestroyAllocator(allocator);
@@ -311,18 +370,21 @@ void Renderer::createDevice(HINSTANCE hinstance, HWND hwnd, size_t physicalDevic
 		if (device)
 			vkDestroyDevice(device, nullptr);
 
+		if (surface)
+			vkDestroySurfaceKHR(instance, surface, nullptr);
+
+		surface = _surface;
+
 		device = _device;
 
-		execution.graphicsFamilyIndex = graphicsFamilyIndex;
-		execution.graphicsQueue = graphicsQueue;
-		execution.transferFamilyIndex = transferFamilyIndex;
-		execution.transferQueue = transferQueue;
-		execution.presentFamilyIndex = presentFamilyIndex;
-		execution.presentQueue = presentQueue;
+		familyIndex = _familyIndex;
+		deviceQueue = _deviceQueue;
 
 		allocator = _allocator;
 
-		return;
+		transferStage = rndr::TransferStage{ _stagingSpan };
+
+		return error;
 
 	} while (false);
 
@@ -419,30 +481,6 @@ int Renderer::createImage(const void* const pData, size_t _Size, uint32_t _Width
 
 		if (result != VK_SUCCESS)
 			break;
-
-		result = transferStage.beginStream();
-
-		if (result != VK_SUCCESS)
-			break;
-
-		{
-			rndr::DataSource source = { pData, _Size };
-			rndr::TransferImageAttributes imageAttribs = { VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 }, { _Width, _Height, 1 }, 4 };
-
-			VkOffset3D offset{ 0, 0, 0 };
-
-			result = transferStage.streamImageUpload(&source, _image, &imageAttribs, &offset);
-		}
-
-		if (result != VK_SUCCESS)
-			break;
-
-		result = transferStage.flushStream(VK_TRUE, VK_NULL_HANDLE);
-
-		if (result != VK_SUCCESS)
-			break;
-
-		images.push_back(_image);
 
 	} while (false);
 

@@ -60,30 +60,6 @@ namespace mem {
 			return pBegin[_Index];
 		}
 
-		_Ty* begin() noexcept {
-			return pBegin;
-		}
-
-		const _Ty* begin() const noexcept {
-			return pBegin;
-		}
-
-		_Ty* end() noexcept {
-			return pEnd;
-		}
-
-		const _Ty* end() const noexcept {
-			return pEnd;
-		}
-
-		_Ty* data() noexcept {
-			return pBegin;
-		}
-
-		const _Ty* data() const noexcept {
-			return pBegin;
-		}
-
 		size_t size() const noexcept {
 			return static_cast<size_t>(pEnd - pBegin);
 		}
@@ -94,6 +70,10 @@ namespace mem {
 
 		explicit operator bool() const noexcept {
 			return pBegin && pEnd;
+		}
+
+		operator _Ty* () const noexcept {
+			return pBegin;
 		}
 
 		bool empty() const noexcept {
@@ -183,9 +163,17 @@ namespace mem {
 
 		static_vector& operator=(const span<_Ty>& _Span) noexcept {
 			storage = _Span;
-			pCurrent = storage.begin();
+			pCurrent = storage.pBegin;
 
 			return *this;
+		}
+
+		_Ty& operator[](size_t _Index) noexcept {
+			return storage.pBegin[_Index];
+		}
+
+		const _Ty& operator[](size_t _Index) const noexcept {
+			return storage.pBegin[_Index];
 		}
 
 		span<_Ty> view() const noexcept {
@@ -212,10 +200,38 @@ namespace mem {
 				pCurrent = storage.pBegin;
 		}
 
-		void push_back(_Ty&& _Val) noexcept {
+		void push_back_unique(_Ty& _Val) noexcept {
+			for (const _Ty* pVal{ storage.pBegin }; pVal != pCurrent; ++pVal) {
+				if (*pVal == _Val)
+					return;
+			}
+
 			assert(pCurrent != storage.pEnd);
 
 			*(pCurrent++) = _Val;
+		}
+
+		void push_back(_Ty& _Val) noexcept {
+			assert(pCurrent != storage.pEnd);
+
+			*(pCurrent++) = _Val;
+		}
+
+		void push_back_unique(_Ty&& _Val) noexcept {
+			for (const _Ty* pVal{ storage.pBegin }; pVal != pCurrent; ++pVal) {
+				if (*pVal == _Val)
+					return;
+			}
+
+			assert(pCurrent != storage.pEnd);
+
+			*(pCurrent++) = std::move(_Val);
+		}
+
+		void push_back(_Ty&& _Val) noexcept {
+			assert(pCurrent != storage.pEnd);
+
+			*(pCurrent++) = std::move(_Val);
 		}
 
 		template <class... Args>

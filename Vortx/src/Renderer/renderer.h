@@ -8,8 +8,12 @@
 #include "core/Memory/memory.h"
 #include "core/renderer_core.h"
 
+#include "stdErr.h"
+
 class Renderer {
 private:
+	mem::stack stash;
+
 	VkInstance instance = VK_NULL_HANDLE;
 
 	struct PhysicalDevice {
@@ -19,29 +23,36 @@ private:
 
 		VkPhysicalDevice handle = VK_NULL_HANDLE;
 	};
-	std::vector<PhysicalDevice> m_physicalDevices;
 
-	size_t activePhysicalDeviceIndex = 0;
-	VkPhysicalDevice activePhysicalDevice = VK_NULL_HANDLE;
+	mem::span<PhysicalDevice> physicalDevices;
+	PhysicalDevice* physicalDevice;
+
+	VkSurfaceKHR surface = VK_NULL_HANDLE;
 
 	VkDevice device = VK_NULL_HANDLE;
 
-	struct {
-		uint32_t graphicsFamilyIndex{};
-		VkQueue graphicsQueue = VK_NULL_HANDLE;
+	struct QueueFamilyIndices {
+		uint32_t graphics;
+		uint32_t transfer;
+		uint32_t present;
+	} familyIndex;
 
-		uint32_t transferFamilyIndex{};
-		VkQueue transferQueue = VK_NULL_HANDLE;
-
-		uint32_t presentFamilyIndex{};
-		VkQueue presentQueue = VK_NULL_HANDLE;
-	} execution;
+	struct DeviceQueues {
+		VkQueue graphics;
+		VkQueue transfer;
+		VkQueue present;
+	} deviceQueue;
 
 	VmaAllocator allocator = VK_NULL_HANDLE;
 
+	VkBuffer stagingBuffer = VK_NULL_HANDLE;
+	VmaAllocation stagingAllocation;
+	rndr::TransferStage transferStage;
+
+
+
 	rndr::PresentationStage presentationStage;
 
-	rndr::TransferStage transferStage;
 
 	std::vector<size_t> renderTargets;
 
@@ -52,10 +63,10 @@ public:
 	Renderer() noexcept = default;
 	~Renderer() noexcept;
 
-	void deploy();
+	std::error_code deploy() noexcept;
 
-	void enumeratePhysicalDevices(size_t* count, const char** deviceNames) noexcept;
-	void createDevice(HINSTANCE hinstance, HWND hwnd, size_t physicalDeviceIndex);
+	void enumeratePhysicalDeviceNames(size_t* count, const char** const deviceNames) noexcept;
+	std::error_code createDevice(HINSTANCE hinstance, HWND hwnd, size_t physicalDeviceIndex);
 
 	int pushRenderTarget(HINSTANCE hinstance, HWND hwnd) noexcept;
 

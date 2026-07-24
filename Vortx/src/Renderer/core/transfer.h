@@ -16,84 +16,96 @@ namespace rndr {
 	};
 
 	struct TransferImageAttributes {
-		VkImageLayout layout;
-		VkImageSubresourceLayers subresources;
 		VkExtent3D extent;
 		uint32_t texelSize;
 	};
 
-	struct TransferStageCreateInfo {
-		uint32_t transferFamilyIndex;
-		VkQueue transferQueue;
-
-		VkDeviceSize stagingMemoryBudget;
-		uint32_t maxConcurrentTransferJobs;
+	struct flushRanges {
+		VkDeviceSize offset[2];
+		VkDeviceSize size[2];
+		size_t count;
 	};
 
 	class TransferStage {
 	private:
-		mem::stack coreStack;
-		
-		mem::span<VkCommandBuffer> commandBuffers;
-		VkCommandPool commandPool = VK_NULL_HANDLE;
-
-		mem::span<VkFence> transferFences;
-		size_t JobHint = 0;
-
-		mem::span<uint8_t*> transferMarks;
-		size_t reclaimHint = 0;
-
-		VkBuffer stage = VK_NULL_HANDLE;
-		VmaAllocation allocation = VK_NULL_HANDLE;
 		mem::span<uint8_t> stageSpan;
 
-		uint8_t* pAllocBase = nullptr;
-		size_t recorder = 0;
-
 		uint8_t* pAllocTail = nullptr;
+		uint8_t* pAllocBase = nullptr;
 		uint8_t* pAllocHead = nullptr;
 
 		struct {
-			size_t current;
-			size_t peak = 0;
+			size_t failures = 0;
 		} stats;
 		
-		uint32_t stalls = 0;
-
-		uint32_t transferFamilyIndex;
-		VkQueue transferQueue;
-	
-		VkDevice r_device = VK_NULL_HANDLE;
-		VmaAllocator r_allocator = VK_NULL_HANDLE;
-
-		VkResult reclaimJob(size_t _JobIndex) noexcept;
-
 		struct StageChunk {
 			VkDeviceSize offset;
 			VkDeviceSize size;
 			size_t granularityIndex;
 		};
 
-		VkResult commitChunk(const DataSource* const pSource, const size_t* const pGranularities, const size_t granularityCount, StageChunk* const pChunk) noexcept;
+		inline int commitChunk(const DataSource* const pSource, const size_t* const pGranularities, const size_t granularityCount, StageChunk* const pChunk) noexcept;
 
 	public:
-		TransferStage() = default;
-		TransferStage(const TransferStage&) = delete;
+		TransferStage() noexcept = default;
+		TransferStage(const mem::span<uint8_t>& _Span) noexcept 
+			:
+			stageSpan(_Span),
+			pAllocBase(mem::alignUp<uint8_t>(_Span.pBegin, alignof(uint8_t*))),
+			pAllocTail(pAllocBase),
+			pAllocHead(pAllocBase + sizeof(uint8_t*))
+		{
+			*reinterpret_cast<uint8_t**>(pAllocBase) = nullptr;
+		}
 
-		TransferStage& operator=(const TransferStage&) = delete;
+		void restore() noexcept {
+			uint8_t* const pNext = *reinterpret_cast<uint8_t**>(pAllocTail);
 
-		~TransferStage() noexcept = default;
+			if (!pNext)
+				return;
+			
+			pAllocTail = pNext;
+		}
 
-		VkResult root(VkDevice _Device, VmaAllocator _Allocator, const TransferStageCreateInfo* const pCreateInfo) noexcept;
+		void flushStream(flushRanges* const pRanges) noexcept {
+			assert(pRanges);
 
-		VkResult beginStream() noexcept;
+			uint8_t* pMarker = mem::alignUp<uint8_t>(pAllocHead, alignof(uint8_t*));
+			
+			if (pMarker + sizeof(void*) > stageSpan.pEnd)
+				pMarker = stageSpan.pBegin;
 
-		VkResult streamBufferUpload(const DataSource* const pSource, VkBuffer _DstBuffer, VkDeviceSize* const pOffset) noexcept;
-		VkResult streamImageUpload(const DataSource* const pSource, VkImage _DstImage, const TransferImageAttributes* const pImageInfo, VkOffset3D* const pOffset) noexcept;
+			*reinterpret_cast<uint8_t**>(pAllocBase) = pMarker;
 
-		VkResult flushStream(VkBool32 _WaitTransfers, VkSemaphore _Signal) noexcept;
+			pRanges->offset[0] = static_cast<VkDeviceSize>(pAllocBase - stageSpan.pBegin);
+			
+			if (pAllocHead > pAllocBase) {
+				pRanges->size[0] = static_cast<VkDeviceSize>(pAllocHead - pAllocBase);
+				pRanges->count = 1;
 
-		void reset() noexcept;
+			}
+			else {
+				pRanges->size[0] = static_cast<VkDeviceSize>(stageSpan.pEnd - pAllocBase);
+				
+				pRanges->offset[1] = 0ull;
+				pRanges->size[1] = static_cast<VkDeviceSize>(pAllocHead - stageSpan.pBegin);
+
+				pRanges->count = 2;
+			}
+
+			pAllocBase = pMarker;
+			*reinterpret_cast<uint8_t**>(pAllocBase) = nullptr;
+
+			pAllocHead = pMarker + sizeof(uint8_t*);
+		}
+
+		int streamBufferUpload(const DataSource* const pSource, VkDeviceSize* const pOffset, VkBufferCopy* const pRegion) noexcept;
+		int streamImageUpload(const DataSource* const pSource, const TransferImageAttributes* const pImageInfo, VkOffset3D* const pOffset, VkBufferImageCopy* const pRegion) noexcept;
+
+		void reset() noexcept {
+			pAllocHead = stageSpan.pBegin;
+			pAllocBase = nullptr;
+		}
 
 	};
 

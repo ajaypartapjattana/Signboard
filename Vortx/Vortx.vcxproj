@@ -210,7 +210,6 @@
     <ClCompile Include="src\core\Time\Time.cpp" />
     <ClCompile Include="src\Platform\platform.cpp" />
     <ClCompile Include="src\Renderer\core\presentation.cpp" />
-    <ClCompile Include="src\Renderer\core\test.cpp" />
     <ClCompile Include="src\Renderer\Mesh\mesher.cpp" />
     <ClCompile Include="src\Renderer\core\transfer.cpp" />
     <ClCompile Include="src\Renderer\renderer.cpp" />
@@ -249,6 +248,7 @@
     <ClInclude Include="src\Renderer\primitive\rndr_primitive.h" />
     <ClInclude Include="src\Renderer\core\transfer.h" />
     <ClInclude Include="src\Renderer\renderer.h" />
+    <ClInclude Include="src\Renderer\stdErr.h" />
     <ClInclude Include="src\Renderer\Vertex\vertex.hh" />
     <ClInclude Include="Signboard\RHI\primitives\image.h" />
     <ClInclude Include="Signboard\RHI\primitives\image_vk.h" />
