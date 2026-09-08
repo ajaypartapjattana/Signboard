@@ -47,15 +47,23 @@ void freeProcessCookie(ProcessCookie const _ProcessCookie) noexcept;
 
 int waitProcess(Emulator const _Emulator, ProcessCookie const _Cookie) noexcept;
 
-struct Scene_T;
-using Scene = Scene_T*;
+struct Collection_T;
+using Collection = Collection_T*;
 
-struct SceneCreateInfo {
-	uint32_t modelCount;
+struct ModelInfo {
+	const Vertex* pVertex;
+	size_t vertexCount;
+	const Index* pIndex;
+	size_t indexCount;
 };
 
-int createScene(Emulator const _Emulator, const SceneCreateInfo* const pCreateInfo, Scene* const pScene) noexcept;
-void destroyScene(Scene const _Scene) noexcept;
+struct CollectionCreateInfo {
+	uint32_t modelCount;
+	const ModelInfo* pModelInfos;
+};
+
+int createCollection(AsyncLoader const _AsynLoader, Emulator const _Emulator, const CollectionCreateInfo* const pCreateInfo, Collection* const pScene) noexcept;
+void destroyCollection(Collection const _Scene) noexcept;
 
 struct Model_T;
 using Model = Model_T*;
@@ -67,15 +75,8 @@ struct Vertex {
 
 using Index = uint32_t;
 
-struct ModelCreateInfo {
-	const Vertex* pVertex;
-	size_t vertexCount;
-	const Index* pIndex;
-	size_t indexCount;
-};
-
-int loadModel(AsyncLoader const _AsynLoader, Scene const _Scene, const ModelCreateInfo* const pCreateInfo, Model* const pModel, ProcessCookie const _ProcessCookie) noexcept;
-void releaseModel(Scene const _Scene, Model const _Model) noexcept;
+int loadModel(AsyncLoader const _AsynLoader, Collection const _Collection, const ModelInfo* const pModelInfo, Model* const pModel, ProcessCookie const _ProcessCookie) noexcept;
+void releaseModel(Collection const _Scene, Model const _Model) noexcept;
 
 struct Canvas_T;
 using Canvas = Canvas_T*;
@@ -100,7 +101,6 @@ using Renderer = Renderer_T*;
 
 struct RendererCreateInfo {
 	uint32_t maxRenderProcess;
-	uint32_t callDrawLimit;
 };
 
 int createRenderer(Emulator const _Emulator, const RendererCreateInfo* const pCreateInfo, Renderer* const pRenderer) noexcept;
@@ -108,5 +108,35 @@ void destroyRenderer(Renderer const _Renderer) noexcept;
 
 int waitRenderer(Renderer const _Renderer) noexcept;
 
-int draw(Canvas const _Canvas, Renderer const _Renderer, RenderBox const _RenderBox, Scene const _Scene) noexcept;
+struct Scene_T;
+using Scene = Scene_T*;
+
+struct SceneCreateInfo {
+	uint32_t instanceCount;
+	uint32_t drawCount;
+};
+
+int createScene(Collection const _Collection, Renderer const _Renderer, const SceneCreateInfo* const pCreateInfo, Scene* const pScene) noexcept;
+void destroyScene(Scene const _Scene) noexcept;
+
+using Transform = glm::mat4;
+
+struct InstanceData {
+	Transform local;
+};
+
+struct ObjectInstance {
+	Model model;
+	uint32_t instanceCount;
+	const InstanceData* pInstances;
+};
+
+int pushObjectInstance(Scene const _Scene, const ObjectInstance* const pObject) noexcept;
+
+struct DrawInfo {
+	RenderBox renderBox;
+	Collection scene;
+};
+
+int draw(Canvas const _Canvas, Renderer const _Renderer, RenderBox const _RenderBox, Collection const _Scene) noexcept;
 

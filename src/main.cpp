@@ -108,7 +108,7 @@ int main() {
 	AsyncLoader loader = nullptr;
 
 	ProcessCookie cookie = nullptr;
-	Scene scene = nullptr;
+	Collection scene = nullptr;
 
 	Model model = nullptr;
 	
@@ -227,10 +227,10 @@ int main() {
 			break;
 
 		{
-			SceneCreateInfo createInfo{};
+			CollectionCreateInfo createInfo{};
 			createInfo.modelCount = 1u;
 
-			failure = createScene(emulator, &createInfo, &scene);
+			failure = createCollection(emulator, &createInfo, &scene);
 		}
 
 		if (failure)
@@ -248,7 +248,7 @@ int main() {
 				0, 1, 2, 2, 3, 0
 			};
 
-			ModelCreateInfo createInfo{};
+			ModelInfo createInfo{};
 			createInfo.vertexCount = 4u;
 			createInfo.pVertex = vertexData;
 			createInfo.indexCount = 6u;
@@ -313,7 +313,7 @@ int main() {
 
 		while (waitRenderer(renderer));
 
-		destroyScene(scene);
+		destroyCollection(scene);
 		freeProcessCookie(cookie);
 		destroyAsyncLoader(loader);
 
@@ -336,7 +336,7 @@ int main() {
 		while (waitEmulator(emulator));
 
 	if (scene)
-		destroyScene(scene);
+		destroyCollection(scene);
 
 	if (cookie)
 		freeProcessCookie(cookie);

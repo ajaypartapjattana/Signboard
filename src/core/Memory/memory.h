@@ -103,14 +103,6 @@ namespace mem {
 			pEnd -= _Count;
 		}
 
-		void set_begin(_Ty* const _Addr) noexcept {
-			pBegin = _Addr;
-		}
-
-		void set_end(_Ty* const _Addr) noexcept {
-			pEnd = _Addr;
-		}
-
 		void assign(const _Ty& _Val) const noexcept(std::is_nothrow_copy_assignable_v<_Ty>) {
 			std::fill(pBegin, pEnd, _Val);
 		}
@@ -147,6 +139,28 @@ namespace mem {
 		}
 
 	};
+
+	template <typename _Ty>
+	span<_Ty> allocate_range(const size_t _Count) noexcept {
+		if (_Count == 0)
+			return span<_Ty>{};
+
+		const size_t size = sizeof(_Ty) * _Count;
+
+		void* memory = ::operator new(size, std::nothrow);
+
+		if (!memory)
+			return span<_Ty>{};
+
+		 _Ty* const pBegin = static_cast<_Ty*>(memory);
+
+    	return { pBegin, pBegin + _Count };
+	}
+
+	template <typename _Ty>
+	void free_range(const span<_Ty>& _Span) noexcept {
+		::operator delete(_Span.pBegin);
+	}
 
 	template <typename _Ty>
 	struct static_vector {

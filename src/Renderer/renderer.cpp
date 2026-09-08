@@ -420,7 +420,7 @@ int createEmulator(VulkanContext const _Context, const EmulatorCreateInfo* const
 
 		{
 			VmaAllocatorCreateInfo createInfo{};
-			createInfo.flags = 0;
+			createInfo.flags = VMA_ALLOCATOR_CREATE_EXTERNALLY_SYNCHRONIZED_BIT;
 			createInfo.physicalDevice = physicalDevice;
 			createInfo.device = _device;
 			createInfo.preferredLargeHeapBlockSize = 0;
@@ -496,9 +496,39 @@ int waitEmulator(Emulator const _Emulator) noexcept {
 
 struct StagingState {
 	mem::span<uint8_t> stage;
-	uint8_t* pTail;
 	uint8_t* pHead;
 };
+
+static inline void bindStageMemory(StagingState* const pStage, void* const pMemory, const size_t _Size) noexcept {
+	pStage->stage = mem::span<uint8_t>{ reinterpret_cast<uint8_t*>(pMemory), _Size };
+	pStage->pHead = reinterpret_cast<uint8_t*>(pMemory);
+}
+
+static inline size_t getStageSize(const StagingState* const pStage) noexcept {
+	return pStage->stage.size();
+}
+
+static inline size_t getStageCapacity(const StagingState* const pStage) noexcept {
+	return static_cast<size_t>(pStage->stage.pEnd - pStage->pHead);
+}
+
+struct StageRegion {
+	VkDeviceSize offset;
+	VkDeviceSize size;
+};
+
+static inline void allocateStageRegion(StagingState* const pStage, const void* const pSrc, const size_t _Size, StageRegion* const pAllocation) noexcept {
+	memcpy(pStage->pHead, pSrc, _Size);
+	
+	pAllocation->offset = static_cast<VkDeviceSize>(pStage->pHead - pStage->stage.pBegin);
+	pAllocation->size = _Size;
+
+	pStage->pHead += _Size;
+}
+
+static inline void resetStage(StagingState* const pStage) noexcept {
+	pStage->pHead = pStage->stage.pBegin;
+}
 
 struct AsyncLoader_T {
 	VkDevice device;
@@ -512,6 +542,7 @@ struct AsyncLoader_T {
 	VkBuffer buffer;
 	VmaAllocation allocation;
 	StagingState stage;
+	mem::span<uint8_t*> region;
 
 	uint32_t transfer;
 };
@@ -526,6 +557,7 @@ int createAsyncLoader(Emulator const _Emulator, const AsyncLoaderCreateInfo* con
 	mem::span<VkFence> _fence;
 	VkBuffer _buffer = VK_NULL_HANDLE;
 	VmaAllocation _allocation;
+	mem::span<uint8_t*> _region;
 
 	do {
 		VkResult result;
@@ -543,7 +575,7 @@ int createAsyncLoader(Emulator const _Emulator, const AsyncLoaderCreateInfo* con
 		if (result != VK_SUCCESS)
 			break;
 
-		_commandBuffer = { new(std::nothrow) VkCommandBuffer[pCreateInfo->maxLoadProcess], (size_t)pCreateInfo->maxLoadProcess };
+		_commandBuffer = mem::allocate_range<VkCommandBuffer>(pCreateInfo->maxLoadProcess);
 
 		if (!_commandBuffer)
 			break;
@@ -562,7 +594,7 @@ int createAsyncLoader(Emulator const _Emulator, const AsyncLoaderCreateInfo* con
 		if (result != VK_SUCCESS)
 			break;
 
-		_sempahore = { new(std::nothrow) VkSemaphore[pCreateInfo->maxLoadProcess], (size_t)pCreateInfo->maxLoadProcess };
+		_sempahore = mem::allocate_range<VkSemaphore>(pCreateInfo->maxLoadProcess);
 
 		_sempahore.assign_default();
 
@@ -580,7 +612,7 @@ int createAsyncLoader(Emulator const _Emulator, const AsyncLoaderCreateInfo* con
 		if (result != VK_SUCCESS)
 			break;
 
-		_fence = { new(std::nothrow) VkFence[pCreateInfo->maxLoadProcess], (size_t)pCreateInfo->maxLoadProcess };
+		_fence = mem::allocate_range<VkFence>(pCreateInfo->maxLoadProcess);
 
 		if (!_fence)
 			break;
@@ -632,7 +664,14 @@ int createAsyncLoader(Emulator const _Emulator, const AsyncLoaderCreateInfo* con
 
 		if (result != VK_SUCCESS)
 			break;
-			
+
+		_region = mem::allocate_range<uint8_t*>(pCreateInfo->maxLoadProcess);
+
+		if (!_region)
+			break;
+
+		_region.assign_default();
+		
 		AsyncLoader const loader = new(std::nothrow) AsyncLoader_T;
 
 		if (!loader)
@@ -640,7 +679,6 @@ int createAsyncLoader(Emulator const _Emulator, const AsyncLoaderCreateInfo* con
 
 		loader->transfer = 0;
 		loader->stage.stage = stagingSpan;
-		loader->stage.pTail = stagingSpan.pBegin - sizeof(uint8_t);
 		loader->stage.pHead = stagingSpan.pBegin;
 		loader->allocation = _allocation;
 		loader->buffer = _buffer;
@@ -659,6 +697,9 @@ int createAsyncLoader(Emulator const _Emulator, const AsyncLoaderCreateInfo* con
 
 	} while (false);
 
+	if (_region)
+		mem::free_range(_region);
+
 	if (_buffer)
 		vmaDestroyBuffer(allocator, _buffer, _allocation);
 
@@ -667,7 +708,7 @@ int createAsyncLoader(Emulator const _Emulator, const AsyncLoaderCreateInfo* con
 		for (const VkFence* pFence{ _fence.pBegin }; pFence != pFenceEnd && *pFence; ++pFence)
 			vkDestroyFence(device, *pFence, nullptr);
 
-		delete[] _fence;
+		mem::free_range(_fence);
 	}
 
 	if (_sempahore) {
@@ -675,11 +716,11 @@ int createAsyncLoader(Emulator const _Emulator, const AsyncLoaderCreateInfo* con
 		for (const VkSemaphore* pSemaphore{ _sempahore.pBegin }; pSemaphore != pSemaphoreEnd && *pSemaphore; ++pSemaphore)
 			vkDestroySemaphore(device, *pSemaphore, nullptr);
 
-		delete[] _sempahore;
+		mem::free_range(_sempahore);
 	}
 
 	if (_commandBuffer)
-		delete[] _commandBuffer;
+		mem::free_range(_commandBuffer);
 
 	if (_commandPool)
 		vkDestroyCommandPool(device, _commandPool, nullptr);
@@ -688,81 +729,45 @@ int createAsyncLoader(Emulator const _Emulator, const AsyncLoaderCreateInfo* con
 }
 
 void destroyAsyncLoader(AsyncLoader const _AsynLoader) noexcept {
+	mem::free_range(_AsynLoader->region);
+	
 	vmaDestroyBuffer(_AsynLoader->allocator, _AsynLoader->buffer, _AsynLoader->allocation);
 
 	const VkFence* const pFenceEnd = _AsynLoader->fence.pEnd;
 	for (const VkFence* pFence{ _AsynLoader->fence.pBegin }; pFence != pFenceEnd; ++pFence)
 		vkDestroyFence(_AsynLoader->device, *pFence, nullptr);
 
-	delete[] _AsynLoader->fence;
+	mem::free_range(_AsynLoader->fence);
 
 	const VkSemaphore* const pSemaphoreEnd = _AsynLoader->semaphore.pEnd;
 	for (const VkSemaphore* pSemaphore{ _AsynLoader->semaphore.pBegin }; pSemaphore != pSemaphoreEnd; ++pSemaphore)
 		vkDestroySemaphore(_AsynLoader->device, *pSemaphore, nullptr);
 
-	delete[] _AsynLoader->semaphore;
+	mem::free_range(_AsynLoader->semaphore);
 
-	delete[] _AsynLoader->commandBuffer;
+	mem::free_range(_AsynLoader->commandBuffer);
 	vkDestroyCommandPool(_AsynLoader->device, _AsynLoader->commandPool, nullptr);
 	
 	delete _AsynLoader;
 }
 
-struct StageAllocation {
-	VkDeviceSize offset;
-	VkDeviceSize size;
-};
+int waitAsyncLoader(AsyncLoader const _AsyncLoader) noexcept {
+	do {
+		uint32_t transfer = _AsyncLoader->transfer;
 
-struct StageAllocationCreateInfo {
-	const void* data;
-	size_t size;
-	uint32_t allocationGranularityCount;
-	const size_t* pAllocationGranularity;
-};
+		if (!transfer)
+			return 0;
 
-int createStageAllocation(StagingState* const pStage, const StageAllocationCreateInfo* const pAllocationInfo, StageAllocation* const pAllocation) noexcept {
-	size_t availableSize;
-	
-	if (pStage->pHead >= pStage->pTail)
-		availableSize = static_cast<size_t>(pStage->stage.pEnd - pStage->pHead);
-	else
-		availableSize = static_cast<size_t>(pStage->pTail - pStage->pHead);
+		VkResult result = vkWaitForFences(_AsyncLoader->device, transfer, _AsyncLoader->fence, VK_TRUE, UINT64_MAX);
 
-	if (pAllocationInfo->size > availableSize) {
-		if (pStage->pHead < pStage->pTail)
-			return -1;
+		if (result != VK_SUCCESS)
+			break;
 
-		size_t maxTransferSize = 0;
-		const size_t* pGranularity = pAllocationInfo->pAllocationGranularity + pAllocationInfo->allocationGranularityCount;
-		
-		const size_t* const pGranularityBegin = pAllocationInfo->pAllocationGranularity;
-		for (; pGranularity != pGranularityBegin && !(maxTransferSize = mem::alignDown(availableSize, *pGranularity)); --pGranularity);
+		return 0;
 
-		if (maxTransferSize) {
-			memcpy(pStage->pHead, pAllocationInfo->data, maxTransferSize);
+	} while (false);
 
-			pAllocation->offset = static_cast<VkDeviceSize>(pStage->pHead - pStage->stage.pBegin);
-			pAllocation->size = static_cast<VkDeviceSize>(maxTransferSize);
-
-			pStage->pHead += maxTransferSize;
-
-			return static_cast<int>(pGranularity - pGranularityBegin);
-		}
-
-		if (pAllocationInfo->size > static_cast<size_t>(pStage->pTail - pStage->stage.pBegin))
-			return -1;
-
-		pStage->pHead = pStage->stage.pBegin;
-	}
-
-	memcpy(pStage->pHead, pAllocationInfo->data, pAllocationInfo->size);
-	
-	pAllocation->offset = static_cast<VkDeviceSize>(pStage->pHead - pStage->stage.pBegin);
-	pAllocation->size = static_cast<VkDeviceSize>(pAllocationInfo->size);
-
-	pStage->pHead += pAllocationInfo->size;
-	
-	return 0;
+	return -1;
 }
 
 struct ProcessCookie_T {
@@ -795,96 +800,126 @@ enum ModelStateFlagBit : ModelStateFlags {
 };
 
 struct Model_T {
-	VkBuffer vertex;
-	VmaAllocation vertexAllocation;
-	VkDeviceSize vertexoffset;
-	VkBuffer index;
-	VmaAllocation indexAllocation;
-	VkDeviceSize indexOffset;
-	uint32_t count;
+	uint32_t firstVertex;
+	uint32_t firstIndex;
+	uint32_t indexcount;
 	ModelStateFlags state;
 };
 
-struct Scene_T {
+struct Collection_T {
 	VmaAllocator allocator;
 	mem::span<Model_T> model;
-	uint32_t hint;
+	VkBuffer vertex;
+	VmaAllocation vertexAllocation;
+	VkBuffer index;
+	VmaAllocation indexAllocation;
 };
 
-int createScene(Emulator const _Emulator, const SceneCreateInfo* const pCreateInfo, Scene* const pScene) noexcept {
+int createCollection(AsyncLoader const _AsyncLoader, Emulator const _Emulator, const CollectionCreateInfo* const pCreateInfo, Collection* const pScene) noexcept {
+	const VkDevice device = _AsyncLoader->device;
+	const VmaAllocator allocator = _AsyncLoader->allocator;
+	
 	mem::span<Model_T> _model;
 
-	do {
-		const uint32_t modelCount = pCreateInfo->modelCount;
-
-		_model = { new(std::nothrow) Model_T[modelCount]{}, (size_t)modelCount };
-
-		if (!_model)
-			break;
-
-		Scene const scene = new(std::nothrow) Scene_T;
-
-		if (!scene)
-			break;
-
-		scene->hint = 0u;
-		scene->model = _model;
-		scene->allocator = _Emulator->allocator;
-
-		*pScene = scene;
-
-		return 0;
-
-	}	while (false);
-
-	if (_model)
-		delete[] _model;
-
-	return -1;
-}
-
-void destroyScene(Scene const _Scene) noexcept {
-	const VmaAllocator allocator = _Scene->allocator;
-
-	const Model_T* const pModelEnd = _Scene->model.pBegin + _Scene->hint;
-	for (const Model_T* pModel{ _Scene->model.pBegin }; pModel != pModelEnd; ++pModel) {
-		if (!pModel->state)
-			continue;
-
-		vmaDestroyBuffer(allocator, pModel->index, pModel->indexAllocation);
-		vmaDestroyBuffer(allocator, pModel->vertex, pModel->vertexAllocation);
-	}
-
-	delete[] _Scene->model;
-
-	delete _Scene;
-}
-
-int loadModel(AsyncLoader const _AsynLoader, Scene const _Scene, const ModelCreateInfo* const pCreateInfo, Model* const pModel, ProcessCookie const _ProcessCookie) noexcept {
-	const VkDevice device = _AsynLoader->device;
-	const VmaAllocator allocator = _AsynLoader->allocator;
-
-	VkBuffer _vertexBuffer = VK_NULL_HANDLE;
+	VkBuffer _vertex = VK_NULL_HANDLE;
 	VmaAllocation _vertexAllocation;
-	VkBuffer _indexBuffer = VK_NULL_HANDLE;
+	VkBuffer _index = VK_NULL_HANDLE;
 	VmaAllocation _indexAllocation;
 
 	do {
 		VkResult result;
+		
+		const uint32_t modelCount = pCreateInfo->modelCount;
 
-		Model const model = _Scene->model + _Scene->hint;
-
-		if (model == _Scene->model.pEnd)
+		if (!modelCount)
 			break;
 
-		const size_t vertexDataSize = pCreateInfo->vertexCount * sizeof(Vertex);
+		_model = mem::allocate_range<Model_T>((size_t)modelCount);
 
+		if (!_model)
+			break;
+
+		uint32_t totalVertexCount = 0;
+		uint32_t totalIndexCount = 0;
+			
+		uint32_t maxVertexCount = 0;
+		uint32_t maxIndexCount = 0;
+
+		Model_T* pModel = _model.pBegin;
+
+		const ModelInfo const* pModelInfoEnd = pCreateInfo->pModelInfos + pCreateInfo->modelCount;
+		for (const ModelInfo* pModelInfo{ pCreateInfo->pModelInfos }; pModelInfo != pModelInfoEnd; ++pModelInfo) {
+			pModel->firstVertex = totalVertexCount;
+			pModel->firstIndex = totalIndexCount;
+
+			pModel->indexcount = pModelInfo->indexCount;
+
+			totalVertexCount += pModelInfo->vertexCount;
+			totalIndexCount += pModelInfo->indexCount;
+
+			maxVertexCount = std::max<uint32_t>(pModelInfo->vertexCount, maxVertexCount);
+			maxIndexCount = std::max<uint32_t>(pModelInfo->indexCount, maxIndexCount);
+
+			++pModel;
+		}
+
+		const size_t maxAllocationSize = sizeof(Vertex) * maxVertexCount + sizeof(Index) * maxIndexCount;
+
+		if (maxAllocationSize > getStageSize(&_AsyncLoader->stage)) {
+			VkBuffer _buffer = VK_NULL_HANDLE;
+			VmaAllocation _allocation;
+
+			VkBufferCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+			createInfo.pNext = nullptr;
+			createInfo.flags = 0;
+			createInfo.size = maxAllocationSize;
+			createInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+			createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			createInfo.queueFamilyIndexCount = 0;
+			createInfo.pQueueFamilyIndices = nullptr;
+
+			VmaAllocationCreateInfo allocationCreateInfo{};
+			allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+			allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+			allocationCreateInfo.requiredFlags = 0;
+			allocationCreateInfo.preferredFlags = 0;
+			allocationCreateInfo.memoryTypeBits = 0;
+			allocationCreateInfo.pool = VK_NULL_HANDLE;
+			allocationCreateInfo.pUserData = nullptr;
+			allocationCreateInfo.priority = 0.0f;
+
+			VmaAllocationInfo allocationInfo;
+			result = vmaCreateBuffer(allocator, &createInfo, &allocationCreateInfo, &_buffer, &_allocation, &allocationInfo);
+
+			if (result != VK_SUCCESS)
+				break;
+
+			if (_AsyncLoader->transfer) {
+				result = vkWaitForFences(device, _AsyncLoader->transfer, _AsyncLoader->fence, VK_TRUE, UINT64_MAX);
+
+				if (result != VK_SUCCESS) {
+					vmaDestroyBuffer(allocator, _buffer, _allocation);
+					break;
+				}
+			}
+
+			_AsyncLoader->transfer = 0;
+
+			_AsyncLoader->buffer = _buffer;
+			_AsyncLoader->allocation = _allocation;
+			
+			bindStageMemory(&_AsyncLoader->stage, allocationInfo.pMappedData, (size_t)allocationInfo.size);
+		}
+
+		const VkDeviceSize vertexBufferSize = (VkDeviceSize)(sizeof(Vertex) * totalVertexCount);
+		
 		{
 			VkBufferCreateInfo createInfo{};
 			createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 			createInfo.pNext = nullptr;
 			createInfo.flags = 0;
-			createInfo.size = static_cast<VkDeviceSize>(vertexDataSize);
+			createInfo.size = vertexBufferSize;
 			createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 			createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			createInfo.queueFamilyIndexCount = 0u;
@@ -900,20 +935,20 @@ int loadModel(AsyncLoader const _AsynLoader, Scene const _Scene, const ModelCrea
 			allocationCreateInfo.pUserData = nullptr;
 			allocationCreateInfo.priority = 0.0f;
 
-			result = vmaCreateBuffer(allocator, &createInfo, &allocationCreateInfo, &_vertexBuffer, &_vertexAllocation, nullptr);
+			result = vmaCreateBuffer(allocator, &createInfo, &allocationCreateInfo, &_vertex, &_vertexAllocation, nullptr);
 		}
 
 		if (result != VK_SUCCESS)
 			break;
 
-		const size_t indexDataSize = pCreateInfo->indexCount * sizeof(Index);
+		const VkDeviceSize indexBufferSize = (VkDeviceSize)(sizeof(Index) * totalIndexCount);
 
 		{
 			VkBufferCreateInfo createInfo{};
 			createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 			createInfo.pNext = nullptr;
 			createInfo.flags = 0;
-			createInfo.size = indexDataSize;
+			createInfo.size = indexBufferSize;
 			createInfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 			createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			createInfo.queueFamilyIndexCount = 0u;
@@ -929,183 +964,208 @@ int loadModel(AsyncLoader const _AsynLoader, Scene const _Scene, const ModelCrea
 			allocationCreateInfo.pUserData = nullptr;
 			allocationCreateInfo.priority = 0.0f;
 
-			result = vmaCreateBuffer(allocator, &createInfo, &allocationCreateInfo, &_indexBuffer, &_indexAllocation, nullptr);
-		}
-
-		if (result != VK_SUCCESS)
-			break;
-		
-		int allocationResult;
-
-		StageAllocation vertexDataRegion;
-
-		{
-			size_t bufferAllocationGranularity[1] = { 1u };
-
-			StageAllocationCreateInfo createInfo{};
-			createInfo.data = pCreateInfo->pVertex;
-			createInfo.size = vertexDataSize;
-			createInfo.allocationGranularityCount = 1;
-			createInfo.pAllocationGranularity = bufferAllocationGranularity;
-
-			allocationResult = createStageAllocation(&_AsynLoader->stage, &createInfo, &vertexDataRegion);
-		}
-
-		if (allocationResult < 0)
-			break;
-
-		result = vmaFlushAllocation(allocator, _AsynLoader->allocation, vertexDataRegion.offset, vertexDataRegion.size);
-
-		if (result != VK_SUCCESS)
-			break;
-
-		StageAllocation indexDataRegion;
-
-		{
-			size_t bufferAllocationGranularity[1] = { 1u };
-
-			StageAllocationCreateInfo createInfo{};
-			createInfo.data = pCreateInfo->pIndex;
-			createInfo.size = indexDataSize;
-			createInfo.allocationGranularityCount = 1;
-			createInfo.pAllocationGranularity = bufferAllocationGranularity;
-
-			allocationResult = createStageAllocation(&_AsynLoader->stage, &createInfo, &indexDataRegion);
-		}
-
-		if (allocationResult < 0)
-			break;
-
-		result = vmaFlushAllocation(allocator, _AsynLoader->allocation, indexDataRegion.offset, indexDataRegion.size);
-
-		if (result != VK_SUCCESS)
-			break;
-
-		const VkFence fence = _AsynLoader->fence[_AsynLoader->transfer];
-
-		result = vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
-
-		if (result != VK_SUCCESS)
-			break;
-
-		const VkCommandBuffer commandBuffer = _AsynLoader->commandBuffer[_AsynLoader->transfer];
-
-		result = vkResetCommandBuffer(commandBuffer, 0);
-
-		if (result != VK_SUCCESS)
-			break;
-
-		{
-			VkCommandBufferBeginInfo beginInfo{};
-			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-			beginInfo.pNext = nullptr;
-			beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-			beginInfo.pInheritanceInfo = nullptr;
-
-			result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+			result = vmaCreateBuffer(allocator, &createInfo, &allocationCreateInfo, &_index, &_indexAllocation, nullptr);
 		}
 
 		if (result != VK_SUCCESS)
 			break;
 
-		{
-			VkBufferCopy region{};
-			region.srcOffset = vertexDataRegion.offset;
-			region.dstOffset = 0u;
-			region.size = vertexDataRegion.size;
-	
-			vkCmdCopyBuffer(commandBuffer, _AsynLoader->buffer, _vertexBuffer, 1, &region);
+		VkDeviceSize vertexOffset = 0;
+		VkDeviceSize indexOffset = 0;
+
+		const ModelInfo* pModelInfo = pCreateInfo->pModelInfos;
+		while (pModelInfo != pModelInfoEnd) {
+			uint32_t transfer = _AsyncLoader->transfer;
+
+			while (true) {
+				result = vkGetFenceStatus(device, _AsyncLoader->fence[transfer]);
+
+				if (result == VK_NOT_READY) {
+					++transfer;
+					break;
+				}
+
+				if (result != VK_SUCCESS)
+					break;
+
+				uint8_t* region = _AsyncLoader->region[transfer];
+				
+				if (!region)
+					region = _AsyncLoader->stage.pHead;
+
+				_AsyncLoader->stage.pHead = region;
+				
+				if (transfer == 0)
+					break;
+
+				--transfer;
+			}
+
+			if (result != VK_SUCCESS && result != VK_NOT_READY)
+				break;
+
+			if (transfer == _AsyncLoader->fence.size()) {
+				result = vkWaitForFences(device, static_cast<uint32_t>(_AsyncLoader->fence.size()), _AsyncLoader->fence, VK_TRUE, UINT64_MAX);
+
+				if (result != VK_SUCCESS)
+					break;
+
+				resetStage(&_AsyncLoader->stage);
+			}
+
+			const VkFence fence = _AsyncLoader->fence[transfer];
+			
+			result = vkWaitForFences(device, 1u, &fence, VK_TRUE, UINT64_MAX);
+
+			if (result != VK_SUCCESS)
+				break;
+
+			const VkCommandBuffer commandBuffer = _AsyncLoader->commandBuffer[_AsyncLoader->transfer];
+
+			result = vkResetCommandBuffer(commandBuffer, 0);
+
+			if (result != VK_SUCCESS)
+				break;
+
+			{
+				VkCommandBufferBeginInfo beginInfo{};
+				beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+				beginInfo.pNext = nullptr;
+				beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+				beginInfo.pInheritanceInfo = nullptr;
+
+				result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+			}
+
+			if (result != VK_SUCCESS)
+				break;
+
+			StagingState* const pStage = &_AsyncLoader->stage;
+
+			do {
+				uint8_t* const pHead = pStage->pHead;
+				
+				const size_t vertexSize = sizeof(Vertex) * pModelInfo->vertexCount;
+				const size_t indexSize = sizeof(Index) * pModelInfo->indexCount;
+				
+				const size_t allocationSize = vertexSize + indexSize;
+				
+				if (getStageCapacity(pStage) < allocationSize)
+					break;
+				
+				StageRegion vertexRegion;
+				allocateStageRegion(pStage, pModelInfo->pVertex, vertexSize, &vertexRegion);
+
+				StageRegion indexRegion;
+				allocateStageRegion(pStage, pModelInfo->pIndex, indexSize, &indexRegion);
+
+				result = vmaFlushAllocation(_AsyncLoader->allocator, _AsyncLoader->allocation, vertexRegion.offset, allocationSize);
+
+				if (result != VK_SUCCESS) {
+					pStage->pHead = pHead;
+					break;
+				}
+
+				{
+					VkBufferCopy copy{};
+					copy.srcOffset = vertexRegion.offset;
+					copy.dstOffset = vertexOffset;
+					copy.size = vertexRegion.size;
+
+					vkCmdCopyBuffer(commandBuffer, _AsyncLoader->buffer, _vertex, 1u, &copy);
+				}
+
+				vertexOffset += vertexRegion.size;
+
+				{
+					VkBufferCopy copy{};
+					copy.srcOffset = indexRegion.offset;
+					copy.dstOffset = indexOffset;
+					copy.size = indexRegion.size;
+
+					vkCmdCopyBuffer(commandBuffer, _AsyncLoader->buffer, _index, 1u, &copy);
+				}
+
+				indexOffset += indexRegion.size;
+
+				++pModelInfo;
+			} while (pModelInfo != pModelInfoEnd);
+
+			if (result != VK_SUCCESS)
+				break;
+
+			result = vkEndCommandBuffer(commandBuffer);
+
+			if (result != VK_SUCCESS)
+
+			result = vkResetFences(device, 1u, &fence);
+
+			if (result != VK_SUCCESS)
+				break;
+
+			{
+				VkSubmitInfo submitInfo{};
+				submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+				submitInfo.pNext = nullptr;
+				submitInfo.waitSemaphoreCount = 0u;
+				submitInfo.pWaitSemaphores = nullptr;
+				submitInfo.pWaitDstStageMask = nullptr;
+				submitInfo.commandBufferCount = 1u;
+				submitInfo.pCommandBuffers = &commandBuffer;
+				submitInfo.signalSemaphoreCount = 0u;
+				submitInfo.pSignalSemaphores = nullptr;
+
+				result = vkQueueSubmit(_AsyncLoader->queue, 1u, &submitInfo, fence);
+			}
+
+			if (result != VK_SUCCESS)
+				break;
+
+			_AsyncLoader->region[transfer] = _AsyncLoader->stage.pHead;
 		}
-
-		{
-			VkBufferCopy region{};
-			region.srcOffset = indexDataRegion.offset;
-			region.dstOffset = 0u;
-			region.size = indexDataRegion.size;
-
-			vkCmdCopyBuffer(commandBuffer, _AsynLoader->buffer, _indexBuffer, 1, &region);
-		}
-
-		result = vkEndCommandBuffer(commandBuffer);
 
 		if (result != VK_SUCCESS)
 			break;
 
-		result = vkResetFences(device, 1, &fence);
+		Collection const scene = new(std::nothrow) Collection_T;
 
-		if (result != VK_SUCCESS)
+		if (!scene)
 			break;
 
-		const VkSemaphore semaphore = _AsynLoader->semaphore[_AsynLoader->transfer];
+		scene->indexAllocation = _indexAllocation;
+		scene->index = _index;
+		scene->vertexAllocation = _vertexAllocation;
+		scene->vertex = _vertex;
+		scene->model = _model;
+		scene->allocator = _Emulator->allocator;
 
-		{
-			VkSubmitInfo submitInfo{};
-			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-			submitInfo.pNext = nullptr;
-			submitInfo.waitSemaphoreCount = 0u;
-			submitInfo.pWaitSemaphores = nullptr;
-			submitInfo.pWaitDstStageMask = nullptr;
-			submitInfo.commandBufferCount = 1u;
-			submitInfo.pCommandBuffers = &commandBuffer;
-			submitInfo.signalSemaphoreCount = _ProcessCookie ? 1u : 0u;
-			submitInfo.pSignalSemaphores = _ProcessCookie ? &semaphore : nullptr;
-
-			result = vkQueueSubmit(_AsynLoader->queue, 1, &submitInfo, fence);
-		}
-
-		if (result != VK_SUCCESS)
-			break;
-
-		model->vertex = _vertexBuffer;
-		model->vertexAllocation = _vertexAllocation;
-		model->vertexoffset = 0u;
-		model->index = _indexBuffer;
-		model->indexAllocation = _indexAllocation;
-		model->indexOffset = 0u;
-		model->count = pCreateInfo->indexCount;
-		model->state = MODEL_STATE_LOADED_BIT | MODEL_STATE_VISIBLE_BIT;
-
-		*pModel = model;
-
-		if (_ProcessCookie) {
-			_ProcessCookie->sempahore = semaphore;
-			_ProcessCookie->fence = fence;
-		}
-
-		_Scene->hint++;
+		*pScene = scene;
 
 		return 0;
 
 	} while (false);
 
-	if (_indexBuffer)
-		vmaDestroyBuffer(allocator, _indexBuffer, _indexAllocation);
-	
-	if (_vertexBuffer)
-		vmaDestroyBuffer(allocator, _vertexBuffer, _vertexAllocation);
+	if (_index)
+		vmaDestroyBuffer(allocator, _index, _indexAllocation);
+
+	if (_vertex)
+		vmaDestroyBuffer(allocator, _vertex, _vertexAllocation);
+
+	if (_model)
+		mem::free_range(_model);
 
 	return -1;
 }
 
-void releaseModel(Scene const _Scene, Model const _Model) noexcept {
-	const VmaAllocator allocator = _Scene->allocator;
+void destroyCollection(Collection const _Collection) noexcept {
+	const VmaAllocator allocator = _Collection->allocator;
 
-	vmaDestroyBuffer(allocator, _Model->index, _Model->indexAllocation);
-	vmaDestroyBuffer(allocator, _Model->vertex, _Model->vertexAllocation);
-}
+	vmaDestroyBuffer(allocator, _Collection->index, _Collection->indexAllocation);
+	vmaDestroyBuffer(allocator, _Collection->vertex, _Collection->vertexAllocation);
 
-int waitAsyncLoader(AsyncLoader const _AsyncLoader) noexcept {
-	do {
-		VkResult result = vkWaitForFences(_AsyncLoader->device, static_cast<uint32_t>(_AsyncLoader->fence.size()), _AsyncLoader->fence, VK_TRUE, UINT64_MAX);
+	mem::free_range(_Collection->model);
 
-		if (result != VK_SUCCESS)
-			break;
-
-		return 0;
-
-	} while (false);
-
-	return -1;
+	delete _Collection;
 }
 
 int waitProcess(Emulator const _Emulator, ProcessCookie const _Cookie) noexcept {
@@ -1228,7 +1288,7 @@ int createCanvas(Emulator const _Emulator, const CanvasCreateInfo* const pCreate
 			presentMode = pPresentMode != presentModes.pEnd ? *pPresentMode : VK_PRESENT_MODE_FIFO_KHR;
 		}
 
-		_clearValue = { new(std::nothrow) VkClearValue[1u], (size_t)1u };
+		_clearValue = mem::allocate_range<VkClearValue>(1u);
 
 		if (!_clearValue)
 			break;
@@ -1339,7 +1399,7 @@ int createCanvas(Emulator const _Emulator, const CanvasCreateInfo* const pCreate
 		if (result != VK_SUCCESS)
 			break;
 
-		_image = { new(std::nothrow) VkImage[imageCount], (size_t)imageCount };
+		_image = mem::allocate_range<VkImage>((size_t)imageCount);
 
 		if (!_image)
 			break;
@@ -1349,7 +1409,7 @@ int createCanvas(Emulator const _Emulator, const CanvasCreateInfo* const pCreate
 		if (result != VK_SUCCESS)
 			break;
 
-		_imageView = { new(std::nothrow) VkImageView[imageCount], (size_t)imageCount };
+		_imageView = mem::allocate_range<VkImageView>((size_t)imageCount);
 
 		if (!_imageView)
 			break;
@@ -1385,7 +1445,7 @@ int createCanvas(Emulator const _Emulator, const CanvasCreateInfo* const pCreate
 		if (result != VK_SUCCESS)
 			break;
 
-		_framebuffer = { new(std::nothrow) VkFramebuffer[imageCount], (size_t)imageCount };
+		_framebuffer = mem::allocate_range<VkFramebuffer>((size_t)imageCount);
 
 		if (!_framebuffer)
 			break;
@@ -1416,7 +1476,7 @@ int createCanvas(Emulator const _Emulator, const CanvasCreateInfo* const pCreate
 		if (result != VK_SUCCESS)
 			break;
 
-		_fence = { new(std::nothrow) VkFence[imageCount], (size_t)imageCount };
+		_fence = mem::allocate_range<VkFence>((size_t)imageCount);
 		
 		if (!_fence)
 			break;
@@ -1459,14 +1519,14 @@ int createCanvas(Emulator const _Emulator, const CanvasCreateInfo* const pCreate
 	pScratch->restore();
 
 	if (_fence)
-		delete[] _fence;
+		mem::free_range(_fence);	
 
 	if (_framebuffer) {
 		const VkFramebuffer* const pFramebufferEnd = _framebuffer.pEnd;
 		for (const VkFramebuffer* pFramebuffer{ _framebuffer.pBegin }; pFramebuffer != pFramebufferEnd && *pFramebuffer; ++pFramebuffer)
 			vkDestroyFramebuffer(device, *pFramebuffer, nullptr);
 
-		delete[] _framebuffer;
+		mem::free_range(_framebuffer);
 	}
 
 	if (_imageView) {
@@ -1474,11 +1534,11 @@ int createCanvas(Emulator const _Emulator, const CanvasCreateInfo* const pCreate
 		for (const VkImageView* pImageView{ _imageView.pBegin }; pImageView != pImageViewEnd && *pImageView; ++pImageView)
 			vkDestroyImageView(device, *pImageView, nullptr);
 
-		delete[] _imageView;
+		mem::free_range(_imageView);
 	}
 
 	if (_image)
-		delete[] _image;
+		mem::free_range(_image);
 
 	if (_swapchain)
 		vkDestroySwapchainKHR(device, _swapchain, nullptr);
@@ -1487,7 +1547,7 @@ int createCanvas(Emulator const _Emulator, const CanvasCreateInfo* const pCreate
 		vkDestroyRenderPass(device, _renderPass, nullptr);
 
 	if (_clearValue)
-		delete[] _clearValue;
+		mem::free_range(_clearValue);
 
 	return -1;
 }
@@ -1495,25 +1555,25 @@ int createCanvas(Emulator const _Emulator, const CanvasCreateInfo* const pCreate
 void destroyCanvas(Canvas const _Canvas) noexcept {
 	const VkDevice device = _Canvas->device;
 
-	delete[] _Canvas->fence;
+	mem::free_range(_Canvas->fence);
 
 	const VkFramebuffer* const pFramebufferEnd = _Canvas->framebuffer.pEnd;
 	for (const VkFramebuffer* pFramebuffer{ _Canvas->framebuffer.pBegin }; pFramebuffer != pFramebufferEnd; ++pFramebuffer)
 		vkDestroyFramebuffer(device, *pFramebuffer, nullptr);
 
-	delete[] _Canvas->framebuffer;
+	mem::free_range(_Canvas->framebuffer);
 	
 	const VkImageView* const pImageViewEnd = _Canvas->imageView.pEnd;
 	for (const VkImageView* pImageView{ _Canvas->imageView.pBegin }; pImageView != pImageViewEnd; ++pImageView)
 		vkDestroyImageView(device, *pImageView, nullptr);
 
-	delete[] _Canvas->imageView;
-	delete[] _Canvas->image;
+	mem::free_range(_Canvas->imageView);
+	mem::free_range(_Canvas->image);
 
 	vkDestroySwapchainKHR(device, _Canvas->swapchain, nullptr);
 
 	vkDestroyRenderPass(device, _Canvas->renderPass, nullptr);
-	delete[] _Canvas->clearValue;
+	mem::free_range(_Canvas->clearValue);
 
 	delete _Canvas;
 }
@@ -1583,7 +1643,7 @@ int updateCanvas(Canvas const _Canvas) noexcept {
 		if (result != VK_SUCCESS)
 			break;
 
-		_image = { new(std::nothrow) VkImage[imageCount], (size_t)imageCount };
+		_image = mem::allocate_range<VkImage>((size_t)imageCount);
 
 		if (!_image)
 			break;
@@ -1593,7 +1653,7 @@ int updateCanvas(Canvas const _Canvas) noexcept {
 		if (result != VK_SUCCESS)
 			break;
 
-		_imageView = { new(std::nothrow) VkImageView[imageCount], (size_t)imageCount };
+		_imageView = mem::allocate_range<VkImageView>((size_t)imageCount);
 
 		if (!_imageView)
 			break;
@@ -1629,7 +1689,7 @@ int updateCanvas(Canvas const _Canvas) noexcept {
 		if (result != VK_SUCCESS)
 			break;
 
-		_framebuffer = { new(std::nothrow) VkFramebuffer[imageCount], (size_t)imageCount };
+		_framebuffer = mem::allocate_range<VkFramebuffer>((size_t)imageCount);
 		
 		if (!_framebuffer)
 			break;
@@ -1660,7 +1720,7 @@ int updateCanvas(Canvas const _Canvas) noexcept {
 		if (result != VK_SUCCESS)
 			break;
 
-		_fence = { new(std::nothrow) VkFence[imageCount], (size_t)imageCount };
+		_fence = mem::allocate_range<VkFence>((size_t)imageCount);
 
 		if (!_fence)
 			break;
@@ -1674,20 +1734,20 @@ int updateCanvas(Canvas const _Canvas) noexcept {
 		if (result != VK_SUCCESS)
 			break;
 
-		delete[] _Canvas->fence;
+		mem::free_range(_Canvas->fence);
 
 		const VkFramebuffer* const pFramebufferEnd = _Canvas->framebuffer.pEnd;
 		for (const VkFramebuffer* pFramebuffer{ _Canvas->framebuffer.pBegin }; pFramebuffer != pFramebufferEnd; ++pFramebuffer)
 			vkDestroyFramebuffer(device, *pFramebuffer, nullptr);
 
-		delete[] _Canvas->framebuffer;
+		mem::free_range(_Canvas->framebuffer);
 			
 		const VkImageView* const pImageViewEnd = _Canvas->imageView.pEnd;
 		for (const VkImageView* pImageView{ _Canvas->imageView.pBegin }; pImageView != pImageViewEnd; ++pImageView)
 			vkDestroyImageView(device, *pImageView, nullptr);
 
-		delete[] _Canvas->imageView;
-		delete[] _Canvas->image;
+		mem::free_range(_Canvas->imageView);
+		mem::free_range(_Canvas->image);
 
 		vkDestroySwapchainKHR(device, _Canvas->swapchain, nullptr);
 
@@ -1704,14 +1764,14 @@ int updateCanvas(Canvas const _Canvas) noexcept {
 	} while (false);
 
 	if (_fence)
-		delete[] _fence;
+		mem::free_range(_fence);
 
 	if (_framebuffer) {
 		const VkFramebuffer* const pFramebufferEnd = _framebuffer.pEnd;
 		for (const VkFramebuffer* pFramebuffer{ _framebuffer.pBegin }; pFramebuffer != pFramebufferEnd && *pFramebuffer; ++pFramebuffer)
 			vkDestroyFramebuffer(device, *pFramebuffer, nullptr);
 
-		delete[] _framebuffer;
+		mem::free_range(_framebuffer);
 	}
 
 	if (_imageView) {
@@ -1719,11 +1779,11 @@ int updateCanvas(Canvas const _Canvas) noexcept {
 		for (const VkImageView* pImageView{ _imageView.pBegin }; pImageView != pImageViewEnd && *pImageView; ++pImageView)
 			vkDestroyImageView(device, *pImageView, nullptr);
 
-		delete[] _imageView;
+		mem::free_range(_imageView);
 	}
 
 	if (_image)
-		delete[] _image;
+		mem::free_range(_image);
 
 	if (_swapchain)
 		vkDestroySwapchainKHR(device, _swapchain, nullptr);
@@ -1780,10 +1840,10 @@ int createRenderBox(Emulator const _Emulator, Canvas const _Canvas, mem::stack* 
 		{
 			VkDescriptorSetLayoutBinding binding{};
 			binding.binding = 0;
-			binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			binding.descriptorCount = 1;
-			binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-			binding.pImmutableSamplers = &_sampler;
+			binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+			binding.pImmutableSamplers = nullptr;
 
 			VkDescriptorSetLayoutCreateInfo createInfo{};
 			createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -2116,8 +2176,6 @@ struct Renderer_T {
 	mem::span<VkSemaphore> renderSemaphore;
 	mem::span<VkFence> frameFence;
 	
-	mem::span<VkBuffer> buffer;
-
 	uint32_t bufferedFrames;
 	uint32_t frame;
 };
@@ -2130,8 +2188,6 @@ int createRenderer(Emulator const _Emulator, const RendererCreateInfo* const pCr
 	mem::span<VkSemaphore> _imageSemaphore;
 	mem::span<VkSemaphore> _renderSemaphore;
 	mem::span<VkFence> _frameFence;
-
-	mem::span<VkBuffer> _buffer;
 
 	do {
 		VkResult result;
@@ -2149,7 +2205,7 @@ int createRenderer(Emulator const _Emulator, const RendererCreateInfo* const pCr
 		if (result != VK_SUCCESS)
 			break;
 
-		_commandBuffer = { new(std::nothrow) VkCommandBuffer[pCreateInfo->maxRenderProcess], (size_t)pCreateInfo->maxRenderProcess };
+		_commandBuffer = mem::allocate_range<VkCommandBuffer>((size_t)pCreateInfo->maxRenderProcess);
 
 		if (!_commandBuffer)
 			break;
@@ -2168,7 +2224,7 @@ int createRenderer(Emulator const _Emulator, const RendererCreateInfo* const pCr
 		if (result != VK_SUCCESS)
 			break;
 
-		_imageSemaphore = { new(std::nothrow) VkSemaphore[pCreateInfo->maxRenderProcess], (size_t)pCreateInfo->maxRenderProcess };
+		_imageSemaphore = mem::allocate_range<VkSemaphore>((size_t)pCreateInfo->maxRenderProcess);
 
 		if (!_imageSemaphore)
 			break;
@@ -2189,7 +2245,7 @@ int createRenderer(Emulator const _Emulator, const RendererCreateInfo* const pCr
 		if (result != VK_SUCCESS)
 			break;
 
-		_renderSemaphore = { new(std::nothrow) VkSemaphore[pCreateInfo->maxRenderProcess], (size_t)pCreateInfo->maxRenderProcess };
+		_renderSemaphore = mem::allocate_range<VkSemaphore>((size_t)pCreateInfo->maxRenderProcess);
 
 		if (!_renderSemaphore)
 			break;
@@ -2210,7 +2266,7 @@ int createRenderer(Emulator const _Emulator, const RendererCreateInfo* const pCr
 		if (result != VK_SUCCESS)
 			break;
 
-		_frameFence = { new(std::nothrow) VkFence[pCreateInfo->maxRenderProcess], (size_t)pCreateInfo->maxRenderProcess };		
+		_frameFence = mem::allocate_range<VkFence>((size_t)pCreateInfo->maxRenderProcess);
 
 		if (!_frameFence)
 			break;
@@ -2229,11 +2285,6 @@ int createRenderer(Emulator const _Emulator, const RendererCreateInfo* const pCr
 		if (result != VK_SUCCESS)
 			break;
 
-		_buffer = { new(std::nothrow) VkBuffer[pCreateInfo->callDrawLimit], (size_t)pCreateInfo->callDrawLimit };
-
-		if (!_buffer)
-			break;
-
 		Renderer const renderer = new(std::nothrow) Renderer_T;
 
 		if (!renderer)
@@ -2241,8 +2292,6 @@ int createRenderer(Emulator const _Emulator, const RendererCreateInfo* const pCr
 		
 		renderer->frame = 0;
 		renderer->bufferedFrames = pCreateInfo->maxRenderProcess;
-
-		renderer->buffer = _buffer;
 
 		renderer->frameFence = _frameFence;
 		renderer->renderSemaphore = _renderSemaphore;
@@ -2259,15 +2308,12 @@ int createRenderer(Emulator const _Emulator, const RendererCreateInfo* const pCr
 
 	} while (false);
 
-	if (_buffer)
-		delete[] _buffer;
-
 	if (_frameFence) {
 		const VkFence* const pFenceEnd = _frameFence.pEnd;
 		for (const VkFence* pFence{ _frameFence.pBegin }; pFence != pFenceEnd && *pFence; ++pFence)
 			vkDestroyFence(device, *pFence, nullptr);
 
-		delete[] _frameFence;
+		mem::free_range(_frameFence);
 	}
 
 	if (_renderSemaphore) {
@@ -2275,7 +2321,7 @@ int createRenderer(Emulator const _Emulator, const RendererCreateInfo* const pCr
 		for (const VkSemaphore* pSemaphore{ _renderSemaphore.pBegin }; pSemaphore != pSemaphoreEnd && *pSemaphore; ++pSemaphore)
 			vkDestroySemaphore(device, *pSemaphore, nullptr);
 
-		delete[] _renderSemaphore;
+		mem::free_range(_renderSemaphore);
 	}
 
 	if (_imageSemaphore) {
@@ -2283,11 +2329,11 @@ int createRenderer(Emulator const _Emulator, const RendererCreateInfo* const pCr
 		for (const VkSemaphore* pSemaphore{ _imageSemaphore.pEnd }; pSemaphore != pSemaphoreEnd && *pSemaphore; ++pSemaphore)
 			vkDestroySemaphore(device, *pSemaphore, nullptr);
 
-		delete[] _imageSemaphore;
+		mem::free_range(_imageSemaphore);
 	}
 
 	if (_commandBuffer)
-		delete[] _commandBuffer;
+		mem::free_range(_commandBuffer);
 
 	if (_commandPool)
 		vkDestroyCommandPool(device, _commandPool, nullptr);
@@ -2298,27 +2344,25 @@ int createRenderer(Emulator const _Emulator, const RendererCreateInfo* const pCr
 void destroyRenderer(Renderer const _Renderer) noexcept {
 	const VkDevice device = _Renderer->device;
 
-	delete[] _Renderer->buffer;
-
 	const VkFence* const pFenceEnd = _Renderer->frameFence.pEnd;
 	for (const VkFence* pFence{ _Renderer->frameFence.pBegin }; pFence != pFenceEnd; ++pFence)
 		vkDestroyFence(device, *pFence, nullptr);
 
-	delete[] _Renderer->frameFence;
+	mem::free_range(_Renderer->frameFence);
 
 	const VkSemaphore* const pRenderSemaphoreEnd = _Renderer->renderSemaphore.pEnd;
 	for (const VkSemaphore* pRenderSemaphore{ _Renderer->renderSemaphore.pBegin }; pRenderSemaphore != pRenderSemaphoreEnd; ++pRenderSemaphore)
 		vkDestroySemaphore(device, *pRenderSemaphore, nullptr);
 
-	delete[] _Renderer->renderSemaphore;
+	mem::free_range(_Renderer->renderSemaphore);
 
 	const VkSemaphore* const pImageSemaphoreEnd = _Renderer->imageSemaphore.pEnd;
 	for (const VkSemaphore* pImageSemaphore{ _Renderer->imageSemaphore.pBegin }; pImageSemaphore != pImageSemaphoreEnd; ++pImageSemaphore)
 		vkDestroySemaphore(device, *pImageSemaphore, nullptr);
 
-	delete[] _Renderer->imageSemaphore;
+	mem::free_range(_Renderer->imageSemaphore);
 
-	delete[] _Renderer->commandBuffer;
+	mem::free_range(_Renderer->commandBuffer);
 
 	vkDestroyCommandPool(device, _Renderer->commandPool, nullptr);
 
@@ -2346,7 +2390,283 @@ int waitRenderer(Renderer const _Renderer) noexcept {
 	return -1;
 }
 
-int draw(Canvas const _Canvas, Renderer const _Renderer, RenderBox const _RenderBox, Scene const _Scene) noexcept {
+struct InstanceDataGPU {
+	InstanceData external;
+};
+
+struct Scene_T {
+	VmaAllocator allocator;
+	mem::span<VkBuffer> instance;
+	mem::span<VmaAllocation> instanceAllocation;
+	mem::span<InstanceDataGPU*> instanceData;
+	uint32_t instanceCount;
+	uint32_t instanceCapacity;
+	mem::span<VkBuffer> draw;
+	mem::span<VmaAllocation> drawAllocation;
+	mem::span<VkDrawIndexedIndirectCommand*> drawData;
+	uint32_t drawCount;
+	uint32_t drawCapacity;
+};
+
+int createScene(Collection const _Scene, Renderer const _Renderer, const SceneCreateInfo* const pCreateInfo, Scene* const pScene) noexcept {
+	const VmaAllocator allocator = _Scene->allocator;
+
+	mem::span<VkBuffer> _instance;
+	mem::span<VmaAllocation> _instanceAllocation;
+	mem::span<InstanceDataGPU*> _instanceData;
+	mem::span<VkBuffer> _indirect;
+	mem::span<VmaAllocation> _indirectAllocation;
+	mem::span<VkDrawIndexedIndirectCommand*> _indirectData;
+
+	do {
+		VkResult result = VK_SUCCESS;
+
+		const size_t frameCount = _Renderer->commandBuffer.size();
+
+		_instance = mem::allocate_range<VkBuffer>(frameCount);
+
+		if (!_instance)
+			break;
+
+		_instance.assign_default();
+
+		_instanceAllocation = mem::allocate_range<VmaAllocation>(frameCount);
+
+		if (!_instanceAllocation)
+			break;
+
+		_instanceData = mem::allocate_range<InstanceDataGPU*>(frameCount);
+
+		if (!_instanceData)
+			break;
+
+		{
+			VkBufferCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+			createInfo.pNext = nullptr;
+			createInfo.flags = 0;
+			createInfo.size = sizeof(InstanceDataGPU) * pCreateInfo->instanceCount;
+			createInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+			createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			createInfo.queueFamilyIndexCount = 0u;
+			createInfo.pQueueFamilyIndices = nullptr;
+
+			VmaAllocationCreateInfo allocationCreateInfo{};
+			allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+			allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+			allocationCreateInfo.requiredFlags = 0;
+			allocationCreateInfo.preferredFlags = 0;
+			allocationCreateInfo.memoryTypeBits = 0;
+			allocationCreateInfo.pool = VK_NULL_HANDLE;
+			allocationCreateInfo.pUserData = nullptr;
+			allocationCreateInfo.priority = 0.0f;
+
+			VmaAllocationInfo allocationInfo;
+
+			VkBuffer* pBuffer = _instance.pBegin;
+			VmaAllocation* pAllocation = _instanceAllocation.pBegin;
+			InstanceDataGPU** pData = _instanceData.pBegin;
+
+			const VkBuffer* const pBufferEnd = _instance.pEnd;
+			for (; pBuffer != pBufferEnd && result == VK_SUCCESS;) {
+				result = vmaCreateBuffer(allocator, &createInfo, &allocationCreateInfo, pBuffer++, pAllocation++, &allocationInfo);
+				*pData++ = reinterpret_cast<InstanceDataGPU*>(allocationInfo.pMappedData);
+			}
+		}
+
+		if (result != VK_SUCCESS)
+			break;
+
+		_indirect = mem::allocate_range<VkBuffer>(frameCount);
+
+		if (!_indirect)
+			break;
+
+		_indirect.assign_default();
+
+		_indirectAllocation = mem::allocate_range<VmaAllocation>(frameCount);
+
+		if (!_indirectAllocation)
+			break;
+		
+		_indirectData = mem::allocate_range<VkDrawIndexedIndirectCommand*>(frameCount);
+
+		if (!_indirectData)
+			break;
+
+		const uint32_t maxDrawCount = std::min<uint32_t>(pCreateInfo->instanceCount, std::max<uint32_t>(pCreateInfo->drawCount, static_cast<uint32_t>(_Scene->model.size() + 1u)));
+
+		{
+			VkBufferCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+			createInfo.pNext = nullptr;
+			createInfo.flags = 0;
+			createInfo.size = sizeof(VkDrawIndexedIndirectCommand) * maxDrawCount;
+			createInfo.usage = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+			createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			createInfo.queueFamilyIndexCount = 0u;
+			createInfo.pQueueFamilyIndices = nullptr;
+
+			VmaAllocationCreateInfo allocationCreateInfo{};
+			allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+			allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+			allocationCreateInfo.requiredFlags = 0;
+			allocationCreateInfo.preferredFlags = 0;
+			allocationCreateInfo.memoryTypeBits = 0;
+			allocationCreateInfo.pool = VK_NULL_HANDLE;
+			allocationCreateInfo.pUserData = nullptr;
+			allocationCreateInfo.priority = 0.0f;
+
+			VmaAllocationInfo allocationInfo;
+
+			VkBuffer* pBuffer = _indirect.pBegin;
+			VmaAllocation* pAllocation = _indirectAllocation.pBegin;
+			VkDrawIndexedIndirectCommand** pData = _indirectData.pBegin;
+
+			const VkBuffer* const pBufferEnd = _indirect.pEnd;
+			for (; pBuffer != pBufferEnd && result == VK_SUCCESS;) {
+				result = vmaCreateBuffer(allocator, &createInfo, &allocationCreateInfo, pBuffer++, pAllocation++, &allocationInfo);
+				*pData++ = reinterpret_cast<VkDrawIndexedIndirectCommand*>(allocationInfo.pMappedData);
+			}
+		}
+
+		if (result != VK_SUCCESS)
+			break;
+
+		Scene const scene = new(std::nothrow) Scene_T;
+
+		if (!scene)
+			break;
+
+		scene->instanceCapacity = pCreateInfo->instanceCount;
+		scene->drawData = _indirectData;
+		scene->drawAllocation = _indirectAllocation;
+		scene->draw = _indirect;
+		scene->instanceData = _instanceData;
+		scene->instanceAllocation = _instanceAllocation;
+		scene->instance = _instance;
+		scene->allocator = allocator;
+
+		*pScene = scene;
+
+		return 0;
+	
+	} while (false);
+
+	if (_indirectData)
+		mem::free_range(_indirectData);
+
+	if (_indirectAllocation) {
+		const VkBuffer* pBuffer = _indirect.pBegin;
+		const VmaAllocation* pAllocation = _indirectAllocation.pBegin;
+
+		const VkBuffer* const pBufferEnd = _indirect.pEnd;
+		for (; pBuffer != pBufferEnd && *pBuffer;)
+			vmaDestroyBuffer(allocator, *pBuffer++, *pAllocation++);
+
+		mem::free_range(_indirectAllocation);
+	}
+
+	if (_indirect)
+		mem::free_range(_indirect);
+
+	if (_instanceData)
+		mem::free_range(_instanceData);
+
+	if (_instanceAllocation) {
+		const VkBuffer* pBuffer = _instance.pBegin;
+		const VmaAllocation* pAllocation = _instanceAllocation.pBegin;
+
+		const VkBuffer* const pBufferEnd = _instance.pEnd;
+		for(; pBuffer != pBufferEnd && *pBuffer;)
+			vmaDestroyBuffer(allocator, *pBuffer++, *pAllocation++);
+	
+		mem::free_range(_instanceAllocation);
+	}
+
+	if (_instance)
+		mem::free_range(_instance);
+
+	return -1;
+}
+
+void destroyScene(Scene const _Scene) noexcept {
+	const VmaAllocator allocator = _Scene->allocator;
+	
+	mem::free_range(_Scene->drawData);
+
+	{
+		const VkBuffer* pBuffer = _Scene->draw.pBegin;
+		const VmaAllocation* pAllocation = _Scene->drawAllocation.pBegin;
+
+		const VkBuffer* const pBufferEnd = _Scene->draw.pEnd;
+		for (; pBuffer != pBufferEnd;)
+			vmaDestroyBuffer(allocator, *pBuffer++, *pAllocation++);
+	}
+
+	mem::free_range(_Scene->drawAllocation);
+	mem::free_range(_Scene->draw);
+
+	mem::free_range(_Scene->instanceData);
+	
+	{
+		const VkBuffer* pBuffer = _Scene->instance.pBegin;
+		const VmaAllocation* pAllocation = _Scene->instanceAllocation.pBegin;
+	
+		const VkBuffer* const pBufferEnd = _Scene->instance.pEnd;
+		for (; pBuffer != pBufferEnd;)
+			vmaDestroyBuffer(allocator, *pBuffer++, *pAllocation++);
+	}
+
+	mem::free_range(_Scene->instanceAllocation);
+	mem::free_range(_Scene->instance);
+
+	delete _Scene;
+}
+
+int pushObjectInstance(Scene const _Scene, const ObjectInstance* const pObject) noexcept {
+	const uint32_t instanceCount = pObject->instanceCount;
+	
+	if (!instanceCount)
+		return 0;
+
+	if (instanceCount > (_Scene->instanceCapacity - _Scene->instanceCount) || _Scene->drawCount >= _Scene->drawCapacity)
+		return 1;
+
+	const uint32_t firstInstance = _Scene->instanceCount;
+	
+	const InstanceData* const pInstanceDataSrcEnd = pObject->pInstances + pObject->instanceCount;
+	
+	const InstanceDataGPU* const* const ppInstanceDataGPUEnd = _Scene->instanceData.pEnd;
+	for (InstanceDataGPU* const* ppInstanceDataGPU{ _Scene->instanceData.pBegin }; ppInstanceDataGPU != ppInstanceDataGPUEnd;) {
+		InstanceDataGPU* pInstanceDataDst = *ppInstanceDataGPU++ + firstInstance;
+
+		for (const InstanceData* pInstanceDataSrc{ pObject->pInstances }; pInstanceDataSrc != pInstanceDataSrcEnd;)
+			memcpy((void*)(reinterpret_cast<uint8_t*>(pInstanceDataDst++) + offsetof(InstanceDataGPU, InstanceDataGPU::external)), (void*)pInstanceDataSrc++, sizeof(InstanceData));
+	}
+
+	const Model_T* const pModel = pObject->model;
+
+	VkDrawIndexedIndirectCommand command{};
+	command.indexCount = pModel->count;
+	command.instanceCount = pObject->instanceCount;
+	command.firstIndex = static_cast<uint32_t>(pModel->indexOffset);
+	command.vertexOffset = static_cast<int32_t>(pModel->vertexoffset);
+	command.firstInstance = firstInstance;
+
+	const uint32_t drawIndex = _Scene->drawCount;
+
+	const VkDrawIndexedIndirectCommand* const* const ppDrawDataEnd = _Scene->drawData.pEnd;
+	for (VkDrawIndexedIndirectCommand* const* ppDrawData{ _Scene->drawData.pBegin }; ppDrawData != ppDrawDataEnd;)
+		*(*ppDrawData + drawIndex) = command;
+
+	_Scene->instanceCount += instanceCount;
+	++_Scene->drawCount;
+
+	return 0;
+}
+
+int draw(Canvas const _Canvas, Renderer const _Renderer, RenderBox const _RenderBox, Collection const _Scene) noexcept {
 	const VkDevice device = _Renderer->device;
 
 	do {
