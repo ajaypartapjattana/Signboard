@@ -310,6 +310,10 @@ void setWindowTitle(const DisplayContext _Context, DisplayWindow const _Window, 
 	xcb_flush(connection);
 }
 
+float getWindowAspect(DisplayWindow _Window) noexcept {
+	return _Window->width/(float)_Window->height;
+}
+
 void getVulkanSurfaceDependencyInfo(DisplayContext const _Context, DisplayWindow const _Window, VulkanSurfaceDependencyInfo* const pDependencyInfo) noexcept {
 	pDependencyInfo->context = (void*)_Context->connection;
 	pDependencyInfo->window = (uintptr_t)_Window->window;

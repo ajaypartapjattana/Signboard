@@ -1,5 +1,7 @@
 #include <iostream>
 
+#include <glm/gtc/matrix_transform.hpp>
+
 #include <core/Memory/memory.h>
 #include <core/io/io.h>
 
@@ -95,20 +97,20 @@ int main() {
 
 	DisplayContext windowCtx = nullptr;
 	DisplayWindow window = nullptr;
-
 	EventBuffer eventBuffer = nullptr;
 
 	VulkanContext vulkanCtx = nullptr;
 	Emulator emulator = nullptr;
 
 	Surface surface = nullptr;
-	RenderPass renderBox = nullptr;
 	Renderer renderer = nullptr;
-
 	Loader loader = nullptr;
+
+	RenderPass renderPass = nullptr;
 
 	Collection collection = nullptr;
 	Scene scene = nullptr;
+	Camera camera = nullptr;
 	
 	do {
 		int failure;
@@ -192,15 +194,9 @@ int main() {
 		if (failure)
 			break;
 
-		failure = createRenderPass(emulator, surface, &scratch, &renderBox);
-
-		if (failure)
-			break;
-
 		{
 			RendererCreateInfo createInfo{};
 			createInfo.maxRenderProcess = 2u;
-			createInfo.callDrawLimit = 10u;
 
 			failure = createRenderer(emulator, &createInfo, &renderer);
 		}
@@ -219,18 +215,13 @@ int main() {
 		if (failure)
 			break;
 
-		failure = allocateProcessCookie(&cookie);
-
-		if (failure)
-			break;
-
 		{
-			CollectionCreateInfo createInfo{};
-			createInfo.modelCount = 1u;
+			RenderPassCreateInfo createInfo{};
+			createInfo.surface = surface;
 
-			failure = createCollection(emulator, &createInfo, &scene);
+			failure = createRenderPass(emulator, &createInfo, &scratch, &renderPass);
 		}
-
+		
 		if (failure)
 			break;
 
@@ -246,22 +237,77 @@ int main() {
 				0, 1, 2, 2, 3, 0
 			};
 
-			ModelInfo createInfo{};
-			createInfo.vertexCount = 4u;
-			createInfo.pVertex = vertexData;
-			createInfo.indexCount = 6u;
-			createInfo.pIndex = indexData;
+			ModelInfo model[1]{};
+			model[0].vertexCount = 4u;
+			model[0].pVertex = vertexData;
+			model[0].indexCount = 6u;
+			model[0].pIndex = indexData;
 
-			failure = loadModel(loader, scene, &createInfo, &model, cookie);
+			CollectionCreateInfo createInfo{};
+			createInfo.modelCount = 1u;
+			createInfo.pModelInfos = model;
+
+			failure = createCollection(emulator, loader, &createInfo, nullptr, &collection);
 		}
 
 		if (failure)
 			break;
 
-		failure = waitProcess(emulator, cookie);
+		failure = waitLoader(loader);
 
 		if (failure)
 			break;
+
+		{
+			SceneCreateInfo createInfo{};
+			createInfo.collection = collection;
+			createInfo.renderBox = renderPass;
+			createInfo.instanceCount = 4u;
+			createInfo.drawCount = 10u;
+
+			failure = createScene(emulator, renderer, &createInfo, &scratch, &scene);
+		}
+
+		if (failure)
+			break;
+
+		{
+			const InstanceData data[1] = { glm::rotate(glm::mat4(1.0f), glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f)) };
+
+			ObjectInstance instance{};
+			instance.model = 0u;
+			instance.instanceCount = 1u;
+			instance.pInstances = data;
+
+			failure = pushObjectInstance(scene, &instance);
+		}
+
+		if (failure)
+			break;
+
+		{
+			CameraCreateInfo createInfo{};
+			createInfo.renderBox = renderPass;
+			createInfo.bindings = 2u;
+
+			failure = createCamera(emulator, renderer, &createInfo, &scratch, &camera);
+		}
+
+		if (failure)
+			break;
+
+		{
+			CameraData data{};
+			data.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+			data.projection = glm::perspective(glm::radians(45.0f), getWindowAspect(window), 0.1f, 10.0f);
+
+			CameraWrite write{};
+			write.firstCamera = 0u;
+			write.count = 1u;
+			write.pData = &data;
+
+			updateCamera(camera, &write);
+		}
 
 		FlowControl control = 0;
 
@@ -298,7 +344,24 @@ int main() {
 				control &= ~FLOW_CONTROL_WAIT_BIT;
 			}
 
-			failure = draw(surface, renderer, renderBox, scene);
+			failure = beginFrame(renderer, surface);
+
+			if (failure)
+				break;
+
+			beginRenderPass(renderer, renderPass, camera);
+
+			setActiveCamera(renderer, 0u);
+			render(renderer, collection, scene);
+
+			endPass(renderer);
+
+			failure = endFrame(renderer, surface);
+
+			if (failure)
+				break;
+
+			failure = presentFrame(renderer, surface);
 
 			if (failure == -1)
 				break;
@@ -311,11 +374,13 @@ int main() {
 
 		while (waitRenderer(renderer));
 
+		destroyCamera(camera);
+		destroyScene(scene);
 		destroyCollection(collection);
 		destroyLoader(loader);
 
 		destroyRenderer(renderer);
-		destroyRenderPass(renderBox);
+		destroyRenderPass(renderPass);
 		destroySurface(surface);
 
 		destroyEmulator(emulator);
@@ -332,8 +397,14 @@ int main() {
 	if (emulator)
 		while (waitEmulator(emulator));
 
+	if (camera)
+		destroyCamera(camera);
+
 	if (scene)
-		destroyCollection(scene);
+		destroyScene(scene);
+
+	if (collection)
+		destroyCollection(collection);
 
 	if (loader)
 		destroyLoader(loader);
@@ -341,8 +412,8 @@ int main() {
 	if (renderer)
 		destroyRenderer(renderer);
 
-	if (renderBox)
-		destroyRenderPass(renderBox);
+	if (renderPass)
+		destroyRenderPass(renderPass);
 
 	if (surface)
 		destroySurface(surface);

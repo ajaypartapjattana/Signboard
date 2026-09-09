@@ -791,7 +791,7 @@ struct Collection_T {
 	VmaAllocation indexAllocation;
 };
 
-int createCollection(Loader const _AsyncLoader, Emulator const _Emulator, const CollectionCreateInfo* const pCreateInfo, ProcessCookie* const pProcessCookie, Collection* const pScene) noexcept {
+int createCollection(Emulator const _Emulator, Loader const _AsyncLoader, const CollectionCreateInfo* const pCreateInfo, ProcessCookie* const pProcessCookie, Collection* const pScene) noexcept {
 	const VkDevice device = _AsyncLoader->device;
 	const VmaAllocator allocator = _AsyncLoader->allocator;
 	
@@ -823,7 +823,7 @@ int createCollection(Loader const _AsyncLoader, Emulator const _Emulator, const 
 
 		Model_T* pModel = _model.pBegin;
 
-		const ModelInfo const* pModelInfoEnd = pCreateInfo->pModelInfos + pCreateInfo->modelCount;
+		const ModelInfo* const pModelInfoEnd = pCreateInfo->pModelInfos + pCreateInfo->modelCount;
 		for (const ModelInfo* pModelInfo{ pCreateInfo->pModelInfos }; pModelInfo != pModelInfoEnd; ++pModelInfo) {
 			pModel->firstVertex = totalVertexCount;
 			pModel->firstIndex = totalIndexCount;
@@ -1684,7 +1684,7 @@ int createRenderPass(Emulator const _Emulator, const RenderPassCreateInfo* const
 
 		{
 			VkDescriptorSetLayoutBinding binding[1]{};
-			binding[0].binding = 1;
+			binding[0].binding = 0;
 			binding[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			binding[0].descriptorCount = 1u;
 			binding[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
@@ -2762,8 +2762,7 @@ int pushObjectInstance(Scene const _Scene, const ObjectInstance* const pObject) 
 }
 
 struct CameraDataGPU {
-	glm::mat4 camera;
-	glm::mat4 projection;
+	CameraData external;
 };
 
 struct Camera_T {
@@ -2991,6 +2990,18 @@ void destroyCamera(Camera const _Camera) noexcept {
 	mem::free_range(_Camera->buffer);
 
 	delete _Camera;
+}
+
+void updateCamera(Camera const _Camera, const CameraWrite* const pWrite) noexcept {
+	const CameraData* const pDataSrcEnd = pWrite->pData + pWrite->count;
+	
+	const CameraDataGPU* const* const ppDataEnd = _Camera->data.pEnd;
+	for (CameraDataGPU* const* ppData{ _Camera->data.pBegin }; ppData != ppDataEnd;) {
+		CameraDataGPU* pDataDst = *ppData++ + pWrite->firstCamera;
+		
+		for (const CameraData* pDataSrc{ pWrite->pData }; pDataSrc != pDataSrcEnd;)
+			memcpy((void*)(reinterpret_cast<uint8_t*>(pDataDst++) + offsetof(CameraDataGPU, CameraDataGPU::external)), pDataSrc++, sizeof(CameraDataGPU));
+	}
 }
 
 int beginFrame(Renderer const _Renderer, Surface const _Surface) noexcept {

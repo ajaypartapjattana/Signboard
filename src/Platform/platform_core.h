@@ -35,13 +35,15 @@ void destroyDisplayContext(DisplayContext const _Context) noexcept;
 struct DisplayWindow_T;
 using DisplayWindow = DisplayWindow_T*;
 
-int createDisplayWindow(const DisplayContext _Context, const WindowCreateInfo* const pCreateInfo, DisplayWindow* const pWindow) noexcept;
-void destroyDisplayWindow(DisplayContext const _Context, DisplayWindow const _Window) noexcept;
+int createDisplayWindow(DisplayContext _Context, const WindowCreateInfo* pCreateInfo, DisplayWindow* pWindow) noexcept;
+void destroyDisplayWindow(DisplayContext _Context, DisplayWindow const _Window) noexcept;
 
-void raiseDisplayWindow(DisplayContext const _Context, DisplayWindow const _Window) noexcept;
-int queryWindowGeometry(DisplayContext const _Context, DisplayWindow const _Window, WindowGeomentry* const pGeomentry) noexcept;
-int setWindowGeometry(DisplayContext const _Context, DisplayWindow const _Window, const WindowGeomentry* const pGeometry) noexcept;
-void setWindowTitle(DisplayContext const _Context, DisplayWindow const _Window, const char* const _Title) noexcept;
+void raiseDisplayWindow(DisplayContext _Context, DisplayWindow _Window) noexcept;
+int queryWindowGeometry(DisplayContext _Context, DisplayWindow _Window, WindowGeomentry* pGeomentry) noexcept;
+int setWindowGeometry(DisplayContext _Context, DisplayWindow _Window, const WindowGeomentry* pGeometry) noexcept;
+void setWindowTitle(DisplayContext _Context, DisplayWindow _Window, const char* _Title) noexcept;
+
+float getWindowAspect(DisplayWindow _Window) noexcept;
 
 using WindowEventFlags = uint32_t;
 enum WindowEventFlagBit : WindowEventFlags {

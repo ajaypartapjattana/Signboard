@@ -63,7 +63,7 @@ struct CollectionCreateInfo {
 	const ModelInfo* pModelInfos;
 };
 
-int createCollection(Loader _AsynLoader, Emulator _Emulator, const CollectionCreateInfo* pCreateInfo, ProcessCookie* pProcessCookie, Collection* pScene) noexcept;
+int createCollection(Emulator _Emulator, Loader _AsynLoader, const CollectionCreateInfo* pCreateInfo, ProcessCookie* pProcessCookie, Collection* pScene) noexcept;
 void destroyCollection(Collection _Scene) noexcept;
 
 struct Surface_T;
@@ -143,6 +143,19 @@ struct CameraCreateInfo {
 
 int createCamera(Emulator _Emulator, Renderer _Renderer, const CameraCreateInfo* pCreateInfo, mem::stack* pScratch, Camera* pCamera) noexcept;
 void destroyCamera(Camera _Camera) noexcept;
+
+struct CameraData {
+	glm::mat4 view;
+	glm::mat4 projection;
+};
+
+struct CameraWrite {
+	uint32_t firstCamera;
+	uint32_t count;
+	const CameraData* pData;
+};
+
+void updateCamera(Camera const _Camera, const CameraWrite* const pWrite) noexcept;
 
 int beginFrame(Renderer _Renderer, Surface _Surface) noexcept;
 
