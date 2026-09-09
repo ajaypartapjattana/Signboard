@@ -684,6 +684,7 @@ int createLoader(Emulator const _Emulator, const LoaderCreateInfo* const pCreate
 			break;
 
 		loader->transfer = 0;
+		loader->region = _region;
 		loader->stage.stage = stagingSpan;
 		loader->stage.pHead = stagingSpan.pBegin;
 		loader->allocation = _allocation;
@@ -1073,6 +1074,7 @@ int createCollection(Emulator const _Emulator, Loader const _AsyncLoader, const 
 			result = vkEndCommandBuffer(commandBuffer);
 
 			if (result != VK_SUCCESS)
+				break;
 
 			result = vkResetFences(device, 1u, &fence);
 
@@ -2752,7 +2754,7 @@ int pushObjectInstance(Scene const _Scene, const ObjectInstance* const pObject) 
 	const uint32_t drawIndex = _Scene->indirectCommandCount;
 
 	const VkDrawIndexedIndirectCommand* const* const ppDrawDataEnd = _Scene->indirectData.pEnd;
-	for (VkDrawIndexedIndirectCommand* const* ppDrawData{ _Scene->indirectData.pBegin }; ppDrawData != ppDrawDataEnd;)
+	for (VkDrawIndexedIndirectCommand* const* ppDrawData{ _Scene->indirectData.pBegin }; ppDrawData != ppDrawDataEnd; ++ppDrawData)
 		*ppDrawData[drawIndex] = command;
 
 	_Scene->instanceCount += instanceCount;
@@ -2940,6 +2942,8 @@ int createCamera(Emulator const _Emulator, Renderer const _Renderer, const Camer
 		camera->allocator = allocator;
 		camera->device = device;
 
+		*pCamera = camera;
+
 		return 0;
 
 	} while (false);
@@ -3110,10 +3114,12 @@ void render(Renderer const _Renderer, Collection const _Collection, Scene const 
 	const uint32_t frame = _Renderer->frame;
 	const VkCommandBuffer commandBuffer = _Renderer->commandBuffer[frame];
 
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_Collection->vertex, 0);
+	const VkDeviceSize offset[1] = { 0u };
+
+	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_Collection->vertex, offset);
 	vkCmdBindIndexBuffer(commandBuffer, _Collection->index, 0u, VK_INDEX_TYPE_UINT32);
 
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _Renderer->pipelineLayout, 0u, 1u, &_Scene->descriptorSet[frame], 0u, nullptr);
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _Renderer->pipelineLayout, 1u, 1u, &_Scene->descriptorSet[frame], 0u, nullptr);
 			
 	vkCmdDrawIndexedIndirect(commandBuffer, _Scene->indirect[frame], 0, _Scene->indirectCommandCount, sizeof(VkDrawIndexedIndirectCommand));
 }
@@ -3186,7 +3192,7 @@ int presentFrame(Renderer const _Renderer, Surface _Surface) noexcept {
 
 	_Renderer->frame++;
 
-	if (_Renderer->frame > _Renderer->bufferedFrames)
+	if (_Renderer->frame == _Renderer->bufferedFrames)
 		_Renderer->frame = 0u;
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
