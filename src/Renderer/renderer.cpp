@@ -22,7 +22,7 @@
 
 constexpr uint32_t INVALID_QUEUE_FAMILY = UINT32_MAX;
 
-struct PhysicalDevice {
+struct PhysicalDeviceInfo {
 	VkPhysicalDeviceProperties properties;
 	VkPhysicalDeviceMemoryProperties memory;
 	VkPhysicalDeviceFeatures features;
@@ -31,11 +31,13 @@ struct PhysicalDevice {
 
 struct VulkanContext_T {
 	VkInstance instance;
-	mem::span<PhysicalDevice> physicalDevices;
+	mem::span<PhysicalDeviceInfo> deviceInfo;
 };
 
 int requestVulkanContext(mem::stack* const pScratch, VulkanContext* const pContext) noexcept {
 	VkInstance _instance = VK_NULL_HANDLE;
+
+	mem::span<PhysicalDeviceInfo> _deviceInfo;
 	
 	do {
 		VkResult result;
@@ -139,40 +141,43 @@ int requestVulkanContext(mem::stack* const pScratch, VulkanContext* const pConte
 		if (result != VK_SUCCESS)
 			break;
 
-		mem::span<PhysicalDevice> physicalDevices = { new(std::nothrow) PhysicalDevice[physicalDeviceCount], (size_t)physicalDeviceCount };
+		_deviceInfo = mem::allocate_range<PhysicalDeviceInfo>((size_t)physicalDeviceCount);
 
-		if (!physicalDevices)
+		if (!_deviceInfo)
 			break;
 
-		mem::span<VkPhysicalDevice> devicehandles = pScratch->alloc<VkPhysicalDevice>(physicalDeviceCount);
+		mem::span<VkPhysicalDevice> physicalDevice = pScratch->alloc<VkPhysicalDevice>(physicalDeviceCount);
 
-		if (!devicehandles)
+		if (!physicalDevice)
 			break;
 
-		result = vkEnumeratePhysicalDevices(_instance, &physicalDeviceCount, devicehandles);
+		result = vkEnumeratePhysicalDevices(_instance, &physicalDeviceCount, physicalDevice);
 		
 		if (result != VK_SUCCESS)
 			break;
 
-		for (uint32_t i = 0; i < physicalDeviceCount; ++i) {
-			const VkPhysicalDevice handle = devicehandles[i];
+		PhysicalDeviceInfo* pDeviceInfo = _deviceInfo.pBegin;
 
-			vkGetPhysicalDeviceProperties(handle, &physicalDevices[i].properties);
-			vkGetPhysicalDeviceMemoryProperties(handle, &physicalDevices[i].memory);
-			vkGetPhysicalDeviceFeatures(handle, &physicalDevices[i].features);
+		const VkPhysicalDevice* const pPhysicalDeviceEnd = physicalDevice.pEnd;
+		for (const VkPhysicalDevice* pPhysicalDevice{ physicalDevice.pBegin }; pPhysicalDevice != pPhysicalDeviceEnd;) {
+			const VkPhysicalDevice device = *pPhysicalDevice++;
 
-			physicalDevices[i].handle = handle;
+			vkGetPhysicalDeviceProperties(device, &pDeviceInfo->properties);
+			vkGetPhysicalDeviceMemoryProperties(device, &pDeviceInfo->memory);
+			vkGetPhysicalDeviceFeatures(device, &pDeviceInfo->features);
+
+			pDeviceInfo++->handle = device;
 		}
-
+		
 		VulkanContext const context = new(std::nothrow) VulkanContext_T;
 		
 		if (!context)
-		break;
+			break;
 		
 		pScratch->restore();
 
 		context->instance = _instance;
-		context->physicalDevices = physicalDevices;
+		context->deviceInfo = _deviceInfo;
 		
 		*pContext = context;
 		
@@ -182,6 +187,9 @@ int requestVulkanContext(mem::stack* const pScratch, VulkanContext* const pConte
 
 	pScratch->restore();
 
+	if (_deviceInfo)
+		mem::free_range(_deviceInfo);
+
 	if (_instance)
 		vkDestroyInstance(_instance, nullptr);
 
@@ -189,24 +197,22 @@ int requestVulkanContext(mem::stack* const pScratch, VulkanContext* const pConte
 }
 
 void destroyVulkanContext(VulkanContext const _Context) noexcept {
+	mem::free_range(_Context->deviceInfo);
 	vkDestroyInstance(_Context->instance, nullptr);
 
-	delete[] _Context->physicalDevices;
 	delete _Context;
 }
 
 int enumeratePhysicalDevices(VulkanContext const _Context, uint32_t* const pCount, const char** const pDeviceNames) noexcept {
-	assert(pCount);
-	
 	if (!pDeviceNames) {
-		*pCount = static_cast<uint32_t>(_Context->physicalDevices.size());
+		*pCount = static_cast<uint32_t>(_Context->deviceInfo.size());
 		return 0;
 	}
 
 	const char** pDeviceName = pDeviceNames;
 
-	const PhysicalDevice* const pPhysicalDeviceEnd = _Context->physicalDevices.pBegin + *pCount;
-	for(const PhysicalDevice* pDevice{ _Context->physicalDevices.pBegin }; pDevice != pPhysicalDeviceEnd; ++pDevice) {
+	const PhysicalDeviceInfo* const pPhysicalDeviceEnd = _Context->deviceInfo.pBegin + *pCount;
+	for(const PhysicalDeviceInfo* pDevice{ _Context->deviceInfo.pBegin }; pDevice != pPhysicalDeviceEnd; ++pDevice) {
 		*pDeviceName++ = pDevice->properties.deviceName;
 	}
 
@@ -239,7 +245,7 @@ struct Emulator_T {
 
 int createEmulator(VulkanContext const _Context, const EmulatorCreateInfo* const pCreateInfo, mem::stack* const pScratch, Emulator* const pEmulator) noexcept {
 	const VkInstance instance = _Context->instance;
-	const PhysicalDevice* const pPhysicalDeviceInfo = _Context->physicalDevices + pCreateInfo->physicalDevice;
+	const PhysicalDeviceInfo* const pPhysicalDeviceInfo = _Context->deviceInfo + pCreateInfo->physicalDevice;
 	
 	const VkPhysicalDevice physicalDevice = pPhysicalDeviceInfo->handle;
 	
@@ -530,7 +536,7 @@ static inline void resetStage(StagingState* const pStage) noexcept {
 	pStage->pHead = pStage->stage.pBegin;
 }
 
-struct AsyncLoader_T {
+struct Loader_T {
 	VkDevice device;
 	VkQueue queue;
 	VmaAllocator allocator;
@@ -547,7 +553,7 @@ struct AsyncLoader_T {
 	uint32_t transfer;
 };
 
-int createAsyncLoader(Emulator const _Emulator, const AsyncLoaderCreateInfo* const pCreateInfo, AsyncLoader* const pAsyncLoader) noexcept {
+int createLoader(Emulator const _Emulator, const LoaderCreateInfo* const pCreateInfo, Loader* const pAsyncLoader) noexcept {
 	const VkDevice device = _Emulator->device;
 	const VmaAllocator allocator = _Emulator->allocator;
 	
@@ -647,7 +653,7 @@ int createAsyncLoader(Emulator const _Emulator, const AsyncLoaderCreateInfo* con
 			createInfo.pQueueFamilyIndices = nullptr;
 
 			VmaAllocationCreateInfo allocationCreateInfo{};
-			allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+			allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
 			allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
 			allocationCreateInfo.requiredFlags = 0;
 			allocationCreateInfo.preferredFlags = 0;
@@ -672,7 +678,7 @@ int createAsyncLoader(Emulator const _Emulator, const AsyncLoaderCreateInfo* con
 
 		_region.assign_default();
 		
-		AsyncLoader const loader = new(std::nothrow) AsyncLoader_T;
+		Loader const loader = new(std::nothrow) Loader_T;
 
 		if (!loader)
 			break;
@@ -728,7 +734,7 @@ int createAsyncLoader(Emulator const _Emulator, const AsyncLoaderCreateInfo* con
 	return -1;
 }
 
-void destroyAsyncLoader(AsyncLoader const _AsynLoader) noexcept {
+void destroyLoader(Loader const _AsynLoader) noexcept {
 	mem::free_range(_AsynLoader->region);
 	
 	vmaDestroyBuffer(_AsynLoader->allocator, _AsynLoader->buffer, _AsynLoader->allocation);
@@ -751,7 +757,7 @@ void destroyAsyncLoader(AsyncLoader const _AsynLoader) noexcept {
 	delete _AsynLoader;
 }
 
-int waitAsyncLoader(AsyncLoader const _AsyncLoader) noexcept {
+int waitLoader(Loader const _AsyncLoader) noexcept {
 	do {
 		uint32_t transfer = _AsyncLoader->transfer;
 
@@ -770,40 +776,10 @@ int waitAsyncLoader(AsyncLoader const _AsyncLoader) noexcept {
 	return -1;
 }
 
-struct ProcessCookie_T {
-	VkSemaphore sempahore;
-	VkFence fence;
-};
-
-int allocateProcessCookie(ProcessCookie* const pProcessCookie) noexcept {
-	ProcessCookie const cookie = new(std::nothrow) ProcessCookie_T;
-
-	if (!cookie)
-		return -1;
-
-	cookie->sempahore = VK_NULL_HANDLE;
-	cookie->fence = VK_NULL_HANDLE;
-
-	*pProcessCookie = cookie;
-
-	return 0;
-}
-
-void freeProcessCookie(ProcessCookie const _ProcessCookie) noexcept {
-	delete _ProcessCookie;
-}
-
-using ModelStateFlags = uint32_t;
-enum ModelStateFlagBit : ModelStateFlags {
-	MODEL_STATE_VISIBLE_BIT = 1u << 0,
-	MODEL_STATE_LOADED_BIT = 1u << 1
-};
-
 struct Model_T {
 	uint32_t firstVertex;
 	uint32_t firstIndex;
 	uint32_t indexcount;
-	ModelStateFlags state;
 };
 
 struct Collection_T {
@@ -815,7 +791,7 @@ struct Collection_T {
 	VmaAllocation indexAllocation;
 };
 
-int createCollection(AsyncLoader const _AsyncLoader, Emulator const _Emulator, const CollectionCreateInfo* const pCreateInfo, Collection* const pScene) noexcept {
+int createCollection(Loader const _AsyncLoader, Emulator const _Emulator, const CollectionCreateInfo* const pCreateInfo, ProcessCookie* const pProcessCookie, Collection* const pScene) noexcept {
 	const VkDevice device = _AsyncLoader->device;
 	const VmaAllocator allocator = _AsyncLoader->allocator;
 	
@@ -880,7 +856,7 @@ int createCollection(AsyncLoader const _AsyncLoader, Emulator const _Emulator, c
 			createInfo.pQueueFamilyIndices = nullptr;
 
 			VmaAllocationCreateInfo allocationCreateInfo{};
-			allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+			allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
 			allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
 			allocationCreateInfo.requiredFlags = 0;
 			allocationCreateInfo.preferredFlags = 0;
@@ -920,7 +896,7 @@ int createCollection(AsyncLoader const _AsyncLoader, Emulator const _Emulator, c
 			createInfo.pNext = nullptr;
 			createInfo.flags = 0;
 			createInfo.size = vertexBufferSize;
-			createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+			createInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 			createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			createInfo.queueFamilyIndexCount = 0u;
 			createInfo.pQueueFamilyIndices = nullptr;
@@ -949,7 +925,7 @@ int createCollection(AsyncLoader const _AsyncLoader, Emulator const _Emulator, c
 			createInfo.pNext = nullptr;
 			createInfo.flags = 0;
 			createInfo.size = indexBufferSize;
-			createInfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+			createInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 			createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			createInfo.queueFamilyIndexCount = 0u;
 			createInfo.pQueueFamilyIndices = nullptr;
@@ -1168,21 +1144,7 @@ void destroyCollection(Collection const _Collection) noexcept {
 	delete _Collection;
 }
 
-int waitProcess(Emulator const _Emulator, ProcessCookie const _Cookie) noexcept {
-	do {
-		VkResult result = vkWaitForFences(_Emulator->device, 1u, &_Cookie->fence, VK_TRUE, UINT64_MAX);
-
-		if (result != VK_SUCCESS)
-			break;
-
-		return 0;
-
-	} while (false);
-
-	return -1;
-}
-
-struct Canvas_T {
+struct Surface_T {
 	VkSurfaceKHR surface;
 	VkPhysicalDevice physicalDevice;
 	VkDevice device;
@@ -1191,32 +1153,22 @@ struct Canvas_T {
 	VkSurfaceFormatKHR surfaceFormat;
 	VkPresentModeKHR presentMode;
 
-	mem::span<VkClearValue> clearValue;
-	VkRenderPass renderPass;
-
 	VkExtent2D extent;
 	uint32_t layers;
 	VkSwapchainKHR swapchain;
 	mem::span<VkImage> image;
 	mem::span<VkImageView> imageView;
-
-	mem::span<VkFramebuffer> framebuffer;
 	mem::span<VkFence> fence;
 };
 
-int createCanvas(Emulator const _Emulator, const CanvasCreateInfo* const pCreateInfo, mem::stack* const pScratch, Canvas* const pCanvas) noexcept {
+int createSurface(Emulator const _Emulator, const SurfaceCreateInfo* const pCreateInfo, mem::stack* const pScratch, Surface* const pCanvas) noexcept {
 	const VkSurfaceKHR surface = _Emulator->surface;
 	const VkPhysicalDevice physicalDevice = _Emulator->physicalDevice;
 	const VkDevice device = _Emulator->device;
 
-	mem::span<VkClearValue> _clearValue;
-	VkRenderPass _renderPass = VK_NULL_HANDLE;
-
 	VkSwapchainKHR _swapchain = VK_NULL_HANDLE;
 	mem::span<VkImage> _image;
 	mem::span<VkImageView> _imageView;
-
-	mem::span<VkFramebuffer> _framebuffer;
 	mem::span<VkFence> _fence;
 
 	do {
@@ -1287,67 +1239,6 @@ int createCanvas(Emulator const _Emulator, const CanvasCreateInfo* const pCreate
 
 			presentMode = pPresentMode != presentModes.pEnd ? *pPresentMode : VK_PRESENT_MODE_FIFO_KHR;
 		}
-
-		_clearValue = mem::allocate_range<VkClearValue>(1u);
-
-		if (!_clearValue)
-			break;
-
-		_clearValue[0] = {{{ 0.0f, 0.0f, 0.0f, 1.0f } }};
-		
-		{
-			VkAttachmentDescription attachment{};
-			attachment.format = surfaceFormat.format;
-			attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-			attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-			attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-			attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-			VkAttachmentReference reference{};
-			reference.attachment = 0;
-			reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-			VkSubpassDescription subpass{};
-			subpass.flags = 0;
-			subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-			subpass.inputAttachmentCount = 0;
-			subpass.pInputAttachments = nullptr;
-			subpass.colorAttachmentCount = 1;
-			subpass.pColorAttachments = &reference;
-			subpass.pResolveAttachments = nullptr;
-			subpass.pDepthStencilAttachment = nullptr;
-			subpass.preserveAttachmentCount = 0;
-			subpass.pPreserveAttachments = nullptr;
-
-			VkSubpassDependency dependency{};
-			dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-			dependency.dstSubpass = 0;
-			dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			dependency.srcAccessMask = VK_ACCESS_NONE;
-			dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-			dependency.dependencyFlags = 0;
-
-			VkRenderPassCreateInfo createInfo{};
-			createInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-			createInfo.pNext = nullptr;
-			createInfo.flags = 0;
-			createInfo.attachmentCount = 1;
-			createInfo.pAttachments = &attachment;
-			createInfo.subpassCount = 1;
-			createInfo.pSubpasses = &subpass;
-			createInfo.dependencyCount = 1;
-			createInfo.pDependencies = &dependency;
-
-			result = vkCreateRenderPass(device, &createInfo, nullptr, &_renderPass);
-		}
-
-		if (result != VK_SUCCESS)
-			break;
-
 
 		VkSurfaceCapabilitiesKHR surfaceCapabilities;
 
@@ -1445,37 +1336,6 @@ int createCanvas(Emulator const _Emulator, const CanvasCreateInfo* const pCreate
 		if (result != VK_SUCCESS)
 			break;
 
-		_framebuffer = mem::allocate_range<VkFramebuffer>((size_t)imageCount);
-
-		if (!_framebuffer)
-			break;
-
-		_framebuffer.assign_default();
-
-		{
-			VkFramebufferCreateInfo createInfo{};
-			createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			createInfo.pNext = nullptr;
-			createInfo.flags = 0;
-			createInfo.renderPass = _renderPass;
-			createInfo.attachmentCount = 1u;
-			createInfo.width = surfaceCapabilities.currentExtent.width;
-			createInfo.height = surfaceCapabilities.currentExtent.height;
-			createInfo.layers = 1u;
-
-			const VkImageView* pImageView = _imageView.pBegin;
-
-			const VkFramebuffer* const pFramebufferEnd = _framebuffer.pEnd;
-			for (VkFramebuffer* pFramebuffer{ _framebuffer.pBegin }; pFramebuffer != pFramebufferEnd && result == VK_SUCCESS; ++pFramebuffer) {
-				createInfo.pAttachments = pImageView++;
-
-				result = vkCreateFramebuffer(device, &createInfo, nullptr, pFramebuffer);
-			}
-		}
-
-		if (result != VK_SUCCESS)
-			break;
-
 		_fence = mem::allocate_range<VkFence>((size_t)imageCount);
 		
 		if (!_fence)
@@ -1483,7 +1343,7 @@ int createCanvas(Emulator const _Emulator, const CanvasCreateInfo* const pCreate
 
 		_fence.assign_default();
 
-		Canvas const canvas = new(std::nothrow) Canvas_T;
+		Surface const canvas = new(std::nothrow) Surface_T;
 
 		if (!canvas)
 			break;
@@ -1491,17 +1351,12 @@ int createCanvas(Emulator const _Emulator, const CanvasCreateInfo* const pCreate
 		pScratch->restore();
 
 		canvas->fence = _fence;
-		canvas->framebuffer = _framebuffer;
-
 		canvas->imageView = _imageView;
 		canvas->image = _image;
 		canvas->swapchain = _swapchain;
 		canvas->layers = 1u;
 		canvas->extent = surfaceCapabilities.currentExtent;
 		
-		canvas->renderPass = _renderPass;
-		canvas->clearValue = _clearValue;
-
 		canvas->presentMode = presentMode;
 		canvas->surfaceFormat = surfaceFormat;
 
@@ -1521,14 +1376,6 @@ int createCanvas(Emulator const _Emulator, const CanvasCreateInfo* const pCreate
 	if (_fence)
 		mem::free_range(_fence);	
 
-	if (_framebuffer) {
-		const VkFramebuffer* const pFramebufferEnd = _framebuffer.pEnd;
-		for (const VkFramebuffer* pFramebuffer{ _framebuffer.pBegin }; pFramebuffer != pFramebufferEnd && *pFramebuffer; ++pFramebuffer)
-			vkDestroyFramebuffer(device, *pFramebuffer, nullptr);
-
-		mem::free_range(_framebuffer);
-	}
-
 	if (_imageView) {
 		const VkImageView* const pImageViewEnd = _imageView.pEnd;
 		for (const VkImageView* pImageView{ _imageView.pBegin }; pImageView != pImageViewEnd && *pImageView; ++pImageView)
@@ -1543,26 +1390,14 @@ int createCanvas(Emulator const _Emulator, const CanvasCreateInfo* const pCreate
 	if (_swapchain)
 		vkDestroySwapchainKHR(device, _swapchain, nullptr);
 
-	if (_renderPass)
-		vkDestroyRenderPass(device, _renderPass, nullptr);
-
-	if (_clearValue)
-		mem::free_range(_clearValue);
-
 	return -1;
 }
 
-void destroyCanvas(Canvas const _Canvas) noexcept {
+void destroySurface(Surface const _Canvas) noexcept {
 	const VkDevice device = _Canvas->device;
 
 	mem::free_range(_Canvas->fence);
 
-	const VkFramebuffer* const pFramebufferEnd = _Canvas->framebuffer.pEnd;
-	for (const VkFramebuffer* pFramebuffer{ _Canvas->framebuffer.pBegin }; pFramebuffer != pFramebufferEnd; ++pFramebuffer)
-		vkDestroyFramebuffer(device, *pFramebuffer, nullptr);
-
-	mem::free_range(_Canvas->framebuffer);
-	
 	const VkImageView* const pImageViewEnd = _Canvas->imageView.pEnd;
 	for (const VkImageView* pImageView{ _Canvas->imageView.pBegin }; pImageView != pImageViewEnd; ++pImageView)
 		vkDestroyImageView(device, *pImageView, nullptr);
@@ -1572,13 +1407,10 @@ void destroyCanvas(Canvas const _Canvas) noexcept {
 
 	vkDestroySwapchainKHR(device, _Canvas->swapchain, nullptr);
 
-	vkDestroyRenderPass(device, _Canvas->renderPass, nullptr);
-	mem::free_range(_Canvas->clearValue);
-
 	delete _Canvas;
 }
 
-int updateCanvas(Canvas const _Canvas) noexcept {
+int updateCanvas(Surface const _Canvas) noexcept {
 	const VkSurfaceKHR surface = _Canvas->surface;
 	const VkPhysicalDevice physicalDevice = _Canvas->physicalDevice;
 	const VkDevice device = _Canvas->device;
@@ -1586,8 +1418,6 @@ int updateCanvas(Canvas const _Canvas) noexcept {
 	VkSwapchainKHR _swapchain = VK_NULL_HANDLE;
 	mem::span<VkImage> _image;
 	mem::span<VkImageView> _imageView;
-
-	mem::span<VkFramebuffer> _framebuffer;
 	mem::span<VkFence> _fence;
 
 	do {
@@ -1689,37 +1519,6 @@ int updateCanvas(Canvas const _Canvas) noexcept {
 		if (result != VK_SUCCESS)
 			break;
 
-		_framebuffer = mem::allocate_range<VkFramebuffer>((size_t)imageCount);
-		
-		if (!_framebuffer)
-			break;
-
-		_framebuffer.assign_default();
-
-		{
-			VkFramebufferCreateInfo createInfo{};
-			createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			createInfo.pNext = nullptr;
-			createInfo.flags = 0;
-			createInfo.renderPass = _Canvas->renderPass;
-			createInfo.attachmentCount = 1u;
-			createInfo.width = surfaceCapabilities.currentExtent.width;
-			createInfo.height = surfaceCapabilities.currentExtent.height;
-			createInfo.layers = 1u;
-
-			const VkImageView* pImageView = _imageView.pBegin;
-
-			const VkFramebuffer* const pFramebufferEnd = _framebuffer.pEnd;
-			for (VkFramebuffer* pFramebuffer{ _framebuffer.pBegin }; pFramebuffer != pFramebufferEnd && result == VK_SUCCESS; ++pFramebuffer) {
-				createInfo.pAttachments = pImageView++;
-
-				result = vkCreateFramebuffer(device, &createInfo, nullptr, pFramebuffer);
-			}
-		}
-
-		if (result != VK_SUCCESS)
-			break;
-
 		_fence = mem::allocate_range<VkFence>((size_t)imageCount);
 
 		if (!_fence)
@@ -1736,12 +1535,6 @@ int updateCanvas(Canvas const _Canvas) noexcept {
 
 		mem::free_range(_Canvas->fence);
 
-		const VkFramebuffer* const pFramebufferEnd = _Canvas->framebuffer.pEnd;
-		for (const VkFramebuffer* pFramebuffer{ _Canvas->framebuffer.pBegin }; pFramebuffer != pFramebufferEnd; ++pFramebuffer)
-			vkDestroyFramebuffer(device, *pFramebuffer, nullptr);
-
-		mem::free_range(_Canvas->framebuffer);
-			
 		const VkImageView* const pImageViewEnd = _Canvas->imageView.pEnd;
 		for (const VkImageView* pImageView{ _Canvas->imageView.pBegin }; pImageView != pImageViewEnd; ++pImageView)
 			vkDestroyImageView(device, *pImageView, nullptr);
@@ -1752,11 +1545,9 @@ int updateCanvas(Canvas const _Canvas) noexcept {
 		vkDestroySwapchainKHR(device, _Canvas->swapchain, nullptr);
 
 		_Canvas->fence = _fence;
-		_Canvas->framebuffer = _framebuffer;
 		_Canvas->imageView = _imageView;
 		_Canvas->image = _image;
 		_Canvas->swapchain = _swapchain;
-		_Canvas->layers = 1u;
 		_Canvas->extent = surfaceCapabilities.currentExtent;
 
 		return 0;
@@ -1765,14 +1556,6 @@ int updateCanvas(Canvas const _Canvas) noexcept {
 
 	if (_fence)
 		mem::free_range(_fence);
-
-	if (_framebuffer) {
-		const VkFramebuffer* const pFramebufferEnd = _framebuffer.pEnd;
-		for (const VkFramebuffer* pFramebuffer{ _framebuffer.pBegin }; pFramebuffer != pFramebufferEnd && *pFramebuffer; ++pFramebuffer)
-			vkDestroyFramebuffer(device, *pFramebuffer, nullptr);
-
-		mem::free_range(_framebuffer);
-	}
 
 	if (_imageView) {
 		const VkImageView* const pImageViewEnd = _imageView.pEnd;
@@ -1791,82 +1574,151 @@ int updateCanvas(Canvas const _Canvas) noexcept {
 	return -1;
 }
 
-struct RenderBox_T {
+struct RenderPass_T {
 	VkDevice device;
 
-	VkSampler sampler;
-	VkDescriptorSetLayout descriptorSetLayout;
+	mem::span<VkClearValue> clearValue;
+	VkRenderPass renderPass;
+	VkDescriptorSetLayout cameraSetLayout;
+	VkDescriptorSetLayout objectSetLayout;
 	VkPipelineLayout pipelineLayout;
 	VkPipeline pipeline;
+
+	mem::span<VkFramebuffer> framebuffer;
+	VkRect2D renderArea;
 };
 
-int createRenderBox(Emulator const _Emulator, Canvas const _Canvas, mem::stack* const pScratch, RenderBox* const pRenderBox) noexcept {
+int createRenderPass(Emulator const _Emulator, const RenderPassCreateInfo* const pCreateInfo, mem::stack* const pScratch, RenderPass* const pRenderPass) noexcept {
 	const VkDevice device = _Emulator->device;
 
-	VkSampler _sampler = VK_NULL_HANDLE;
-	VkDescriptorSetLayout _descriptorSetLayout = VK_NULL_HANDLE;
+	mem::span<VkClearValue> _clearValue;
+	VkRenderPass _renderPass = VK_NULL_HANDLE;
+	VkDescriptorSetLayout _cameraSetLayout = VK_NULL_HANDLE;
+	VkDescriptorSetLayout _objectSetLayout = VK_NULL_HANDLE;
 	VkPipelineLayout _pipelineLayout = VK_NULL_HANDLE;
 	VkPipeline _pipeline = VK_NULL_HANDLE;
+	mem::span<VkFramebuffer> _framebuffer;
 
 	do {
 		VkResult result;
 
+		_clearValue = mem::allocate_range<VkClearValue>((size_t)1u);
+
+		_clearValue[0] = { { { 0.0f, 0.0f, 0.0f, 1.0f } } };
+
+		const VkFormat surfaceFormat = pCreateInfo->surface->surfaceFormat.format;
+
 		{
-			VkSamplerCreateInfo createInfo{};
-			createInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+			VkAttachmentDescription attachment{};
+			attachment.format = surfaceFormat;
+			attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+			attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+			attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+			attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+			attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+			VkAttachmentReference reference{};
+			reference.attachment = 0;
+			reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+			VkSubpassDescription subpass{};
+			subpass.flags = 0;
+			subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+			subpass.inputAttachmentCount = 0;
+			subpass.pInputAttachments = nullptr;
+			subpass.colorAttachmentCount = 1;
+			subpass.pColorAttachments = &reference;
+			subpass.pResolveAttachments = nullptr;
+			subpass.pDepthStencilAttachment = nullptr;
+			subpass.preserveAttachmentCount = 0;
+			subpass.pPreserveAttachments = nullptr;
+
+			VkSubpassDependency dependency{};
+			dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+			dependency.dstSubpass = 0;
+			dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			dependency.srcAccessMask = VK_ACCESS_NONE;
+			dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			dependency.dependencyFlags = 0;
+
+			VkRenderPassCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 			createInfo.pNext = nullptr;
 			createInfo.flags = 0;
-			createInfo.magFilter = VK_FILTER_LINEAR;
-			createInfo.minFilter = VK_FILTER_LINEAR;
-			createInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-			createInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-			createInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-			createInfo.mipLodBias = 1.0f;
-			createInfo.anisotropyEnable = VK_FALSE;
-			createInfo.maxAnisotropy = 1.0f;
-			createInfo.compareEnable = VK_FALSE;
-			createInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-			createInfo.minLod = 0.0f;
-			createInfo.maxLod = VK_LOD_CLAMP_NONE;
-			createInfo.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
-			createInfo.unnormalizedCoordinates = VK_FALSE;
+			createInfo.attachmentCount = 1;
+			createInfo.pAttachments = &attachment;
+			createInfo.subpassCount = 1;
+			createInfo.pSubpasses = &subpass;
+			createInfo.dependencyCount = 1;
+			createInfo.pDependencies = &dependency;
 
-			result = vkCreateSampler(device, &createInfo, nullptr, &_sampler);
+			result = vkCreateRenderPass(device, &createInfo, nullptr, &_renderPass);
 		}
 
 		if (result != VK_SUCCESS)
 			break;
 
 		{
-			VkDescriptorSetLayoutBinding binding{};
-			binding.binding = 0;
-			binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			binding.descriptorCount = 1;
-			binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-			binding.pImmutableSamplers = nullptr;
+			VkDescriptorSetLayoutBinding binding[1]{};
+			binding[0].binding = 0;
+			binding[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			binding[0].descriptorCount = 1u;
+			binding[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+			binding[0].pImmutableSamplers = nullptr;
 
 			VkDescriptorSetLayoutCreateInfo createInfo{};
 			createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 			createInfo.pNext = nullptr;
 			createInfo.flags = 0;
 			createInfo.bindingCount = 1u;
-			createInfo.pBindings = &binding;
+			createInfo.pBindings = binding;
 
-			result = vkCreateDescriptorSetLayout(device, &createInfo, nullptr, &_descriptorSetLayout);
+			result = vkCreateDescriptorSetLayout(device, &createInfo, nullptr, &_cameraSetLayout);
 		}
 
 		if (result != VK_SUCCESS)
 			break;
 
 		{
+			VkDescriptorSetLayoutBinding binding[1]{};
+			binding[0].binding = 1;
+			binding[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			binding[0].descriptorCount = 1u;
+			binding[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+			binding[0].pImmutableSamplers = nullptr;
+
+			VkDescriptorSetLayoutCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+			createInfo.pNext = nullptr;
+			createInfo.flags = 0;
+			createInfo.bindingCount = 1u;
+			createInfo.pBindings = binding;
+
+			result = vkCreateDescriptorSetLayout(device, &createInfo, nullptr, &_objectSetLayout);
+		}
+
+		if (result != VK_SUCCESS)
+			break;
+
+		{
+			const VkDescriptorSetLayout setLayouts[2] = {_cameraSetLayout, _objectSetLayout};
+
+			VkPushConstantRange pushRange{};
+			pushRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+			pushRange.size = sizeof(uint32_t);
+			pushRange.offset = 0u;
+
 			VkPipelineLayoutCreateInfo createInfo{};
 			createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 			createInfo.pNext = nullptr;
 			createInfo.flags = 0;
-			createInfo.setLayoutCount = 1;
-			createInfo.pSetLayouts = &_descriptorSetLayout;
-			createInfo.pushConstantRangeCount = 0;
-			createInfo.pPushConstantRanges = nullptr;
+			createInfo.setLayoutCount = 2u;
+			createInfo.pSetLayouts = setLayouts;
+			createInfo.pushConstantRangeCount = 1u;
+			createInfo.pPushConstantRanges = &pushRange;
 
 			result = vkCreatePipelineLayout(device, &createInfo, nullptr, &_pipelineLayout);
 		}
@@ -2108,7 +1960,7 @@ int createRenderBox(Emulator const _Emulator, Canvas const _Canvas, mem::stack* 
 			createInfo.pColorBlendState = &colorBlendState;
 			createInfo.pDynamicState = &dynamicState;
 			createInfo.layout = _pipelineLayout;
-			createInfo.renderPass = _Canvas->renderPass;
+			createInfo.renderPass = _renderPass;
 			createInfo.subpass = 0;
 			createInfo.basePipelineHandle = VK_NULL_HANDLE;
 			createInfo.basePipelineIndex = 0;
@@ -2122,23 +1974,69 @@ int createRenderBox(Emulator const _Emulator, Canvas const _Canvas, mem::stack* 
 		if (result != VK_SUCCESS)
 			break;
 
-		RenderBox const renderBox = new(std::nothrow) RenderBox_T;
+		_framebuffer = mem::allocate_range<VkFramebuffer>(pCreateInfo->surface->imageView.size());
 
-		if (!renderBox)
+		if (!_framebuffer)
 			break;
 
-		renderBox->pipeline = _pipeline;
-		renderBox->pipelineLayout = _pipelineLayout;
-		renderBox->descriptorSetLayout = _descriptorSetLayout;
-		renderBox->sampler = _sampler;
+		_framebuffer.assign_default();
 
-		renderBox->device = device;
+		const VkExtent2D extent = pCreateInfo->surface->extent;
 
-		*pRenderBox = renderBox;
+		{
+			VkFramebufferCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			createInfo.pNext = nullptr;
+			createInfo.flags = 0;
+			createInfo.renderPass = _renderPass;
+			createInfo.attachmentCount = 1u;
+			createInfo.width = extent.width;
+			createInfo.height = extent.height;
+			createInfo.layers = 1u;
+
+			const VkImageView* pImageView = pCreateInfo->surface->imageView.pBegin;
+
+			const VkFramebuffer* const pFramebufferEnd = _framebuffer.pEnd;
+			for (VkFramebuffer* pFramebuffer{ _framebuffer.pBegin }; pFramebuffer != pFramebufferEnd && result == VK_SUCCESS;) {
+				createInfo.pAttachments = pImageView++;
+
+				result = vkCreateFramebuffer(device, &createInfo, nullptr, pFramebuffer++);
+			}
+		}
+
+		if (result != VK_SUCCESS)
+			break;
+
+		RenderPass const pass = new(std::nothrow) RenderPass_T;
+
+		if (!pass)
+			break;
+
+		pass->renderArea = { { 0u, 0u }, extent };
+		pass->framebuffer = _framebuffer;
+
+		pass->pipeline = _pipeline;
+		pass->pipelineLayout = _pipelineLayout;
+		pass->cameraSetLayout = _cameraSetLayout;
+		pass->objectSetLayout = _objectSetLayout;
+		pass->renderPass = _renderPass;
+		pass->clearValue = _clearValue;
+
+		pass->device = device;
+
+		*pRenderPass = pass;
 
 		return 0;
 
 	} while (false);
+
+	if (_framebuffer) {
+		const VkFramebuffer* const pFramebufferEnd = _framebuffer.pEnd;
+		for (const VkFramebuffer* pFramebuffer{ _framebuffer.pBegin }; pFramebuffer != pFramebufferEnd && *pFramebuffer; ++pFramebuffer)
+			vkDestroyFramebuffer(device, *pFramebuffer, nullptr);
+
+		mem::free_range(_framebuffer);
+	}
 
 	if (_pipeline)
 		vkDestroyPipeline(device, _pipeline, nullptr);
@@ -2146,24 +2044,104 @@ int createRenderBox(Emulator const _Emulator, Canvas const _Canvas, mem::stack* 
 	if (_pipelineLayout)
 		vkDestroyPipelineLayout(device, _pipelineLayout, nullptr);
 
-	if (_descriptorSetLayout)
-		vkDestroyDescriptorSetLayout(device, _descriptorSetLayout, nullptr);
+	if (_objectSetLayout)
+		vkDestroyDescriptorSetLayout(device, _objectSetLayout, nullptr);
 
-	if (_sampler)
-		vkDestroySampler(device, _sampler, nullptr);
+	if (_cameraSetLayout)
+		vkDestroyDescriptorSetLayout(device, _cameraSetLayout, nullptr);
+
+	if (_renderPass)
+		vkDestroyRenderPass(device, _renderPass, nullptr);
+
+	if (_clearValue)
+		mem::free_range(_clearValue);
 
 	return -1;
 }
 
-void destroyRenderBox(RenderBox const _RenderBox) noexcept {
-	const VkDevice device = _RenderBox->device;
+void destroyRenderPass(RenderPass const _RenderPass) noexcept {
+	const VkDevice device = _RenderPass->device;
 
-	vkDestroyPipeline(device, _RenderBox->pipeline, nullptr);
-	vkDestroyPipelineLayout(device, _RenderBox->pipelineLayout, nullptr);
-	vkDestroyDescriptorSetLayout(device, _RenderBox->descriptorSetLayout, nullptr);
-	vkDestroySampler(device, _RenderBox->sampler, nullptr);
+	const VkFramebuffer* const pFramebufferEnd = _RenderPass->framebuffer.pEnd;
+	for (const VkFramebuffer* pFramebuffer{ _RenderPass->framebuffer.pBegin }; pFramebuffer != pFramebufferEnd && *pFramebuffer; ++pFramebuffer)
+		vkDestroyFramebuffer(device, *pFramebuffer, nullptr);
 
-	delete _RenderBox;
+	mem::free_range(_RenderPass->framebuffer);
+
+	vkDestroyPipeline(device, _RenderPass->pipeline, nullptr);
+	vkDestroyPipelineLayout(device, _RenderPass->pipelineLayout, nullptr);
+	vkDestroyDescriptorSetLayout(device, _RenderPass->objectSetLayout, nullptr);
+	vkDestroyDescriptorSetLayout(device, _RenderPass->cameraSetLayout, nullptr);
+	vkDestroyRenderPass(device, _RenderPass->renderPass, nullptr);
+
+	mem::free_range(_RenderPass->clearValue);
+
+	delete _RenderPass;
+}
+
+int updateRenderPass(RenderPass const _RenderPass, const RenderPassUpdateInfo* const pUpdateInfo) noexcept {
+	const VkDevice device = _RenderPass->device;
+
+	mem::span<VkFramebuffer> _framebuffer;
+
+	do {
+		VkResult result;
+
+		_framebuffer = mem::allocate_range<VkFramebuffer>(pUpdateInfo->surface->imageView.size());
+
+		if (!_framebuffer)
+			break;
+
+		_framebuffer.assign_default();
+
+		const VkExtent2D extent = pUpdateInfo->surface->extent;
+
+		{
+			VkFramebufferCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			createInfo.pNext = nullptr;
+			createInfo.flags = 0;
+			createInfo.renderPass = _RenderPass->renderPass;
+			createInfo.attachmentCount = 1u;
+			createInfo.width = extent.width;
+			createInfo.height = extent.height;
+			createInfo.layers = 1u;
+
+			const VkImageView* pImageView = pUpdateInfo->surface->imageView.pBegin;
+
+			const VkFramebuffer* const pFramebufferEnd = _framebuffer.pEnd;
+			for (VkFramebuffer* pFramebuffer{ _framebuffer.pBegin }; pFramebuffer != pFramebufferEnd && result == VK_SUCCESS;) {
+				createInfo.pAttachments = pImageView++;
+
+				result = vkCreateFramebuffer(device, &createInfo, nullptr, pFramebuffer++);
+			}
+		}
+
+		if (result != VK_SUCCESS)
+			break;
+
+		const VkFramebuffer* const pFramebufferEnd = _RenderPass->framebuffer.pEnd;
+		for (const VkFramebuffer* pFramebuffer{ _RenderPass->framebuffer.pBegin }; pFramebuffer != pFramebufferEnd; ++pFramebuffer)
+			vkDestroyFramebuffer(device, *pFramebuffer, nullptr);
+
+		mem::free_range(_RenderPass->framebuffer);
+
+		_RenderPass->renderArea = { { 0u, 0u }, extent };
+		_RenderPass->framebuffer = _framebuffer;
+
+		return 0;
+
+	} while (false);
+
+	if (_framebuffer) {
+		const VkFramebuffer* const pFramebufferEnd = _framebuffer.pEnd;
+		for (const VkFramebuffer* pFramebuffer{ _framebuffer.pBegin }; pFramebuffer != pFramebufferEnd && *pFramebuffer; ++pFramebuffer)
+			vkDestroyFramebuffer(device, *pFramebuffer, nullptr);
+
+		mem::free_range(_framebuffer);
+	}
+
+	return -1;
 }
 
 struct Renderer_T {
@@ -2178,6 +2156,9 @@ struct Renderer_T {
 	
 	uint32_t bufferedFrames;
 	uint32_t frame;
+
+	uint32_t image;
+	VkPipelineLayout pipelineLayout;
 };
 
 int createRenderer(Emulator const _Emulator, const RendererCreateInfo* const pCreateInfo, Renderer* const pRenderer) noexcept {
@@ -2188,6 +2169,8 @@ int createRenderer(Emulator const _Emulator, const RendererCreateInfo* const pCr
 	mem::span<VkSemaphore> _imageSemaphore;
 	mem::span<VkSemaphore> _renderSemaphore;
 	mem::span<VkFence> _frameFence;
+
+	sizeof(Renderer_T);
 
 	do {
 		VkResult result;
@@ -2289,6 +2272,9 @@ int createRenderer(Emulator const _Emulator, const RendererCreateInfo* const pCr
 
 		if (!renderer)
 			break;
+		
+		renderer->pipelineLayout = VK_NULL_HANDLE;
+		renderer->image = UINT32_MAX;
 		
 		renderer->frame = 0;
 		renderer->bufferedFrames = pCreateInfo->maxRenderProcess;
@@ -2395,31 +2381,45 @@ struct InstanceDataGPU {
 };
 
 struct Scene_T {
+	VkDevice device;
 	VmaAllocator allocator;
+	
+	mem::span<Model_T> model;
 	mem::span<VkBuffer> instance;
 	mem::span<VmaAllocation> instanceAllocation;
 	mem::span<InstanceDataGPU*> instanceData;
 	uint32_t instanceCount;
 	uint32_t instanceCapacity;
-	mem::span<VkBuffer> draw;
-	mem::span<VmaAllocation> drawAllocation;
-	mem::span<VkDrawIndexedIndirectCommand*> drawData;
-	uint32_t drawCount;
-	uint32_t drawCapacity;
+
+	VkDescriptorPool descriptorPool;
+	mem::span<VkDescriptorSet> descriptorSet;
+
+	mem::span<VkBuffer> indirect;
+	mem::span<VmaAllocation> indirectAllocation;
+	mem::span<VkDrawIndexedIndirectCommand*> indirectData;
+	uint32_t indirectCommandCount;
+	uint32_t indirectCommandCapacity;
 };
 
-int createScene(Collection const _Scene, Renderer const _Renderer, const SceneCreateInfo* const pCreateInfo, Scene* const pScene) noexcept {
-	const VmaAllocator allocator = _Scene->allocator;
+int createScene(Emulator const _Emulator, Renderer const _Renderer, const SceneCreateInfo* const pCreateInfo, mem::stack* pScratch, Scene* const pScene) noexcept {
+	const VkDevice device = _Emulator->device;
+	const VmaAllocator allocator = _Emulator->allocator;
 
 	mem::span<VkBuffer> _instance;
 	mem::span<VmaAllocation> _instanceAllocation;
 	mem::span<InstanceDataGPU*> _instanceData;
+
+	VkDescriptorPool _descriptorPool = VK_NULL_HANDLE;
+	mem::span<VkDescriptorSet> _descriptorSet;
+
 	mem::span<VkBuffer> _indirect;
 	mem::span<VmaAllocation> _indirectAllocation;
 	mem::span<VkDrawIndexedIndirectCommand*> _indirectData;
 
 	do {
 		VkResult result = VK_SUCCESS;
+
+		pScratch->mark();
 
 		const size_t frameCount = _Renderer->commandBuffer.size();
 
@@ -2440,19 +2440,21 @@ int createScene(Collection const _Scene, Renderer const _Renderer, const SceneCr
 		if (!_instanceData)
 			break;
 
+		const size_t instanceBufferSize = sizeof(InstanceDataGPU) * pCreateInfo->instanceCount;
+
 		{
 			VkBufferCreateInfo createInfo{};
 			createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 			createInfo.pNext = nullptr;
 			createInfo.flags = 0;
-			createInfo.size = sizeof(InstanceDataGPU) * pCreateInfo->instanceCount;
+			createInfo.size = (VkDeviceSize)instanceBufferSize;
 			createInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 			createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			createInfo.queueFamilyIndexCount = 0u;
 			createInfo.pQueueFamilyIndices = nullptr;
 
 			VmaAllocationCreateInfo allocationCreateInfo{};
-			allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+			allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
 			allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
 			allocationCreateInfo.requiredFlags = 0;
 			allocationCreateInfo.preferredFlags = 0;
@@ -2477,6 +2479,78 @@ int createScene(Collection const _Scene, Renderer const _Renderer, const SceneCr
 		if (result != VK_SUCCESS)
 			break;
 
+		{
+			VkDescriptorPoolSize poolSize[1]{};
+			poolSize[0].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			poolSize[0].descriptorCount = frameCount;
+
+			VkDescriptorPoolCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+			createInfo.pNext = nullptr;
+			createInfo.flags = 0;
+			createInfo.maxSets = frameCount;
+			createInfo.poolSizeCount = 1u;
+			createInfo.pPoolSizes = poolSize;
+
+			result = vkCreateDescriptorPool(device, &createInfo, nullptr, &_descriptorPool);
+		}
+
+		if (result != VK_SUCCESS)
+			break;
+
+		_descriptorSet = mem::allocate_range<VkDescriptorSet>((size_t)frameCount);
+
+		if (!_descriptorSet)
+			break;
+
+		mem::span<VkDescriptorSetLayout> setLayout = pScratch->alloc<VkDescriptorSetLayout>((size_t)frameCount);
+
+		if (!setLayout)
+			break;
+
+		setLayout.assign(pCreateInfo->renderBox->objectSetLayout);
+
+		{
+			VkDescriptorSetAllocateInfo allocateInfo{};
+			allocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+			allocateInfo.pNext = nullptr;
+			allocateInfo.descriptorPool = _descriptorPool;
+			allocateInfo.descriptorSetCount = frameCount;
+			allocateInfo.pSetLayouts = setLayout;
+
+			result = vkAllocateDescriptorSets(device, &allocateInfo, _descriptorSet);
+		}
+
+		if (result != VK_SUCCESS)
+			break;
+
+		{
+			VkDescriptorBufferInfo bufferInfo{};
+			bufferInfo.offset = (VkDeviceSize)0u;
+			bufferInfo.range = (VkDeviceSize)instanceBufferSize;
+
+			VkWriteDescriptorSet write{};
+			write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			write.pNext = nullptr;
+			write.dstBinding = 0u;
+			write.dstArrayElement = 0u;
+			write.descriptorCount = 1u;
+			write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			write.pImageInfo = nullptr;
+			write.pBufferInfo = &bufferInfo;
+			write.pTexelBufferView = nullptr;
+
+			const VkBuffer* pBuffer = _instance.pBegin;
+
+			const VkDescriptorSet* const pDescriptorSetEnd = _descriptorSet.pEnd;
+			for (const VkDescriptorSet* pDescriptorSet{ _descriptorSet.pBegin }; pDescriptorSet != pDescriptorSetEnd;) {
+				bufferInfo.buffer = *pBuffer++;
+				write.dstSet = *pDescriptorSet++;
+
+				vkUpdateDescriptorSets(device, 1u, &write, 0u, nullptr);
+			}
+		}
+
 		_indirect = mem::allocate_range<VkBuffer>(frameCount);
 
 		if (!_indirect)
@@ -2494,7 +2568,7 @@ int createScene(Collection const _Scene, Renderer const _Renderer, const SceneCr
 		if (!_indirectData)
 			break;
 
-		const uint32_t maxDrawCount = std::min<uint32_t>(pCreateInfo->instanceCount, std::max<uint32_t>(pCreateInfo->drawCount, static_cast<uint32_t>(_Scene->model.size() + 1u)));
+		const uint32_t maxDrawCount = std::min<uint32_t>(pCreateInfo->instanceCount, std::max<uint32_t>(pCreateInfo->drawCount, static_cast<uint32_t>(pCreateInfo->collection->model.size() + 1u)));
 
 		{
 			VkBufferCreateInfo createInfo{};
@@ -2538,20 +2612,31 @@ int createScene(Collection const _Scene, Renderer const _Renderer, const SceneCr
 		if (!scene)
 			break;
 
+		pScratch->restore();
+
 		scene->instanceCapacity = pCreateInfo->instanceCount;
-		scene->drawData = _indirectData;
-		scene->drawAllocation = _indirectAllocation;
-		scene->draw = _indirect;
+		scene->indirectData = _indirectData;
+		scene->indirectAllocation = _indirectAllocation;
+		scene->indirect = _indirect;
+
+		scene->descriptorSet = _descriptorSet;
+		scene->descriptorPool = _descriptorPool;
+
 		scene->instanceData = _instanceData;
 		scene->instanceAllocation = _instanceAllocation;
 		scene->instance = _instance;
+		scene->model = pCreateInfo->collection->model;
+
 		scene->allocator = allocator;
+		scene->device = device;
 
 		*pScene = scene;
 
 		return 0;
 	
 	} while (false);
+
+	pScratch->restore();
 
 	if (_indirectData)
 		mem::free_range(_indirectData);
@@ -2569,6 +2654,12 @@ int createScene(Collection const _Scene, Renderer const _Renderer, const SceneCr
 
 	if (_indirect)
 		mem::free_range(_indirect);
+
+	if (_descriptorSet)
+		mem::free_range(_descriptorSet);
+
+	if (_descriptorPool)
+		vkDestroyDescriptorPool(device, _descriptorPool, nullptr);
 
 	if (_instanceData)
 		mem::free_range(_instanceData);
@@ -2591,21 +2682,25 @@ int createScene(Collection const _Scene, Renderer const _Renderer, const SceneCr
 }
 
 void destroyScene(Scene const _Scene) noexcept {
+	const VkDevice device = _Scene->device;
 	const VmaAllocator allocator = _Scene->allocator;
 	
-	mem::free_range(_Scene->drawData);
+	mem::free_range(_Scene->indirectData);
 
 	{
-		const VkBuffer* pBuffer = _Scene->draw.pBegin;
-		const VmaAllocation* pAllocation = _Scene->drawAllocation.pBegin;
+		const VkBuffer* pBuffer = _Scene->indirect.pBegin;
+		const VmaAllocation* pAllocation = _Scene->indirectAllocation.pBegin;
 
-		const VkBuffer* const pBufferEnd = _Scene->draw.pEnd;
+		const VkBuffer* const pBufferEnd = _Scene->indirect.pEnd;
 		for (; pBuffer != pBufferEnd;)
 			vmaDestroyBuffer(allocator, *pBuffer++, *pAllocation++);
 	}
 
-	mem::free_range(_Scene->drawAllocation);
-	mem::free_range(_Scene->draw);
+	mem::free_range(_Scene->indirectAllocation);
+	mem::free_range(_Scene->indirect);
+
+	mem::free_range(_Scene->descriptorSet);
+	vkDestroyDescriptorPool(device, _Scene->descriptorPool, nullptr);
 
 	mem::free_range(_Scene->instanceData);
 	
@@ -2630,7 +2725,7 @@ int pushObjectInstance(Scene const _Scene, const ObjectInstance* const pObject) 
 	if (!instanceCount)
 		return 0;
 
-	if (instanceCount > (_Scene->instanceCapacity - _Scene->instanceCount) || _Scene->drawCount >= _Scene->drawCapacity)
+	if (instanceCount > (_Scene->instanceCapacity - _Scene->instanceCount) || _Scene->indirectCommandCount >= _Scene->indirectCommandCapacity)
 		return 1;
 
 	const uint32_t firstInstance = _Scene->instanceCount;
@@ -2645,190 +2740,449 @@ int pushObjectInstance(Scene const _Scene, const ObjectInstance* const pObject) 
 			memcpy((void*)(reinterpret_cast<uint8_t*>(pInstanceDataDst++) + offsetof(InstanceDataGPU, InstanceDataGPU::external)), (void*)pInstanceDataSrc++, sizeof(InstanceData));
 	}
 
-	const Model_T* const pModel = pObject->model;
+	const Model_T* const pModel = &_Scene->model[pObject->model];
 
 	VkDrawIndexedIndirectCommand command{};
-	command.indexCount = pModel->count;
+	command.indexCount = pModel->indexcount;
 	command.instanceCount = pObject->instanceCount;
-	command.firstIndex = static_cast<uint32_t>(pModel->indexOffset);
-	command.vertexOffset = static_cast<int32_t>(pModel->vertexoffset);
+	command.firstIndex = static_cast<uint32_t>(pModel->firstIndex);
+	command.vertexOffset = static_cast<int32_t>(pModel->firstVertex);
 	command.firstInstance = firstInstance;
 
-	const uint32_t drawIndex = _Scene->drawCount;
+	const uint32_t drawIndex = _Scene->indirectCommandCount;
 
-	const VkDrawIndexedIndirectCommand* const* const ppDrawDataEnd = _Scene->drawData.pEnd;
-	for (VkDrawIndexedIndirectCommand* const* ppDrawData{ _Scene->drawData.pBegin }; ppDrawData != ppDrawDataEnd;)
-		*(*ppDrawData + drawIndex) = command;
+	const VkDrawIndexedIndirectCommand* const* const ppDrawDataEnd = _Scene->indirectData.pEnd;
+	for (VkDrawIndexedIndirectCommand* const* ppDrawData{ _Scene->indirectData.pBegin }; ppDrawData != ppDrawDataEnd;)
+		*ppDrawData[drawIndex] = command;
 
 	_Scene->instanceCount += instanceCount;
-	++_Scene->drawCount;
+	++_Scene->indirectCommandCount;
 
 	return 0;
 }
 
-int draw(Canvas const _Canvas, Renderer const _Renderer, RenderBox const _RenderBox, Collection const _Scene) noexcept {
-	const VkDevice device = _Renderer->device;
+struct CameraDataGPU {
+	glm::mat4 camera;
+	glm::mat4 projection;
+};
+
+struct Camera_T {
+	VkDevice device;
+	VmaAllocator allocator;
+
+	mem::span<VkBuffer> buffer;
+	mem::span<VmaAllocation> allocation;
+	mem::span<CameraDataGPU*> data;
+
+	VkDescriptorPool descriptorPool;
+	mem::span<VkDescriptorSet> descriptorSet;
+};
+
+int createCamera(Emulator const _Emulator, Renderer const _Renderer, const CameraCreateInfo* const pCreateInfo, mem::stack* const pScratch, Camera* const pCamera) noexcept {
+	const VkDevice device = _Emulator->device;
+	const VmaAllocator allocator = _Emulator->allocator;
+
+	mem::span<VkBuffer> _buffer;
+	mem::span<VmaAllocation> _allocation;
+	mem::span<CameraDataGPU*> _data;
+
+	VkDescriptorPool _descriptorPool = VK_NULL_HANDLE;
+	mem::span<VkDescriptorSet> _descriptorSet;
 
 	do {
-		VkResult result;
-		
-		const uint32_t frame = _Renderer->frame;
+		VkResult result{};
 
-		const VkSwapchainKHR swapchain = _Canvas->swapchain;
-		const VkSemaphore imageAvailable = _Renderer->imageSemaphore[frame];
+		pScratch->mark();
 
-		const VkFence frameFence = _Renderer->frameFence[frame];
-		
-		result = vkWaitForFences(device, 1u, &frameFence, VK_TRUE, UINT64_MAX);
+		const uint32_t frameCount = static_cast<uint32_t>(_Renderer->frameFence.size());
 
-		if (result != VK_SUCCESS)
+		_buffer = mem::allocate_range<VkBuffer>((size_t)frameCount);
+
+		if (!_buffer)
 			break;
-		
-		uint32_t imageIndex;
-		result = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, imageAvailable, VK_NULL_HANDLE, &imageIndex);
 
-		if (result == VK_ERROR_OUT_OF_DATE_KHR)
-			return 1;
+		_buffer.assign_default();
 
-		if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+		_allocation = mem::allocate_range<VmaAllocation>((size_t)frameCount);
+
+		if (!_allocation)
 			break;
-		
-		VkFence imageFence = _Canvas->fence[imageIndex];
 
-		if (!imageFence)
-			imageFence = frameFence;
+		_data = mem::allocate_range<CameraDataGPU*>((size_t)frameCount);
 
-		result = vkWaitForFences(device, 1u, &imageFence, VK_TRUE, UINT64_MAX);
-
-		if (result != VK_SUCCESS)
+		if (!_data)
 			break;
-		
-		const VkCommandBuffer commandBuffer = _Renderer->commandBuffer[frame];
 
-		result = vkResetCommandBuffer(commandBuffer, 0);
+		const size_t size = sizeof(CameraDataGPU) * pCreateInfo->bindings;
+
+		{
+			VkBufferCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+			createInfo.pNext = nullptr;
+			createInfo.flags = 0;
+			createInfo.size = (VkDeviceSize)size;
+			createInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+			createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			createInfo.queueFamilyIndexCount = 0u;
+			createInfo.pQueueFamilyIndices = nullptr;
+
+			VmaAllocationCreateInfo allocationCreateInfo{};
+			allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
+			allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+			allocationCreateInfo.requiredFlags = 0;
+			allocationCreateInfo.preferredFlags = 0;
+			allocationCreateInfo.memoryTypeBits = 0;
+			allocationCreateInfo.pool = VK_NULL_HANDLE;
+			allocationCreateInfo.pUserData = nullptr;
+			allocationCreateInfo.priority = 0.0f;
+
+			VmaAllocationInfo allocationInfo;
+
+			CameraDataGPU** ppData = _data.pBegin;
+			VmaAllocation* pAllocation = _allocation.pBegin;
+
+			const VkBuffer* const pBufferEnd = _buffer.pEnd;
+			for (VkBuffer* pBuffer{_buffer.pBegin}; pBuffer != pBufferEnd && result == VK_SUCCESS;) {
+				result = vmaCreateBuffer(allocator, &createInfo, &allocationCreateInfo, pBuffer++, pAllocation++, &allocationInfo);
+
+				*ppData++ = reinterpret_cast<CameraDataGPU*>(allocationInfo.pMappedData);
+			}
+		}
 
 		if (result != VK_SUCCESS)
 			break;
 
 		{
-			VkCommandBufferBeginInfo beginInfo{};
-			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-			beginInfo.pNext = nullptr;
-			beginInfo.flags = 0;
-			beginInfo.pInheritanceInfo = nullptr;
+			VkDescriptorPoolSize poolSize[1]{};
+			poolSize[0].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			poolSize[0].descriptorCount = frameCount;
 
-			result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+			VkDescriptorPoolCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+			createInfo.pNext = nullptr;
+			createInfo.flags = 0;
+			createInfo.maxSets = frameCount;
+			createInfo.poolSizeCount = 1u;
+			createInfo.pPoolSizes = poolSize;
+
+			result = vkCreateDescriptorPool(device, &createInfo, nullptr, &_descriptorPool);
 		}
 
 		if (result != VK_SUCCESS)
 			break;
 
-		const VkRect2D renderArea = { {}, _Canvas->extent };
+		_descriptorSet = mem::allocate_range<VkDescriptorSet>((size_t)frameCount);
+
+		if (!_descriptorSet)
+			break;		
+
+		mem::span<VkDescriptorSetLayout> setLayout = pScratch->alloc<VkDescriptorSetLayout>(frameCount);
+
+		if (!setLayout)
+			break;
+
+		setLayout.assign(pCreateInfo->renderBox->cameraSetLayout);
 
 		{
-			VkRenderPassBeginInfo beginInfo{};
-			beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			beginInfo.pNext = nullptr;
-			beginInfo.renderPass = _Canvas->renderPass;
-			beginInfo.framebuffer = _Canvas->framebuffer[imageIndex];
-			beginInfo.renderArea = renderArea;
-			beginInfo.clearValueCount = static_cast<uint32_t>(_Canvas->clearValue.size());
-			beginInfo.pClearValues = _Canvas->clearValue;
+			VkDescriptorSetAllocateInfo allocateInfo{};
+			allocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+			allocateInfo.pNext = nullptr;
+			allocateInfo.descriptorPool = _descriptorPool;
+			allocateInfo.descriptorSetCount = frameCount;
+			allocateInfo.pSetLayouts = setLayout;
 
-			vkCmdBeginRenderPass(commandBuffer, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			result = vkAllocateDescriptorSets(device, &allocateInfo, _descriptorSet);
 		}
-
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _RenderBox->pipeline);
-
-		VkViewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = renderArea.extent.width;
-		viewport.height = renderArea.extent.height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
-		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-		VkRect2D scissor{};
-		scissor.offset = { 0, 0 };
-		scissor.extent = renderArea.extent;
-
-		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
-		const Model_T* const pModelEnd = _Scene->model.pBegin + _Scene->hint;
-		for (const Model_T* pModel{ _Scene->model.pBegin }; pModel != pModelEnd; ++pModel) {
-			if (!(pModel->state & MODEL_STATE_VISIBLE_BIT))
-				continue;
-
-			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &pModel->vertex, &pModel->vertexoffset);
-			vkCmdBindIndexBuffer(commandBuffer, pModel->index, 0u, VK_INDEX_TYPE_UINT32);
-			
-			vkCmdDrawIndexed(commandBuffer, pModel->count, 1, 0, pModel->vertexoffset, 0);
-		}
-
-		vkCmdEndRenderPass(commandBuffer);
-
-		result = vkEndCommandBuffer(commandBuffer);
-
-		if (result != VK_SUCCESS)
-			break;
-
-		VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
-		const VkSemaphore renderSemaphore = _Renderer->renderSemaphore[frame];
-
-		result = vkResetFences(device, 1u, &frameFence);
 
 		if (result != VK_SUCCESS)
 			break;
 
 		{
-			VkSubmitInfo submitInfo{};
-			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-			submitInfo.pNext = nullptr;
-			submitInfo.waitSemaphoreCount = 1u;
-			submitInfo.pWaitSemaphores = &imageAvailable;
-			submitInfo.pWaitDstStageMask = &waitStage;
-			submitInfo.commandBufferCount = 1u;
-			submitInfo.pCommandBuffers = &commandBuffer;
-			submitInfo.signalSemaphoreCount = 1u;
-			submitInfo.pSignalSemaphores = &renderSemaphore;
+			VkDescriptorBufferInfo bufferInfo{};
+			bufferInfo.offset = (VkDeviceSize)0u;
+			bufferInfo.range = (VkDeviceSize)size;
 
-			result = vkQueueSubmit(_Renderer->queue, 1u, &submitInfo, _Renderer->frameFence[frame]);
+			VkWriteDescriptorSet write{};
+			write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			write.pNext = nullptr;
+			write.dstBinding = 0u;
+			write.dstArrayElement = 0u;
+			write.descriptorCount = 1u;
+			write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			write.pImageInfo = nullptr;
+			write.pBufferInfo = &bufferInfo;
+			write.pTexelBufferView = nullptr;
+
+			const VkBuffer* pBuffer = _buffer.pBegin;
+
+			const VkDescriptorSet* const pDescriptorSetEnd = _descriptorSet.pEnd;
+			for (const VkDescriptorSet* pDescriptorSet{ _descriptorSet.pBegin }; pDescriptorSet != pDescriptorSetEnd;) {
+				bufferInfo.buffer = *pBuffer++;
+				write.dstSet = *pDescriptorSet++;
+
+				vkUpdateDescriptorSets(device, 1u, &write, 0, nullptr);
+			}
 		}
 
-		if (result != VK_SUCCESS)
+		Camera const camera = new(std::nothrow) Camera_T;
+
+		if (!camera)
 			break;
 
-		_Canvas->fence[imageIndex] = frameFence;
+		pScratch->restore();
 
-		{
-			VkPresentInfoKHR presentInfo{};
-			presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-			presentInfo.pNext = nullptr;
-			presentInfo.waitSemaphoreCount = 1u;
-			presentInfo.pWaitSemaphores = &renderSemaphore;
-			presentInfo.swapchainCount = 1u;
-			presentInfo.pSwapchains = &swapchain;
-			presentInfo.pResults = nullptr;
-			presentInfo.pImageIndices = &imageIndex;
+		camera->descriptorSet = _descriptorSet;
+		camera->descriptorPool = _descriptorPool;
 
-			result = vkQueuePresentKHR(_Canvas->queue, &presentInfo);
-		}
+		camera->data = _data;
+		camera->allocation = _allocation;
+		camera->buffer = _buffer;
 		
-		_Renderer->frame++;
-		_Renderer->frame = _Renderer->frame == _Renderer->bufferedFrames ? 0 : _Renderer->frame;
-
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
-			return 1;
-
-		if (result != VK_SUCCESS)
-			break;
+		camera->allocator = allocator;
+		camera->device = device;
 
 		return 0;
 
 	} while (false);
 
+	pScratch->restore();
+
+	if (_descriptorSet)
+		mem::free_range(_descriptorSet);
+
+	if (_descriptorPool)
+		vkDestroyDescriptorPool(device, _descriptorPool, nullptr);
+
+	if (_data)
+		mem::free_range(_data);
+
+	if (_allocation) {
+		const VmaAllocation* pAllocation = _allocation.pBegin;
+
+		const VkBuffer* const pBufferEnd = _buffer.pEnd;
+		for (const VkBuffer* pBuffer{ _buffer.pBegin }; pBuffer != pBufferEnd && *pBuffer;)
+			vmaDestroyBuffer(allocator, *pBuffer++, *pAllocation++);
+
+		mem::free_range(_allocation);
+	}
+
+	if (_buffer)
+		mem::free_range(_buffer);
+
 	return -1;
+}
+
+void destroyCamera(Camera const _Camera) noexcept {
+	const VkDevice device = _Camera->device;
+	const VmaAllocator allocator = _Camera->allocator;
+
+	mem::free_range(_Camera->descriptorSet);
+	vkDestroyDescriptorPool(device, _Camera->descriptorPool, nullptr);
+
+	mem::free_range(_Camera->data);
+
+	const VmaAllocation* pAllocation = _Camera->allocation.pBegin;
+	
+	const VkBuffer* const pBufferEnd = _Camera->buffer.pEnd;
+	for (const VkBuffer* pBuffer{ _Camera->buffer.pBegin }; pBuffer != pBufferEnd && *pBuffer;)
+		vmaDestroyBuffer(allocator, *pBuffer++, *pAllocation++);
+
+	mem::free_range(_Camera->allocation);
+	mem::free_range(_Camera->buffer);
+
+	delete _Camera;
+}
+
+int beginFrame(Renderer const _Renderer, Surface const _Surface) noexcept {
+	const VkDevice device = _Renderer->device;
+	
+	VkResult result;
+	
+	const uint32_t frame = _Renderer->frame;
+
+	const VkSwapchainKHR swapchain = _Surface->swapchain;
+	const VkSemaphore imageAvailable = _Renderer->imageSemaphore[frame];
+
+	const VkFence frameFence = _Renderer->frameFence[frame];
+
+	result = vkWaitForFences(device, 1u, &frameFence, VK_TRUE, UINT64_MAX);
+
+	if (result != VK_SUCCESS)
+		return -1;
+
+	uint32_t imageIndex;
+	result = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, imageAvailable, VK_NULL_HANDLE, &imageIndex);
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR)
+		return 1;
+
+	if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+		return -1;
+
+	VkFence imageFence = _Surface->fence[imageIndex];
+
+	if (!imageFence)
+		imageFence = frameFence;
+
+	result = vkWaitForFences(device, 1u, &imageFence, VK_TRUE, UINT64_MAX);
+
+	if (result != VK_SUCCESS)
+		return -1;
+
+	const VkCommandBuffer commandBuffer = _Renderer->commandBuffer[frame];
+
+	result = vkResetCommandBuffer(commandBuffer, 0);
+
+	if (result != VK_SUCCESS)
+		return -1;
+
+	{
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.pNext = nullptr;
+		beginInfo.flags = 0;
+		beginInfo.pInheritanceInfo = nullptr;
+
+		result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+	}
+
+	if (result != VK_SUCCESS)
+		return -1;
+
+	_Renderer->image = imageIndex;
+
+	return 0;
+}
+
+void beginRenderPass(Renderer const _Renderer, RenderPass const _RenderPass, Camera const _Camera) noexcept {
+	const VkCommandBuffer commandBuffer = _Renderer->commandBuffer[_Renderer->frame];
+
+	{
+		VkRenderPassBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		beginInfo.pNext = nullptr;
+		beginInfo.renderPass = _RenderPass->renderPass;
+		beginInfo.framebuffer = _RenderPass->framebuffer[_Renderer->image];
+		beginInfo.renderArea = _RenderPass->renderArea;
+		beginInfo.clearValueCount = static_cast<uint32_t>(_RenderPass->clearValue.size());
+		beginInfo.pClearValues = _RenderPass->clearValue;
+
+		vkCmdBeginRenderPass(commandBuffer, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	}
+
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _RenderPass->pipeline);
+
+	{
+		VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = _RenderPass->renderArea.extent.width;
+		viewport.height = _RenderPass->renderArea.extent.height;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+
+		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+	}
+	
+	vkCmdSetScissor(commandBuffer, 0, 1, &_RenderPass->renderArea);
+
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _RenderPass->pipelineLayout, 0u, 1u, &_Camera->descriptorSet[_Renderer->frame], 0u, nullptr);
+
+	_Renderer->pipelineLayout = _RenderPass->pipelineLayout;
+}
+
+void setActiveCamera(Renderer _Renderer, uint32_t camera) noexcept {
+	vkCmdPushConstants(_Renderer->commandBuffer[_Renderer->frame], _Renderer->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0u, sizeof(uint32_t), &camera);
+}
+
+void render(Renderer const _Renderer, Collection const _Collection, Scene const _Scene) noexcept {
+	const uint32_t frame = _Renderer->frame;
+	const VkCommandBuffer commandBuffer = _Renderer->commandBuffer[frame];
+
+	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_Collection->vertex, 0);
+	vkCmdBindIndexBuffer(commandBuffer, _Collection->index, 0u, VK_INDEX_TYPE_UINT32);
+
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _Renderer->pipelineLayout, 0u, 1u, &_Scene->descriptorSet[frame], 0u, nullptr);
+			
+	vkCmdDrawIndexedIndirect(commandBuffer, _Scene->indirect[frame], 0, _Scene->indirectCommandCount, sizeof(VkDrawIndexedIndirectCommand));
+}
+
+void endPass(Renderer const _Renderer) noexcept {
+	vkCmdEndRenderPass(_Renderer->commandBuffer[_Renderer->frame]);
+}
+
+int endFrame(Renderer const _Renderer, Surface const _Surface) noexcept {
+	const uint32_t frame = _Renderer->frame;
+	const VkCommandBuffer commandBuffer = _Renderer->commandBuffer[frame];
+
+	VkResult result;
+
+	result = vkEndCommandBuffer(commandBuffer);
+
+	if (result != VK_SUCCESS)
+		return -1;
+
+	const VkFence fence = _Renderer->frameFence[frame];
+
+	result = vkResetFences(_Renderer->device, 1u, &fence);
+
+	const VkSemaphore imageAvailable = _Renderer->imageSemaphore[frame];
+	const VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+	const VkSemaphore renderComplete = _Renderer->renderSemaphore[frame];
+
+	{
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pNext = nullptr;
+		submitInfo.waitSemaphoreCount = 1u;
+		submitInfo.pWaitSemaphores = &imageAvailable;
+		submitInfo.pWaitDstStageMask = &waitStage;
+		submitInfo.commandBufferCount = 1u;
+		submitInfo.pCommandBuffers = &commandBuffer;
+		submitInfo.signalSemaphoreCount = 1u;
+		submitInfo.pSignalSemaphores = &renderComplete;
+
+		result = vkQueueSubmit(_Renderer->queue, 1u, &submitInfo, fence);
+	}
+
+	if (result != VK_SUCCESS)
+		return -1;
+
+	_Surface->fence[_Renderer->image] = fence;
+
+	return 0;
+}
+
+int presentFrame(Renderer const _Renderer, Surface _Surface) noexcept {
+	VkResult result;
+	
+	const VkSemaphore semaphore = _Renderer->renderSemaphore[_Renderer->frame];
+
+	{
+		VkPresentInfoKHR presentInfo{};
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		presentInfo.pNext = nullptr;
+		presentInfo.waitSemaphoreCount = 1u;
+		presentInfo.pWaitSemaphores = &semaphore;
+		presentInfo.swapchainCount = 1u;
+		presentInfo.pSwapchains = &_Surface->swapchain;
+		presentInfo.pResults = nullptr;
+		presentInfo.pImageIndices = &_Renderer->image;
+
+		result = vkQueuePresentKHR(_Surface->queue, &presentInfo);
+	}
+
+	_Renderer->frame++;
+
+	if (_Renderer->frame > _Renderer->bufferedFrames)
+		_Renderer->frame = 0u;
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+		return 1;
+
+	if (result != VK_SUCCESS)
+		return -1;
+
+	return 0;
 }

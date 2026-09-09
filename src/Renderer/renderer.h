@@ -7,10 +7,10 @@
 struct VulkanContext_T;
 using VulkanContext = VulkanContext_T*;
 
-int requestVulkanContext(mem::stack* const pScratch, VulkanContext* const pContext) noexcept;
-void destroyVulkanContext(VulkanContext const _Context) noexcept;
+int requestVulkanContext(mem::stack* pScratch, VulkanContext* pContext) noexcept;
+void destroyVulkanContext(VulkanContext _Context) noexcept;
 
-int enumeratePhysicalDevices(VulkanContext const _Context, uint32_t* const pCount, const char** const pDeviceNames) noexcept;
+int enumeratePhysicalDevices(VulkanContext _Context, uint32_t* pCount, const char** pDeviceNames) noexcept;
 
 struct EmulatorCreateInfo {
 	void* windowContext;
@@ -21,34 +21,35 @@ struct EmulatorCreateInfo {
 struct Emulator_T;
 using Emulator = Emulator_T*;
 
-int createEmulator(VulkanContext const  _Context, const EmulatorCreateInfo* const pCreateInfo, mem::stack* const pScratch, Emulator* const pEmulator) noexcept;
-void destroyEmulator(Emulator const _Emulator) noexcept;
+int createEmulator(VulkanContext _Context, const EmulatorCreateInfo* pCreateInfo, mem::stack* pScratch, Emulator* pEmulator) noexcept;
+void destroyEmulator(Emulator _Emulator) noexcept;
 
 int waitEmulator(Emulator const _Emulator) noexcept;
 
-struct AsyncLoader_T;
-using AsyncLoader = AsyncLoader_T*;
+struct Loader_T;
+using Loader = Loader_T*;
 
-struct AsyncLoaderCreateInfo {
+struct LoaderCreateInfo {
 	size_t stageSize;
 	uint32_t maxLoadProcess;
 };
 
-int createAsyncLoader(Emulator const _Emulator, const AsyncLoaderCreateInfo* const pCreateInfo, AsyncLoader* const pAsyncLoader) noexcept;
-void destroyAsyncLoader(AsyncLoader const _AsynLoader) noexcept;
+int createLoader(Emulator _Emulator, const LoaderCreateInfo* pCreateInfo, Loader* pLoader) noexcept;
+void destroyLoader(Loader _Loader) noexcept;
 
-int waitAsyncLoader(AsyncLoader const _AsyncLoader) noexcept;
+int waitLoader(Loader _Loader) noexcept;
 
-struct ProcessCookie_T;
-using ProcessCookie = ProcessCookie_T*;
-
-int allocateProcessCookie(ProcessCookie* const pProcessCookie) noexcept;
-void freeProcessCookie(ProcessCookie const _ProcessCookie) noexcept;
-
-int waitProcess(Emulator const _Emulator, ProcessCookie const _Cookie) noexcept;
+using ProcessCookie = uintptr_t;
 
 struct Collection_T;
 using Collection = Collection_T*;
+
+struct Vertex {
+	glm::vec2 pos;
+	glm::vec3 color;
+};
+
+using Index = uint32_t;
 
 struct ModelInfo {
 	const Vertex* pVertex;
@@ -62,39 +63,20 @@ struct CollectionCreateInfo {
 	const ModelInfo* pModelInfos;
 };
 
-int createCollection(AsyncLoader const _AsynLoader, Emulator const _Emulator, const CollectionCreateInfo* const pCreateInfo, Collection* const pScene) noexcept;
-void destroyCollection(Collection const _Scene) noexcept;
+int createCollection(Loader _AsynLoader, Emulator _Emulator, const CollectionCreateInfo* pCreateInfo, ProcessCookie* pProcessCookie, Collection* pScene) noexcept;
+void destroyCollection(Collection _Scene) noexcept;
 
-struct Model_T;
-using Model = Model_T*;
+struct Surface_T;
+using Surface = Surface_T*;
 
-struct Vertex {
-	glm::vec2 pos;
-	glm::vec3 color;
-};
-
-using Index = uint32_t;
-
-int loadModel(AsyncLoader const _AsynLoader, Collection const _Collection, const ModelInfo* const pModelInfo, Model* const pModel, ProcessCookie const _ProcessCookie) noexcept;
-void releaseModel(Collection const _Scene, Model const _Model) noexcept;
-
-struct Canvas_T;
-using Canvas = Canvas_T*;
-
-struct CanvasCreateInfo {
+struct SurfaceCreateInfo {
 	uint32_t minImageCount;
 };
 
-int createCanvas(Emulator const _Emulator, const CanvasCreateInfo* const pCreateInfo, mem::stack* const pScratch, Canvas* const pCanvas) noexcept;
-void destroyCanvas(Canvas const _Canvas) noexcept;
+int createSurface(Emulator _Emulator, const SurfaceCreateInfo* pCreateInfo, mem::stack* pScratch, Surface* pCanvas) noexcept;
+void destroySurface(Surface _Surface) noexcept;
 
-int updateCanvas(Canvas const _Canvas) noexcept;
-
-struct RenderBox_T;
-using RenderBox = RenderBox_T*;
-
-int createRenderBox(Emulator const _Emulator, Canvas const _Canvas, mem::stack* const pScratch, RenderBox* const pRenderBox) noexcept;
-void destroyRenderBox(RenderBox const _RenderBox) noexcept;
+int updateCanvas(Surface _Surface) noexcept;
 
 struct Renderer_T;
 using Renderer = Renderer_T*;
@@ -103,21 +85,39 @@ struct RendererCreateInfo {
 	uint32_t maxRenderProcess;
 };
 
-int createRenderer(Emulator const _Emulator, const RendererCreateInfo* const pCreateInfo, Renderer* const pRenderer) noexcept;
-void destroyRenderer(Renderer const _Renderer) noexcept;
+int createRenderer(Emulator _Emulator, const RendererCreateInfo* pCreateInfo, Renderer* pRenderer) noexcept;
+void destroyRenderer(Renderer _Renderer) noexcept;
 
-int waitRenderer(Renderer const _Renderer) noexcept;
+int waitRenderer(Renderer _Renderer) noexcept;
+
+struct RenderPass_T;
+using RenderPass = RenderPass_T*;
+
+struct RenderPassCreateInfo {
+	Surface surface;
+};
+
+int createRenderPass(Emulator _Emulator, const RenderPassCreateInfo* pCreateInfo, mem::stack* pScratch, RenderPass* pRenderBox) noexcept;
+void destroyRenderPass(RenderPass _RenderBox) noexcept;
+
+struct RenderPassUpdateInfo {
+	Surface surface;
+};
+
+int updateRenderPass(RenderPass _RenderPass, const RenderPassUpdateInfo* pUpdateInfo) noexcept;
 
 struct Scene_T;
 using Scene = Scene_T*;
 
 struct SceneCreateInfo {
+	RenderPass renderBox;
+	Collection collection;
 	uint32_t instanceCount;
 	uint32_t drawCount;
 };
 
-int createScene(Collection const _Collection, Renderer const _Renderer, const SceneCreateInfo* const pCreateInfo, Scene* const pScene) noexcept;
-void destroyScene(Scene const _Scene) noexcept;
+int createScene(Emulator _Emulator, Renderer _Renderer, const SceneCreateInfo* pCreateInfo, mem::stack* pScratch, Scene* pScene) noexcept;
+void destroyScene(Scene _Scene) noexcept;
 
 using Transform = glm::mat4;
 
@@ -126,17 +126,30 @@ struct InstanceData {
 };
 
 struct ObjectInstance {
-	Model model;
+	uint32_t model;
 	uint32_t instanceCount;
 	const InstanceData* pInstances;
 };
 
-int pushObjectInstance(Scene const _Scene, const ObjectInstance* const pObject) noexcept;
+int pushObjectInstance(Scene _Scene, const ObjectInstance* pObject) noexcept;
 
-struct DrawInfo {
-	RenderBox renderBox;
-	Collection scene;
+struct Camera_T;
+using Camera = Camera_T*;
+
+struct CameraCreateInfo {
+	RenderPass renderBox;
+	uint32_t bindings;
 };
 
-int draw(Canvas const _Canvas, Renderer const _Renderer, RenderBox const _RenderBox, Collection const _Scene) noexcept;
+int createCamera(Emulator _Emulator, Renderer _Renderer, const CameraCreateInfo* pCreateInfo, mem::stack* pScratch, Camera* pCamera) noexcept;
+void destroyCamera(Camera _Camera) noexcept;
 
+int beginFrame(Renderer _Renderer, Surface _Surface) noexcept;
+
+void beginRenderPass(Renderer _Renderer, RenderPass _RenderPass, Camera _Camera) noexcept;
+void setActiveCamera(Renderer _Renderer, uint32_t camera) noexcept;
+void render(Renderer _Renderer, Collection _Collection, Scene _Scene) noexcept;
+void endPass(Renderer _Renderer) noexcept;
+
+int endFrame(Renderer _Renderer, Surface _Surface) noexcept;
+int presentFrame(Renderer _Renderer, Surface _Surface) noexcept;

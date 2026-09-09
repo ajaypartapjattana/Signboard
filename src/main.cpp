@@ -101,16 +101,14 @@ int main() {
 	VulkanContext vulkanCtx = nullptr;
 	Emulator emulator = nullptr;
 
-	Canvas canvas = nullptr;
-	RenderBox renderBox = nullptr;
+	Surface surface = nullptr;
+	RenderPass renderBox = nullptr;
 	Renderer renderer = nullptr;
 
-	AsyncLoader loader = nullptr;
+	Loader loader = nullptr;
 
-	ProcessCookie cookie = nullptr;
-	Collection scene = nullptr;
-
-	Model model = nullptr;
+	Collection collection = nullptr;
+	Scene scene = nullptr;
 	
 	do {
 		int failure;
@@ -185,16 +183,16 @@ int main() {
 			break;
 
 		{
-			CanvasCreateInfo createInfo{};
+			SurfaceCreateInfo createInfo{};
 			createInfo.minImageCount = 2u;
 
-			failure = createCanvas(emulator, &createInfo, &scratch, &canvas);
+			failure = createSurface(emulator, &createInfo, &scratch, &surface);
 		}
 
 		if (failure)
 			break;
 
-		failure = createRenderBox(emulator, canvas, &scratch, &renderBox);
+		failure = createRenderPass(emulator, surface, &scratch, &renderBox);
 
 		if (failure)
 			break;
@@ -211,11 +209,11 @@ int main() {
 			break;
 
 		{
-			AsyncLoaderCreateInfo createInfo{};
+			LoaderCreateInfo createInfo{};
 			createInfo.stageSize = 16ull << 20;
 			createInfo.maxLoadProcess = 2u;
 
-			failure = createAsyncLoader(emulator, &createInfo, &loader);
+			failure = createLoader(emulator, &createInfo, &loader);
 		}
 
 		if (failure)
@@ -283,7 +281,7 @@ int main() {
 				break;
 			
 			if (control & FLOW_CONTROL_DIRTY_EXTENT_BIT) {
-				failure = updateCanvas(canvas);
+				failure = updateCanvas(surface);
 
 				if (failure)
 					break;
@@ -300,7 +298,7 @@ int main() {
 				control &= ~FLOW_CONTROL_WAIT_BIT;
 			}
 
-			failure = draw(canvas, renderer, renderBox, scene);
+			failure = draw(surface, renderer, renderBox, scene);
 
 			if (failure == -1)
 				break;
@@ -313,13 +311,12 @@ int main() {
 
 		while (waitRenderer(renderer));
 
-		destroyCollection(scene);
-		freeProcessCookie(cookie);
-		destroyAsyncLoader(loader);
+		destroyCollection(collection);
+		destroyLoader(loader);
 
 		destroyRenderer(renderer);
-		destroyRenderBox(renderBox);
-		destroyCanvas(canvas);
+		destroyRenderPass(renderBox);
+		destroySurface(surface);
 
 		destroyEmulator(emulator);
 		destroyVulkanContext(vulkanCtx);
@@ -338,20 +335,17 @@ int main() {
 	if (scene)
 		destroyCollection(scene);
 
-	if (cookie)
-		freeProcessCookie(cookie);
-
 	if (loader)
-		destroyAsyncLoader(loader);
+		destroyLoader(loader);
 
 	if (renderer)
 		destroyRenderer(renderer);
 
 	if (renderBox)
-		destroyRenderBox(renderBox);
+		destroyRenderPass(renderBox);
 
-	if (canvas)
-		destroyCanvas(canvas);
+	if (surface)
+		destroySurface(surface);
 
 	if (emulator)
 		destroyEmulator(emulator);
