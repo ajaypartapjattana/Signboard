@@ -2625,17 +2625,21 @@ int createScene(Emulator const _Emulator, Renderer const _Renderer, const SceneC
 
 		pScratch->restore();
 
-		scene->instanceCapacity = pCreateInfo->instanceCount;
+		scene->indirectCommandCapacity = pCreateInfo->drawCount;
+		scene->indirectCommandCount = 0u;
 		scene->indirectData = _indirectData;
 		scene->indirectAllocation = _indirectAllocation;
 		scene->indirect = _indirect;
-
+		
 		scene->descriptorSet = _descriptorSet;
 		scene->descriptorPool = _descriptorPool;
-
+		
+		scene->instanceCapacity = pCreateInfo->instanceCount;
+		scene->instanceCount = 0u;
 		scene->instanceData = _instanceData;
 		scene->instanceAllocation = _instanceAllocation;
 		scene->instance = _instance;
+		
 		scene->model = pCreateInfo->collection->model;
 
 		scene->allocator = allocator;

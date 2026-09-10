@@ -272,7 +272,7 @@ int main() {
 			break;
 
 		{
-			const InstanceData data[1] = { glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)) };
+			const InstanceData data[1] = { glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) };
 
 			ObjectInstance instance{};
 			instance.model = 0u;
@@ -299,7 +299,7 @@ int main() {
 		{
 			CameraData data{};
 			data.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-			data.projection = glm::perspective(glm::radians(45.0f), getWindowAspect(window), 0.1f, 10.0f);
+			data.projection = glm::perspective(glm::radians(78.0f), getWindowAspect(window), 0.1f, 10.0f);
 			data.projection[1][1] *= -1;
 
 			CameraWrite write{};
@@ -346,7 +346,7 @@ int main() {
 				{
 					CameraData data{};
 					data.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-					data.projection = glm::perspective(glm::radians(45.0f), getWindowAspect(window), 0.1f, 10.0f);
+					data.projection = glm::perspective(glm::radians(78.0f), getWindowAspect(window), 0.1f, 10.0f);
 					data.projection[1][1] *= -1;
 
 					CameraWrite write{};
