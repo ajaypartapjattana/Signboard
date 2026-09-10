@@ -536,6 +536,8 @@ static inline void resetStage(StagingState* const pStage) noexcept {
 	pStage->pHead = pStage->stage.pBegin;
 }
 
+constexpr uint32_t NONE = UINT32_MAX;
+
 struct Loader_T {
 	VkDevice device;
 	VkQueue queue;
@@ -683,7 +685,7 @@ int createLoader(Emulator const _Emulator, const LoaderCreateInfo* const pCreate
 		if (!loader)
 			break;
 
-		loader->transfer = 0;
+		loader->transfer = NONE;
 		loader->region = _region;
 		loader->stage.stage = stagingSpan;
 		loader->stage.pHead = stagingSpan.pBegin;
@@ -759,22 +761,23 @@ void destroyLoader(Loader const _AsynLoader) noexcept {
 }
 
 int waitLoader(Loader const _AsyncLoader) noexcept {
-	do {
-		uint32_t transfer = _AsyncLoader->transfer;
+	uint32_t transfer = _AsyncLoader->transfer;
 
-		if (!transfer)
-			return 0;
-
-		VkResult result = vkWaitForFences(_AsyncLoader->device, transfer, _AsyncLoader->fence, VK_TRUE, UINT64_MAX);
-
-		if (result != VK_SUCCESS)
-			break;
-
+	if (transfer == NONE)
 		return 0;
 
-	} while (false);
+	VkResult result = vkWaitForFences(_AsyncLoader->device, transfer + 1u, _AsyncLoader->fence, VK_TRUE, UINT64_MAX);
 
-	return -1;
+	if (result != VK_SUCCESS) {
+		if (result == VK_TIMEOUT)
+			return 1;
+		
+		return -1;
+	}
+
+	_AsyncLoader->transfer = NONE;
+
+	return 0;
 }
 
 struct Model_T {
@@ -792,9 +795,9 @@ struct Collection_T {
 	VmaAllocation indexAllocation;
 };
 
-int createCollection(Emulator const _Emulator, Loader const _AsyncLoader, const CollectionCreateInfo* const pCreateInfo, ProcessCookie* const pProcessCookie, Collection* const pScene) noexcept {
-	const VkDevice device = _AsyncLoader->device;
-	const VmaAllocator allocator = _AsyncLoader->allocator;
+int createCollection(Emulator const _Emulator, Loader const _Loader, const CollectionCreateInfo* const pCreateInfo, ProcessCookie* const pProcessCookie, Collection* const pScene) noexcept {
+	const VkDevice device = _Loader->device;
+	const VmaAllocator allocator = _Loader->allocator;
 	
 	mem::span<Model_T> _model;
 
@@ -842,7 +845,7 @@ int createCollection(Emulator const _Emulator, Loader const _AsyncLoader, const 
 
 		const size_t maxAllocationSize = sizeof(Vertex) * maxVertexCount + sizeof(Index) * maxIndexCount;
 
-		if (maxAllocationSize > getStageSize(&_AsyncLoader->stage)) {
+		if (maxAllocationSize > getStageSize(&_Loader->stage)) {
 			VkBuffer _buffer = VK_NULL_HANDLE;
 			VmaAllocation _allocation;
 
@@ -872,8 +875,8 @@ int createCollection(Emulator const _Emulator, Loader const _AsyncLoader, const 
 			if (result != VK_SUCCESS)
 				break;
 
-			if (_AsyncLoader->transfer) {
-				result = vkWaitForFences(device, _AsyncLoader->transfer, _AsyncLoader->fence, VK_TRUE, UINT64_MAX);
+			if (_Loader->transfer) {
+				result = vkWaitForFences(device, _Loader->transfer, _Loader->fence, VK_TRUE, UINT64_MAX);
 
 				if (result != VK_SUCCESS) {
 					vmaDestroyBuffer(allocator, _buffer, _allocation);
@@ -881,12 +884,12 @@ int createCollection(Emulator const _Emulator, Loader const _AsyncLoader, const 
 				}
 			}
 
-			_AsyncLoader->transfer = 0;
+			_Loader->transfer = 0;
 
-			_AsyncLoader->buffer = _buffer;
-			_AsyncLoader->allocation = _allocation;
+			_Loader->buffer = _buffer;
+			_Loader->allocation = _allocation;
 			
-			bindStageMemory(&_AsyncLoader->stage, allocationInfo.pMappedData, (size_t)allocationInfo.size);
+			bindStageMemory(&_Loader->stage, allocationInfo.pMappedData, (size_t)allocationInfo.size);
 		}
 
 		const VkDeviceSize vertexBufferSize = (VkDeviceSize)(sizeof(Vertex) * totalVertexCount);
@@ -952,10 +955,10 @@ int createCollection(Emulator const _Emulator, Loader const _AsyncLoader, const 
 
 		const ModelInfo* pModelInfo = pCreateInfo->pModelInfos;
 		while (pModelInfo != pModelInfoEnd) {
-			uint32_t transfer = _AsyncLoader->transfer;
+			uint32_t transfer = _Loader->transfer == NONE ? 0u : _Loader->transfer;
 
 			while (true) {
-				result = vkGetFenceStatus(device, _AsyncLoader->fence[transfer]);
+				result = vkGetFenceStatus(device, _Loader->fence[transfer]);
 
 				if (result == VK_NOT_READY) {
 					++transfer;
@@ -965,12 +968,12 @@ int createCollection(Emulator const _Emulator, Loader const _AsyncLoader, const 
 				if (result != VK_SUCCESS)
 					break;
 
-				uint8_t* region = _AsyncLoader->region[transfer];
+				uint8_t* region = _Loader->region[transfer];
 				
 				if (!region)
-					region = _AsyncLoader->stage.pHead;
+					region = _Loader->stage.pHead;
 
-				_AsyncLoader->stage.pHead = region;
+				_Loader->stage.pHead = region;
 				
 				if (transfer == 0)
 					break;
@@ -981,23 +984,23 @@ int createCollection(Emulator const _Emulator, Loader const _AsyncLoader, const 
 			if (result != VK_SUCCESS && result != VK_NOT_READY)
 				break;
 
-			if (transfer == _AsyncLoader->fence.size()) {
-				result = vkWaitForFences(device, static_cast<uint32_t>(_AsyncLoader->fence.size()), _AsyncLoader->fence, VK_TRUE, UINT64_MAX);
+			if (transfer == _Loader->fence.size()) {
+				result = vkWaitForFences(device, static_cast<uint32_t>(_Loader->fence.size()), _Loader->fence, VK_TRUE, UINT64_MAX);
 
 				if (result != VK_SUCCESS)
 					break;
 
-				resetStage(&_AsyncLoader->stage);
+				resetStage(&_Loader->stage);
 			}
 
-			const VkFence fence = _AsyncLoader->fence[transfer];
+			const VkFence fence = _Loader->fence[transfer];
 			
 			result = vkWaitForFences(device, 1u, &fence, VK_TRUE, UINT64_MAX);
 
 			if (result != VK_SUCCESS)
 				break;
 
-			const VkCommandBuffer commandBuffer = _AsyncLoader->commandBuffer[_AsyncLoader->transfer];
+			const VkCommandBuffer commandBuffer = _Loader->commandBuffer[transfer];
 
 			result = vkResetCommandBuffer(commandBuffer, 0);
 
@@ -1017,7 +1020,7 @@ int createCollection(Emulator const _Emulator, Loader const _AsyncLoader, const 
 			if (result != VK_SUCCESS)
 				break;
 
-			StagingState* const pStage = &_AsyncLoader->stage;
+			StagingState* const pStage = &_Loader->stage;
 
 			do {
 				uint8_t* const pHead = pStage->pHead;
@@ -1036,7 +1039,7 @@ int createCollection(Emulator const _Emulator, Loader const _AsyncLoader, const 
 				StageRegion indexRegion;
 				allocateStageRegion(pStage, pModelInfo->pIndex, indexSize, &indexRegion);
 
-				result = vmaFlushAllocation(_AsyncLoader->allocator, _AsyncLoader->allocation, vertexRegion.offset, allocationSize);
+				result = vmaFlushAllocation(_Loader->allocator, _Loader->allocation, vertexRegion.offset, allocationSize);
 
 				if (result != VK_SUCCESS) {
 					pStage->pHead = pHead;
@@ -1049,7 +1052,7 @@ int createCollection(Emulator const _Emulator, Loader const _AsyncLoader, const 
 					copy.dstOffset = vertexOffset;
 					copy.size = vertexRegion.size;
 
-					vkCmdCopyBuffer(commandBuffer, _AsyncLoader->buffer, _vertex, 1u, &copy);
+					vkCmdCopyBuffer(commandBuffer, _Loader->buffer, _vertex, 1u, &copy);
 				}
 
 				vertexOffset += vertexRegion.size;
@@ -1060,7 +1063,7 @@ int createCollection(Emulator const _Emulator, Loader const _AsyncLoader, const 
 					copy.dstOffset = indexOffset;
 					copy.size = indexRegion.size;
 
-					vkCmdCopyBuffer(commandBuffer, _AsyncLoader->buffer, _index, 1u, &copy);
+					vkCmdCopyBuffer(commandBuffer, _Loader->buffer, _index, 1u, &copy);
 				}
 
 				indexOffset += indexRegion.size;
@@ -1081,6 +1084,8 @@ int createCollection(Emulator const _Emulator, Loader const _AsyncLoader, const 
 			if (result != VK_SUCCESS)
 				break;
 
+			VkSemaphore signalSemaphore[1] = { _Loader->semaphore[transfer] };
+
 			{
 				VkSubmitInfo submitInfo{};
 				submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1090,16 +1095,18 @@ int createCollection(Emulator const _Emulator, Loader const _AsyncLoader, const 
 				submitInfo.pWaitDstStageMask = nullptr;
 				submitInfo.commandBufferCount = 1u;
 				submitInfo.pCommandBuffers = &commandBuffer;
-				submitInfo.signalSemaphoreCount = 0u;
-				submitInfo.pSignalSemaphores = nullptr;
+				submitInfo.signalSemaphoreCount = pProcessCookie ? 1u : 0u;;
+				submitInfo.pSignalSemaphores = pProcessCookie ? signalSemaphore : nullptr;
 
-				result = vkQueueSubmit(_AsyncLoader->queue, 1u, &submitInfo, fence);
+				result = vkQueueSubmit(_Loader->queue, 1u, &submitInfo, fence);
 			}
 
 			if (result != VK_SUCCESS)
 				break;
 
-			_AsyncLoader->region[transfer] = _AsyncLoader->stage.pHead;
+			_Loader->region[transfer] = _Loader->stage.pHead;
+
+			_Loader->transfer = transfer;
 		}
 
 		if (result != VK_SUCCESS)
@@ -1412,7 +1419,7 @@ void destroySurface(Surface const _Canvas) noexcept {
 	delete _Canvas;
 }
 
-int updateCanvas(Surface const _Canvas) noexcept {
+int updateSurface(Surface const _Canvas) noexcept {
 	const VkSurfaceKHR surface = _Canvas->surface;
 	const VkPhysicalDevice physicalDevice = _Canvas->physicalDevice;
 	const VkDevice device = _Canvas->device;
@@ -1574,6 +1581,15 @@ int updateCanvas(Surface const _Canvas) noexcept {
 		vkDestroySwapchainKHR(device, _swapchain, nullptr);
 
 	return -1;
+}
+
+int waitSurface(Surface const _Surface) noexcept {
+	VkResult result = vkQueueWaitIdle(_Surface->queue);
+
+	if (result != VK_SUCCESS)
+		return -1;
+
+	return 0;
 }
 
 struct RenderPass_T {
@@ -2087,7 +2103,7 @@ int updateRenderPass(RenderPass const _RenderPass, const RenderPassUpdateInfo* c
 	mem::span<VkFramebuffer> _framebuffer;
 
 	do {
-		VkResult result;
+		VkResult result{};
 
 		_framebuffer = mem::allocate_range<VkFramebuffer>(pUpdateInfo->surface->imageView.size());
 
@@ -2171,8 +2187,6 @@ int createRenderer(Emulator const _Emulator, const RendererCreateInfo* const pCr
 	mem::span<VkSemaphore> _imageSemaphore;
 	mem::span<VkSemaphore> _renderSemaphore;
 	mem::span<VkFence> _frameFence;
-
-	sizeof(Renderer_T);
 
 	do {
 		VkResult result;
@@ -2360,22 +2374,17 @@ void destroyRenderer(Renderer const _Renderer) noexcept {
 int waitRenderer(Renderer const _Renderer) noexcept {
 	const VkDevice device = _Renderer->device;
 
-	do {
-		VkResult result;
+	VkResult result;
 
-		result = vkWaitForFences(device, static_cast<uint32_t>(_Renderer->frameFence.size()), _Renderer->frameFence, VK_TRUE, UINT64_MAX);
+	result = vkWaitForFences(device, static_cast<uint32_t>(_Renderer->frameFence.size()), _Renderer->frameFence, VK_TRUE, UINT64_MAX);
 
-		if (result == VK_TIMEOUT)
-			return 1;
+	if (result == VK_TIMEOUT)
+		return 1;
 
-		if (result != VK_SUCCESS)
-			break;
+	if (result != VK_SUCCESS)
+		return -1;
 
-		return 0;
-
-	} while (false);
-
-	return -1;
+	return 0;
 }
 
 struct InstanceDataGPU {

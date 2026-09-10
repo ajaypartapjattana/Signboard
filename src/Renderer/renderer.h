@@ -76,7 +76,9 @@ struct SurfaceCreateInfo {
 int createSurface(Emulator _Emulator, const SurfaceCreateInfo* pCreateInfo, mem::stack* pScratch, Surface* pCanvas) noexcept;
 void destroySurface(Surface _Surface) noexcept;
 
-int updateCanvas(Surface _Surface) noexcept;
+int updateSurface(Surface _Surface) noexcept;
+
+int waitSurface(Surface _Surface) noexcept;
 
 struct Renderer_T;
 using Renderer = Renderer_T*;

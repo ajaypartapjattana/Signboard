@@ -272,7 +272,7 @@ int main() {
 			break;
 
 		{
-			const InstanceData data[1] = { glm::rotate(glm::mat4(1.0f), glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f)) };
+			const InstanceData data[1] = { glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)) };
 
 			ObjectInstance instance{};
 			instance.model = 0u;
@@ -300,6 +300,7 @@ int main() {
 			CameraData data{};
 			data.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 			data.projection = glm::perspective(glm::radians(45.0f), getWindowAspect(window), 0.1f, 10.0f);
+			data.projection[1][1] *= -1;
 
 			CameraWrite write{};
 			write.firstCamera = 0u;
@@ -327,10 +328,34 @@ int main() {
 				break;
 			
 			if (control & FLOW_CONTROL_DIRTY_EXTENT_BIT) {
-				failure = updateCanvas(surface);
+				failure = updateSurface(surface);
 
 				if (failure)
 					break;
+
+				{
+					RenderPassUpdateInfo updateInfo{};
+					updateInfo.surface = surface;
+
+					failure = updateRenderPass(renderPass, &updateInfo);
+				}
+
+				if (failure)
+					break;
+
+				{
+					CameraData data{};
+					data.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+					data.projection = glm::perspective(glm::radians(45.0f), getWindowAspect(window), 0.1f, 10.0f);
+					data.projection[1][1] *= -1;
+
+					CameraWrite write{};
+					write.firstCamera = 0u;
+					write.count = 1u;
+					write.pData = &data;
+
+					updateCamera(camera, &write);
+				}
 
 				control &= ~FLOW_CONTROL_DIRTY_EXTENT_BIT;
 			}
@@ -346,8 +371,13 @@ int main() {
 
 			failure = beginFrame(renderer, surface);
 
-			if (failure)
-				break;
+			if (failure) {
+				if (failure < 0)
+					break;
+					
+				control |= FLOW_CONTROL_DIRTY_EXTENT_BIT;
+				continue;
+			}
 
 			beginRenderPass(renderer, renderPass, camera);
 
@@ -363,16 +393,21 @@ int main() {
 
 			failure = presentFrame(renderer, surface);
 
-			if (failure == -1)
-				break;
+			if (failure) {
+				if (failure < 0)
+					break;
 
-			control |= failure != 1 ? 0u : FLOW_CONTROL_DIRTY_EXTENT_BIT;
+				control |= FLOW_CONTROL_DIRTY_EXTENT_BIT;
+			}
 		}
 
 		if (failure)
 			break;
 
 		while (waitRenderer(renderer));
+		while (waitSurface(surface));
+
+		while (waitLoader(loader));
 
 		destroyCamera(camera);
 		destroyScene(scene);
