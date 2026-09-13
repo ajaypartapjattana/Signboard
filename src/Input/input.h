@@ -2,7 +2,8 @@
 
 #include <cstdint>
 
-enum InputKeyModifier : uint16_t {
+using InputKeyModifierState = uint8_t;
+enum InputKeyModifierBit : InputKeyModifierState {
 	INPUT_KEY_MODIFIER_SHIFT = 1u << 0,
 	INPUT_KEY_MODIFIER_CTRL = 1u << 1,
 	INPUT_KEY_MODIFIER_ALT = 1u << 2,
@@ -102,15 +103,49 @@ enum InputKey : uint16_t {
 	INPUT_KEY_MAX_ENUM = UINT16_MAX
 };
 
-struct EventInputInfo {
+enum InputKeyState : uint8_t {
+	INPUT_KEY_STATE_PRESSED,
+	INPUT_KEY_STATE_RELEASED,
+	INPUT_KEY_STATE_REPEAT,
+
+	INPUT_KEY_STATE_UNDEFINED
+};
+
+struct InputKeyEvent {
 	InputKey key;
-	InputKeyModifier mod;
+	InputKeyModifierState mod;
+	InputKeyState state;
+};
+
+struct InputKeyBuffer {
+	InputKeyEvent* pEvent;
+	InputKeyEvent* pNext;
+	InputKeyEvent* pEnd;
+	InputKeyModifierState modifier;
+};
+
+using InputButtons = uint32_t; 
+enum InputButtonBits : InputButtons {
+	INPUT_BUTTON_BIT_LEFT = 1u << 0,
+	INPUT_BUTTON_BIT_RIGHT = 1u << 1,
+	INPUT_BUTTON_BIT_MIDDLE = 1u << 2
+};
+
+struct InputCursorState {
+	InputButtons button;	
+	int32_t posX;
+	int32_t posY;
+	int32_t delX;
+	int32_t delY;
+};
+
+struct InputState {
+	InputKeyBuffer key;
+	InputCursorState cursor;
 };
 
 using InputDeviceCapabilityFlags = uint32_t;
-
 enum InputDeviceCapabilityBits : InputDeviceCapabilityFlags {
-    INPUT_DEVICE_CAPABILITY_UNDEFINED_BIT = 0,
     INPUT_DEVICE_CAPABILITY_KEYBOARD_BIT = 1u << 0,
     INPUT_DEVICE_CAPABILITY_MOUSE_BIT = 1u << 1,
     INPUT_DEVICE_CAPABILITY_GAMEPAD_BIT = 1u << 2
@@ -118,4 +153,17 @@ enum InputDeviceCapabilityBits : InputDeviceCapabilityFlags {
 
 using InputDeviceSet = void*;
 
-int createInputDeviceSet(InputDeviceSet const pDeviceSet, const InputDeviceCapabilityFlags _inputCapabilites) noexcept;
+struct InputDeviceDicoverControlInfo {
+	InputDeviceCapabilityFlags flags;
+	uint32_t maxInputDevice;
+};
+
+int discoverInputDevices(const InputDeviceDicoverControlInfo* pDiscoverInfo, uint32_t* pCount, InputDeviceSet* pInputDeviceSet) noexcept;
+void destroyInputDeviceSet(InputDeviceSet _InputDeviceSet) noexcept;
+
+void enumerateInputDeviceName(InputDeviceSet _InputDeviceSet, uint32_t _Count, const char** pName) noexcept;
+
+int beginInputEventPoll(InputDeviceSet _InputDeviceSet) noexcept;
+void endInputEventPoll(InputDeviceSet _InputDeviceSet) noexcept;
+
+void pollInputs(InputDeviceSet _InputDeviceSet, InputState* pInputState) noexcept;

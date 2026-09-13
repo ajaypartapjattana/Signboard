@@ -5,6 +5,7 @@
 #include <core/Memory/memory.h>
 #include <core/io/io.h>
 
+#include <Input/input.h>
 #include <Platform/platform.h>
 #include <Renderer/renderer.h>
 
@@ -78,43 +79,63 @@ int readPng(mem::stack* const pScratch, const char* _Path) noexcept {
 	return -1;
 }
 
-using FlowControl = uint32_t;
-enum FlowControlBits : FlowControl {
-	FLOW_CONTROL_HALT_BIT = 1u << 0,
-	FLOW_CONTROL_DIRTY_EXTENT_BIT = 1u << 1,
-	FLOW_CONTROL_WAIT_BIT = 1u << 2
-};
-
 int main() {
+	int failure{};
+	
 	mem::stack scratch;
 
 	try {
-		scratch.resize(32u << 20);
+		scratch.resize(16u << 20);
 	}
 	catch (const std::exception* _Except) {
 		return EXIT_FAILURE;
 	}
 
+	InputDeviceSet inputDevice = nullptr;
+
+	do {
+		uint32_t deviceCount;
+
+		{
+			InputDeviceDicoverControlInfo discoverInfo{};
+			discoverInfo.flags = INPUT_DEVICE_CAPABILITY_KEYBOARD_BIT | INPUT_DEVICE_CAPABILITY_MOUSE_BIT;
+			discoverInfo.maxInputDevice = 10u;
+
+			failure = discoverInputDevices(&discoverInfo, &deviceCount, &inputDevice);
+		}
+
+		if (failure)
+			break;
+
+		scratch.mark();
+
+		mem::span<const char*> deviceName = scratch.alloc<const char*>((size_t)deviceCount);
+
+		if (!deviceName) {
+			scratch.restore();
+			break;
+		}
+
+		enumerateInputDeviceName(inputDevice, deviceCount, deviceName);
+
+		const char** const pNameEnd = deviceName.pEnd;
+		for (const char** pName{ deviceName.pBegin }; pName != pNameEnd; ++pName)
+			printf("input_device : {%s}\n", *pName);
+
+		printf("\n");
+			
+		scratch.restore();
+
+	} while (false);
+
+	if (failure)
+		return EXIT_FAILURE;
+
 	DisplayContext windowCtx = nullptr;
 	DisplayWindow window = nullptr;
 	EventBuffer eventBuffer = nullptr;
 
-	VulkanContext vulkanCtx = nullptr;
-	Emulator emulator = nullptr;
-
-	Surface surface = nullptr;
-	Renderer renderer = nullptr;
-	Loader loader = nullptr;
-
-	RenderPass renderPass = nullptr;
-
-	Collection collection = nullptr;
-	Scene scene = nullptr;
-	Camera camera = nullptr;
-	
 	do {
-		int failure;
-
 		failure = requestDisplayContext(&windowCtx);
 
 		if (failure)
@@ -125,7 +146,8 @@ int main() {
 			createInfo.flags = WINDOW_CREATE_FULLSCREEN_BIT | WINDOW_CREATE_RESIZABLE_BIT;
 			createInfo.width = 800u;
 			createInfo.height = 800u;
-			createInfo.x = 0;
+			createInfo.x = 0u;
+			createInfo.y = 0u;
 			createInfo.title = "My Window";
 
 			failure = createDisplayWindow(windowCtx, &createInfo, &window);
@@ -136,54 +158,103 @@ int main() {
 
 		{
 			EventBufferCreateInfo createInfo{};
-			createInfo.eventMask = WINDOW_EVENT_ALL_BIT;
 			createInfo.size = 64u;
 			
 			failure = createEventBuffer(&createInfo, &eventBuffer);
 		}
 
-		if (failure)
-			break;
+	} while (false);
 
+	if (failure) {
+		if (eventBuffer)
+			destroyEventBuffer(eventBuffer);
+
+		if (window)
+			destroyDisplayWindow(windowCtx, window);
+
+		destroyDisplayContext(windowCtx);
+
+		return EXIT_FAILURE;
+	}
+
+	VulkanContext vulkanCtx = nullptr;
+	Emulator emulator = nullptr;
+
+	do {
 		failure = requestVulkanContext(&scratch, &vulkanCtx);
 
 		if (failure)
 			break;
+			
+		uint32_t deviceCount;
+		getPhysicalDeviceCount(vulkanCtx, &deviceCount);
+		
+		if (!deviceCount)
+			break;
 
-		uint32_t selectedDeviceIndex = 0;
+		int device;
 
-		{
-			uint32_t deviceCount;
-			enumeratePhysicalDevices(vulkanCtx, &deviceCount, nullptr);
+		int powerOptimal = -1;
+		queryBatteryOptimalDevice(vulkanCtx, 0u, &powerOptimal);
 
-			mem::span<const char*> devices = scratch.alloc<const char*>(deviceCount);
-			enumeratePhysicalDevices(vulkanCtx, &deviceCount, devices.pBegin);
+		if (powerOptimal != -1)
+			device = powerOptimal;
 
-			for (size_t i = 0; i < deviceCount; ++i) {
-				std::cout << "[" << i << "] : " << devices[i] << std::endl;
-			}
+		int performaceOptimal = -1;
+		queryPerformaceOptimalDevice(vulkanCtx, 0u, &performaceOptimal);
 
-			std::cout << "PHYSICAL_DEVICE_INDEX : ";
-			std::cin >> selectedDeviceIndex;
+		if (performaceOptimal != -1)
+			device = performaceOptimal;
+
+		if (device == -1) {
+			printf("FAILURE : no_optimal_device_found.\n");
+			break;
 		}
 
-		raiseDisplayWindow(windowCtx, window);
+		const char* deviceName;
+		getPhysicalDeviceName(vulkanCtx, device, &deviceName);
+
+		printf("graphics_device : {%s}\n", deviceName);
+		printf("compute_device : {%s}\n", deviceName);
+
+		printf("\n");
 
 		{
 			VulkanSurfaceDependencyInfo surfaceInfo;
 			getVulkanSurfaceDependencyInfo(windowCtx, window, &surfaceInfo);
 
 			EmulatorCreateInfo createInfo{};
-			createInfo.physicalDevice = selectedDeviceIndex;
+			createInfo.physicalDevice = device;
 			createInfo.windowContext = surfaceInfo.context;
 			createInfo.windowHandle = surfaceInfo.window;
 
 			failure = createEmulator(vulkanCtx, &createInfo, &scratch, &emulator);
 		}
 			
-		if (failure)
-			break;
+	} while (false);
 
+	if (failure) {
+		if (emulator)
+			destroyEmulator(emulator);
+			
+		destroyVulkanContext(vulkanCtx);
+
+		destroyEventBuffer(eventBuffer);
+		destroyDisplayWindow(windowCtx, window);
+		destroyDisplayContext(windowCtx);
+
+		destroyInputDeviceSet(inputDevice);
+
+		return EXIT_FAILURE;
+	}
+
+	raiseDisplayWindow(windowCtx, window);
+
+	Surface surface = nullptr;
+	Renderer renderer = nullptr;
+	Loader loader = nullptr;	
+
+	do {
 		{
 			SurfaceCreateInfo createInfo{};
 			createInfo.minImageCount = 2u;
@@ -211,10 +282,35 @@ int main() {
 
 			failure = createLoader(emulator, &createInfo, &loader);
 		}
+	} while (false);
 
-		if (failure)
-			break;
+	if (failure) {
+		if (loader)
+			destroyLoader(loader);
+		
+		if (renderer)
+			destroyRenderer(renderer);
 
+		destroySurface(surface);
+
+		destroyEmulator(emulator);
+		destroyVulkanContext(vulkanCtx);
+
+		destroyEventBuffer(eventBuffer);
+		destroyDisplayWindow(windowCtx, window);
+		destroyDisplayContext(windowCtx);
+
+		destroyInputDeviceSet(inputDevice);
+
+		return EXIT_FAILURE;
+	}
+
+	RenderPass renderPass = nullptr;
+	Collection collection = nullptr;
+	Scene scene = nullptr;
+	Camera camera = nullptr;
+
+	do {
 		{
 			RenderPassCreateInfo createInfo{};
 			createInfo.surface = surface;
@@ -297,176 +393,190 @@ int main() {
 			break;
 
 		{
-			CameraData data{};
-			data.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-			data.projection = glm::perspective(glm::radians(78.0f), getWindowAspect(window), 0.1f, 10.0f);
-			data.projection[1][1] *= -1;
+			CameraData data[1]{};
+			data[0].view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+			data[0].projection = glm::perspective(glm::radians(78.0f), getWindowAspect(window), 0.1f, 10.0f);
+			data[0].projection[1][1] *= -1;
 
 			CameraWrite write{};
 			write.firstCamera = 0u;
 			write.count = 1u;
-			write.pData = &data;
+			write.pData = data;
 
 			updateCamera(camera, &write);
 		}
 
-		FlowControl control = 0;
+		failure = beginInputEventPoll(inputDevice);
 
-		while (true) {
-			WindowEventFlags events = 0;
+	} while (false);
 
-			while (pollWindowEvents(windowCtx, eventBuffer))
-				resolveWindowEvents(eventBuffer, window, &events);
+	
 
-			if (events) {
-				control |= events & WINDOW_EVENT_CLOSE_BIT ? FLOW_CONTROL_HALT_BIT : 0u;
-				control |= events & WINDOW_EVENT_RESIZED_BIT ? FLOW_CONTROL_DIRTY_EXTENT_BIT : 0u;
-				control |= events & WINDOW_EVENT_MINIMIZED_BIT ? FLOW_CONTROL_WAIT_BIT : 0u;			
-			}
+	if (failure) {
+		if (camera)
+			destroyCamera(camera);
 
-			if (control & FLOW_CONTROL_HALT_BIT)
-				break;
+		if (scene)
+			destroyScene(scene);
 			
-			if (control & FLOW_CONTROL_DIRTY_EXTENT_BIT) {
-				failure = updateSurface(surface);
+		while (waitLoader(loader));
 
-				if (failure)
-					break;
+		if (collection)
+			destroyCollection(collection);
 
-				{
-					RenderPassUpdateInfo updateInfo{};
-					updateInfo.surface = surface;
+		destroyRenderPass(renderPass);
+		
+		destroyLoader(loader);
+		destroyRenderer(renderer);
 
-					failure = updateRenderPass(renderPass, &updateInfo);
-				}
+		destroySurface(surface);
 
-				if (failure)
-					break;
+		destroyEmulator(emulator);
+		destroyVulkanContext(vulkanCtx);
 
-				{
-					CameraData data{};
-					data.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-					data.projection = glm::perspective(glm::radians(78.0f), getWindowAspect(window), 0.1f, 10.0f);
-					data.projection[1][1] *= -1;
+		destroyEventBuffer(eventBuffer);
+		destroyDisplayWindow(windowCtx, window);
+		destroyDisplayContext(windowCtx);
 
-					CameraWrite write{};
-					write.firstCamera = 0u;
-					write.count = 1u;
-					write.pData = &data;
+		destroyInputDeviceSet(inputDevice);
 
-					updateCamera(camera, &write);
-				}
+		return EXIT_FAILURE;
+	}
 
-				control &= ~FLOW_CONTROL_DIRTY_EXTENT_BIT;
-			}
+	InputKeyEvent keyEvents[64u];
 
-			if (control & FLOW_CONTROL_WAIT_BIT) {
-				if (waitWindowEvents(windowCtx, eventBuffer))
-					resolveWindowEvents(eventBuffer, window, &events);
-				else
-					break;
+	InputState inputs{};
+	inputs.key.pEvent = keyEvents;
+	inputs.key.pNext = keyEvents;
+	inputs.key.pEnd = keyEvents + 64u;
+	inputs.key.modifier = 0u;
 
-				control &= ~FLOW_CONTROL_WAIT_BIT;
-			}
+	while (true) {
+		WindowStateFlags events = 0;
 
-			failure = beginFrame(renderer, surface);
+		while (pollWindowEvents(windowCtx, eventBuffer))
+			resolveWindowEvents(eventBuffer, window, &events);
 
-			if (failure) {
-				if (failure < 0)
-					break;
-					
-				control |= FLOW_CONTROL_DIRTY_EXTENT_BIT;
-				continue;
-			}
-
-			beginRenderPass(renderer, renderPass, camera);
-
-			setActiveCamera(renderer, 0u);
-			render(renderer, collection, scene);
-
-			endPass(renderer);
-
-			failure = endFrame(renderer, surface);
+		if (events & WINDOW_STATE_TERMINATION_IMMINENT_BIT)
+			break;
+			
+		if (events & WINDOW_STATE_EXTENT_DIRTY_BIT) {
+			failure = updateSurface(surface);
 
 			if (failure)
 				break;
 
-			failure = presentFrame(renderer, surface);
+			{
+				RenderPassUpdateInfo updateInfo{};
+				updateInfo.surface = surface;
 
-			if (failure) {
-				if (failure < 0)
-					break;
-
-				control |= FLOW_CONTROL_DIRTY_EXTENT_BIT;
+				failure = updateRenderPass(renderPass, &updateInfo);
 			}
+
+			if (failure)
+				break;
+
+			{
+				CameraData data{};
+				data.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+				data.projection = glm::perspective(glm::radians(78.0f), getWindowAspect(window), 0.1f, 10.0f);
+				data.projection[1][1] *= -1;
+
+				CameraWrite write{};
+				write.firstCamera = 0u;
+				write.count = 1u;
+				write.pData = &data;
+
+				updateCamera(camera, &write);
+			}
+
+			events &= ~WINDOW_STATE_EXTENT_DIRTY_BIT;
 		}
+
+		if (events & WINDOW_STATE_MINIMIZED_BIT) {
+			if (waitWindowEvents(windowCtx, eventBuffer))
+				resolveWindowEvents(eventBuffer, window, &events);
+			else
+				break;
+		}
+
+		{
+			pollInputs(inputDevice, &inputs);
+
+			inputs.cursor.posX += inputs.cursor.delX;
+			inputs.cursor.posY += inputs.cursor.delY;
+
+			inputs.cursor.delX = 0;
+			inputs.cursor.delY = 0;
+
+			const InputKeyEvent* const pKeyEventEnd = inputs.key.pNext;
+			for (const InputKeyEvent* pKeyEvent{ keyEvents }; pKeyEvent != pKeyEventEnd; ++pKeyEvent) {
+				if (pKeyEvent->key == INPUT_KEY_W)
+					printf("x = %d, y = %d\n", inputs.cursor.posX, inputs.cursor.posY);
+			}
+
+			inputs.key.pNext = inputs.key.pEvent;
+		}
+
+		failure = beginFrame(renderer, surface);
+
+		if (failure) {
+			if (failure < 0)
+				break;
+					
+			events |= WINDOW_STATE_EXTENT_DIRTY_BIT;
+			continue;
+		}
+
+		beginRenderPass(renderer, renderPass, camera);
+
+		setActiveCamera(renderer, 0u);
+		render(renderer, collection, scene);
+
+		endPass(renderer);
+
+		failure = endFrame(renderer, surface);
 
 		if (failure)
 			break;
 
-		while (waitRenderer(renderer));
-		while (waitSurface(surface));
+		failure = presentFrame(renderer, surface);
 
-		while (waitLoader(loader));
+		if (failure) {
+			if (failure < 0)
+				break;
 
-		destroyCamera(camera);
-		destroyScene(scene);
-		destroyCollection(collection);
-		destroyLoader(loader);
+			events |= WINDOW_STATE_EXTENT_DIRTY_BIT;
+		}
+	}
 
-		destroyRenderer(renderer);
-		destroyRenderPass(renderPass);
-		destroySurface(surface);
+	endInputEventPoll(inputDevice);
 
-		destroyEmulator(emulator);
-		destroyVulkanContext(vulkanCtx);
+	while (waitRenderer(renderer));
+	while (waitSurface(surface));
 
-		destroyEventBuffer(eventBuffer);
-		destroyDisplayWindow(windowCtx, window);
-		destroyDisplayContext(windowCtx);
+	while (waitLoader(loader));
 
-		return EXIT_SUCCESS;
-		
-	} while (false);
+	destroyCamera(camera);
+	destroyScene(scene);
+	destroyCollection(collection);
+	destroyLoader(loader);
 
-	if (emulator)
-		while (waitEmulator(emulator));
+	destroyRenderer(renderer);
+	destroyRenderPass(renderPass);
+	destroySurface(surface);
 
-	if (camera)
-		destroyCamera(camera);
+	destroyEmulator(emulator);
+	destroyVulkanContext(vulkanCtx);
 
-	if (scene)
-		destroyScene(scene);
+	destroyEventBuffer(eventBuffer);
+	destroyDisplayWindow(windowCtx, window);
+	destroyDisplayContext(windowCtx);
 
-	if (collection)
-		destroyCollection(collection);
+	destroyInputDeviceSet(inputDevice);
 
-	if (loader)
-		destroyLoader(loader);
+	if (failure)
+		return EXIT_FAILURE;
 
-	if (renderer)
-		destroyRenderer(renderer);
-
-	if (renderPass)
-		destroyRenderPass(renderPass);
-
-	if (surface)
-		destroySurface(surface);
-
-	if (emulator)
-		destroyEmulator(emulator);
-	
-	if (vulkanCtx)
-		destroyVulkanContext(vulkanCtx);
-
-	if (eventBuffer)
-		destroyEventBuffer(eventBuffer);
-
-	if (window)
-		destroyDisplayWindow(windowCtx, window);
-
-	if (windowCtx)
-		destroyDisplayContext(windowCtx);
-
-	return EXIT_FAILURE;
+	return EXIT_SUCCESS;
 }

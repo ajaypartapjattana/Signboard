@@ -10,7 +10,12 @@ using VulkanContext = VulkanContext_T*;
 int requestVulkanContext(mem::stack* pScratch, VulkanContext* pContext) noexcept;
 void destroyVulkanContext(VulkanContext _Context) noexcept;
 
-int enumeratePhysicalDevices(VulkanContext _Context, uint32_t* pCount, const char** pDeviceNames) noexcept;
+void getPhysicalDeviceCount(VulkanContext _Context, uint32_t* pCount) noexcept;
+void queryPerformaceOptimalDevice(VulkanContext _Context, uint32_t minIndex, int* pIndex) noexcept;
+void queryBatteryOptimalDevice(VulkanContext _Context, uint32_t minIndex, int* pIndex) noexcept;
+
+void getPhysicalDeviceName(VulkanContext _Context, uint32_t index, const char** pName) noexcept;
+void enumeratePhysicalDeviceName(VulkanContext _Context, uint32_t minIndex, uint32_t count, const char** pDeviceNames) noexcept;
 
 struct EmulatorCreateInfo {
 	void* windowContext;

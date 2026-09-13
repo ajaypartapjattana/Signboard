@@ -1,5 +1,94 @@
 #pragma once
 
+#include <cstring>
+#include <cstdint>
+#include <utility>
+#include <cassert>
+#include <stdexcept>
+#include <type_traits>
+
+inline void* mem_allocateAligned(const size_t _Size, const size_t _Alignment) noexcept {
+	const size_t allocationSize = _Size + _Alignment - 1u + sizeof(void*);
+
+	void* const raw = malloc(allocationSize);
+
+	if (!raw)
+		return nullptr;
+
+	uintptr_t addr = reinterpret_cast<uintptr_t>(raw) + sizeof(void*);
+	addr = (addr + _Alignment - 1) & ~(_Alignment - 1);
+
+	void* const aligned = reinterpret_cast<void*>(addr);
+
+	reinterpret_cast<void**>(aligned)[-1] = raw;
+
+	return aligned;
+}
+
+inline void mem_freeAligned(const void* const _Ptr) noexcept {
+	std::free(reinterpret_cast<void* const*>(const_cast<void*>(_Ptr))[-1]);
+}
+
+template <typename _Ty, typename _Meta>
+_Ty* mem_allocateMetaRange(const size_t _Count) noexcept {
+	constexpr size_t align = alignof(_Ty) > alignof(_Meta) ? alignof(_Ty) : alignof(_Meta);
+	constexpr size_t offset = (sizeof(_Meta) + alignof(_Ty) - 1) & ~(alignof(_Ty) - 1);
+
+	const size_t size = offset + sizeof(_Ty) * _Count;
+
+	void* mem = mem_allocateAligned(size, align);
+
+	if (!mem)
+		return nullptr;
+
+	return reinterpret_cast<_Ty*>(reinterpret_cast<char*>(mem) + offset);
+}
+
+template <typename _Ty>
+_Ty* mem_allocateSizeRange(const size_t _Count) noexcept {
+	constexpr size_t align = alignof(_Ty) > alignof(size_t) ? alignof(_Ty) : alignof(size_t);
+	constexpr size_t offset = (sizeof(size_t) + alignof(_Ty) - 1) & ~(alignof(_Ty) - 1);
+
+	const size_t size = offset + sizeof(_Ty) * _Count;
+
+	void* const mem = mem_allocateAligned(size, align);
+
+	if (!mem)
+		return nullptr;
+
+	*reinterpret_cast<size_t*>(mem) = _Count;
+
+	return reinterpret_cast<_Ty*>(reinterpret_cast<char*>(mem) + offset);
+}
+
+template <typename _Ty, typename _Meta>
+_Meta* mem_getAllocationMeta(_Ty* const _Ptr) noexcept {
+	constexpr size_t offset = (sizeof(_Meta) + alignof(_Ty) - 1) & ~(alignof(_Ty) - 1);
+
+	return reinterpret_cast<_Meta*>(reinterpret_cast<char*>(_Ptr) - offset);
+}
+
+template <typename _Ty>
+size_t mem_getAllocationSize(const _Ty* const _Ptr) noexcept {
+	constexpr size_t offset = (sizeof(size_t) + alignof(_Ty) - 1) & ~(alignof(_Ty) - 1);
+
+	return *reinterpret_cast<const size_t*>(reinterpret_cast<const char*>(_Ptr) - offset);
+}
+
+template <typename _Ty, typename _Meta>
+void mem_freeMetaRange(const _Ty* const _Ptr) noexcept {
+	constexpr size_t offset = (sizeof(_Meta) + alignof(_Ty) - 1) & ~(alignof(_Ty) - 1);
+
+	mem_freeAligned(reinterpret_cast<const char*>(_Ptr) - offset);
+}
+
+template <typename _Ty>
+void mem_freeSizeRange(const _Ty* const _Ptr) noexcept {
+	constexpr size_t offset = (sizeof(size_t) + alignof(_Ty) - 1) & ~(alignof(_Ty) - 1);
+
+	mem_freeAligned(reinterpret_cast<const char*>(_Ptr) - offset);
+}
+
 #if defined(PLATFORM_WINDOWS)
   #define WIN32_LEAN_AND_MEAN
   #define NOMINMAX
@@ -10,13 +99,6 @@
 #else
   #error "Unsupported platform"
 #endif
-
-#include <cstring>
-#include <cstdint>
-#include <utility>
-#include <cassert>
-#include <stdexcept>
-#include <type_traits>
 
 namespace mem {
 
@@ -177,6 +259,10 @@ namespace mem {
 
 		}
 
+		span<_Ty> memory() noexcept {
+			return span<_Ty>{ pBegin, pEnd };
+		}
+
 		static_vector& operator=(const span<_Ty>& _Span) noexcept {
 			pBegin = _Span.pBegin;
 			pEnd = _Span.pEnd;
@@ -221,20 +307,26 @@ namespace mem {
 				pCurrent = pBegin;
 		}
 
+		void assign_default() noexcept {
+			if constexpr (std::is_trivially_constructible_v<_Ty> && std::is_trivially_destructible_v<_Ty>) {
+				memset(pBegin, 0, static_cast<size_t>(pEnd - pBegin) * sizeof(_Ty));
+			}
+			else {
+				for (_Ty* ptr{ pBegin }; ptr != pEnd; ++ptr)
+					::new (ptr) _Ty{};
+			}
+		}
+
 		void push_back_unique(_Ty& _Val) noexcept {
 			for (const _Ty* pVal{ pBegin }; pVal != pCurrent; ++pVal) {
 				if (*pVal == _Val)
 					return;
 			}
 
-			assert(pCurrent != pEnd);
-
 			*(pCurrent++) = _Val;
 		}
 
 		void push_back(_Ty& _Val) noexcept {
-			assert(pCurrent != pEnd);
-
 			*(pCurrent++) = _Val;
 		}
 
@@ -244,27 +336,21 @@ namespace mem {
 					return;
 			}
 
-			assert(pCurrent != pEnd);
-
 			*(pCurrent++) = std::move(_Val);
 		}
 
 		void push_back(_Ty&& _Val) noexcept {
-			assert(pCurrent != pEnd);
-
 			*(pCurrent++) = std::move(_Val);
 		}
 
 		template <class... Args>
 		_Ty* emplace_back(Args&&... args) noexcept {
-			assert(pCurrent != pEnd);
 			::new (pCurrent) _Ty(std::forward<Args>(args)...);
 
 			return pCurrent++;
 		}
 
 		void pop_back() noexcept {
-			assert(pCurrent != pBegin);
 			--pCurrent;
 
 			if constexpr (!std::is_trivially_destructible_v<_Ty>)
@@ -587,8 +673,6 @@ namespace mem {
 		}
 
 		void restore(marker _Marker = {}) noexcept {
-			assert(pCurrent != pBase);
-
 			pMark = _Marker.mark ? _Marker.mark : pMark;
 
 			if (!pMark) {

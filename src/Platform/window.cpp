@@ -342,7 +342,6 @@ struct WindowEvent {
 };
 
 struct EventBuffer_T {
-	WindowEventFlags mask;
 	uint32_t count;
 	mem::span<WindowEvent> event;
 };
@@ -361,7 +360,6 @@ int createEventBuffer(const EventBufferCreateInfo* const pCreateInfo, EventBuffe
 		if (!buffer)
 			break;
 
-		buffer->mask = pCreateInfo->eventMask;
 		buffer->count = 0;
 		buffer->event = _event;
 
@@ -504,12 +502,12 @@ bool waitWindowEvents(DisplayContext const _Context, EventBuffer const _EventBuf
 	return true;
 }
 
-void resolveWindowEvents(EventBuffer const _EventBuffer, DisplayWindow const _Window, WindowEventFlags* const pEventFlags) noexcept {
+void resolveWindowEvents(EventBuffer const _EventBuffer, DisplayWindow const _Window, WindowStateFlags* const pState) noexcept {
 	const WindowEvent* const pEventEnd = _EventBuffer->event.pBegin + _EventBuffer->count;
 
 	const xcb_window_t window = _Window->window;
 
-	WindowEventFlags events = 0;
+	WindowStateFlags state = 0;
 
 	for (const WindowEvent* pEvent{ _EventBuffer->event.pBegin }; pEvent != pEventEnd; ++pEvent) {
 		if (pEvent->window != window)
@@ -518,13 +516,13 @@ void resolveWindowEvents(EventBuffer const _EventBuffer, DisplayWindow const _Wi
 		switch (pEvent->type) {
 		case WINDOW_EVENT_TYPE_WINDOW_CONFIGURE:
 			if (pEvent->extent.width != _Window->width || pEvent->extent.height != _Window->height) {
-				events |= WINDOW_EVENT_RESIZED_BIT;
+				state |= WINDOW_STATE_EXTENT_DIRTY_BIT;
 				_Window->width = pEvent->extent.width;
 				_Window->height = pEvent->extent.height;
 			}
 			
 			if (pEvent->position.x != _Window->x || pEvent->position.y != _Window->y) {
-				events |= WINDOW_EVENT_MOVED_BIT;
+				state |= WINDOW_STATE_POSITION_DIRTY_BIT;
 				_Window->x = pEvent->position.x;
 				_Window->y = pEvent->position.y;
 			}
@@ -532,27 +530,27 @@ void resolveWindowEvents(EventBuffer const _EventBuffer, DisplayWindow const _Wi
 			break;
 			
 		case WINDOW_EVENT_TYPE_FOCUS_GAINED:
-			events |= WINDOW_EVENT_FOCUSED_BIT;
+			state |= WINDOW_EVENT_FOCUSED_BIT;
 
 			break;
 
 		case WINDOW_EVENT_TYPE_FOCUS_LOST:
-			events &= ~WINDOW_EVENT_FOCUSED_BIT;
+			state &= ~WINDOW_EVENT_FOCUSED_BIT;
 
 			break;
 
 		case WINDOW_EVENT_TYPE_MINIMIZE:
-			events |= WINDOW_EVENT_MINIMIZED_BIT;
+			state |= WINDOW_STATE_MINIMIZED_BIT;
 			
 			break;
 
 		case WINDOW_EVENT_TYPE_RESTORED:
-			events &= ~WINDOW_EVENT_MINIMIZED_BIT;
+			state &= ~WINDOW_STATE_MINIMIZED_BIT;
 
 			break;
 
 		case WINDOW_EVENT_TYPE_WINDOW_CLOSE:
-			events |= WINDOW_EVENT_CLOSE_BIT;
+			state |= WINDOW_STATE_TERMINATION_IMMINENT_BIT;
 
 		default:
 			break;
@@ -560,7 +558,8 @@ void resolveWindowEvents(EventBuffer const _EventBuffer, DisplayWindow const _Wi
 	}
 
 	_EventBuffer->count = 0;
-	*pEventFlags |= events & _EventBuffer->mask;
+
+	*pState = state;
 }
 
   #elif defined(WINDOW_X11)

@@ -203,20 +203,48 @@ void destroyVulkanContext(VulkanContext const _Context) noexcept {
 	delete _Context;
 }
 
-int enumeratePhysicalDevices(VulkanContext const _Context, uint32_t* const pCount, const char** const pDeviceNames) noexcept {
-	if (!pDeviceNames) {
-		*pCount = static_cast<uint32_t>(_Context->deviceInfo.size());
-		return 0;
+void getPhysicalDeviceCount(VulkanContext const _Context, uint32_t* const pCount) noexcept {
+	*pCount = static_cast<uint32_t>(_Context->deviceInfo.size());
+}
+
+void queryPerformaceOptimalDevice(VulkanContext const _Context, const uint32_t minIndex, int* const pIndex) noexcept {
+	const PhysicalDeviceInfo* const pDeviceEnd = _Context->deviceInfo.pEnd;
+	for (const PhysicalDeviceInfo* pDevice{ _Context->deviceInfo + minIndex }; pDevice != pDeviceEnd; ++pDevice) {
+		if (pDevice->properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+			continue;
+
+		*pIndex = static_cast<uint32_t>(pDevice - _Context->deviceInfo.pBegin);
+		return;
 	}
 
-	const char** pDeviceName = pDeviceNames;
+	*pIndex = -1;
+}
 
-	const PhysicalDeviceInfo* const pPhysicalDeviceEnd = _Context->deviceInfo.pBegin + *pCount;
-	for(const PhysicalDeviceInfo* pDevice{ _Context->deviceInfo.pBegin }; pDevice != pPhysicalDeviceEnd; ++pDevice) {
-		*pDeviceName++ = pDevice->properties.deviceName;
+void queryBatteryOptimalDevice(VulkanContext const _Context, const uint32_t minIndex, int* const pIndex) noexcept {
+	const PhysicalDeviceInfo* const pDeviceEnd = _Context->deviceInfo.pEnd;
+	for (const PhysicalDeviceInfo* pDevice{ _Context->deviceInfo + minIndex }; pDevice != pDeviceEnd; ++pDevice) {
+		if (pDevice->properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
+			continue;
+
+		*pIndex = static_cast<uint32_t>(pDevice - _Context->deviceInfo.pBegin);
+		return;
 	}
 
-	return 0;
+	*pIndex = -1;
+}
+
+void getPhysicalDeviceName(VulkanContext const _Context, const uint32_t index, const char** pName) noexcept {
+	const PhysicalDeviceInfo* const pDevice = _Context->deviceInfo.pBegin + index;
+
+	*pName = pDevice->properties.deviceName;
+}
+
+void enumeratePhysicalDeviceName(VulkanContext const _Context, const uint32_t minIndex, const uint32_t count, const char** const pDeviceNames) noexcept {
+	const PhysicalDeviceInfo* pDeviceInfo = _Context->deviceInfo.pBegin + minIndex;
+	
+	const char** const pNameEnd = pDeviceNames + count;
+	for(const char** pName{ pDeviceNames }; pName != pNameEnd; ++pName)
+		*pName = pDeviceInfo++->properties.deviceName;
 }
 
 struct QueueFamilyIndices {
