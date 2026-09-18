@@ -2,16 +2,7 @@
 
 #include <cstdint>
 
-using InputKeyModifierState = uint8_t;
-enum InputKeyModifierBit : InputKeyModifierState {
-	INPUT_KEY_MODIFIER_SHIFT = 1u << 0,
-	INPUT_KEY_MODIFIER_CTRL = 1u << 1,
-	INPUT_KEY_MODIFIER_ALT = 1u << 2,
-};
-
 enum InputKey : uint16_t {
-	INPUT_KEY_UNDEFINED = 0,
-
 	INPUT_KEY_A,
 	INPUT_KEY_B,
 	INPUT_KEY_C,
@@ -99,62 +90,68 @@ enum InputKey : uint16_t {
 	INPUT_KEY_NUMPAD_MULTIPLY,
 	INPUT_KEY_NUMPAD_DIVIDE,
 	INPUT_KEY_NUMPAD_ENTER,
-	
-	INPUT_KEY_MAX_ENUM = UINT16_MAX
+
+	INPUT_KEY_IMP
 };
 
-enum InputKeyState : uint8_t {
-	INPUT_KEY_STATE_PRESSED,
-	INPUT_KEY_STATE_RELEASED,
-	INPUT_KEY_STATE_REPEAT,
+constexpr size_t KEY_PAGE_COUNT = (INPUT_KEY_IMP + 63u) >> 6;
 
-	INPUT_KEY_STATE_UNDEFINED
+struct InputKeyField {
+	uint64_t repeat[KEY_PAGE_COUNT];
+	uint64_t press[KEY_PAGE_COUNT];
+	uint64_t release[KEY_PAGE_COUNT];
 };
 
-struct InputKeyEvent {
-	InputKey key;
-	InputKeyModifierState mod;
-	InputKeyState state;
-};
+constexpr inline bool isKeyPressed(const InputKeyField* const pKeyField, const InputKey _Key) noexcept {
+	const size_t keyPage = _Key >> 6;
+	const uint64_t keyBit = (uint64_t)1u << (_Key & 0x3F);
 
-struct InputKeyBuffer {
-	InputKeyEvent* pEvent;
-	InputKeyEvent* pNext;
-	InputKeyEvent* pEnd;
-	InputKeyModifierState modifier;
-};
+	return pKeyField->press[keyPage] & keyBit;
+}
 
-using InputButtons = uint32_t; 
-enum InputButtonBits : InputButtons {
-	INPUT_BUTTON_BIT_LEFT = 1u << 0,
-	INPUT_BUTTON_BIT_RIGHT = 1u << 1,
-	INPUT_BUTTON_BIT_MIDDLE = 1u << 2
+constexpr inline bool isKeyReleased(const InputKeyField* const pKeyField, const InputKey _Key) noexcept {
+	const size_t keyPage = _Key >> 6;
+	const uint64_t keyBit = (uint64_t)1u << (_Key & 0x3F);
+
+	return pKeyField->release[keyPage] & keyBit;
+}
+
+constexpr inline bool isKeyDown(const InputKeyField* const pKeyField, const InputKey _Key) noexcept {
+	const size_t keyPage = _Key >> 6;
+	const uint64_t keyBit = (uint64_t)1u << (_Key & 0x3F);
+
+	return pKeyField->repeat[keyPage] & keyBit;
+}
+
+enum InputButton : uint16_t {
+	INPUT_BUTTON_LEFT,
+	INPUT_BUTTON_RIGHT,
+	INPUT_BUTTON_MIDDLE,
+	INPUT_BUTTON_TOUCH,
+
+	INPUT_BUTTON_IMP
 };
 
 struct InputCursorState {
-	InputButtons button;	
-	int32_t posX;
-	int32_t posY;
-	int32_t delX;
-	int32_t delY;
+	uint32_t repeat;
+	uint32_t press;
+	uint32_t release;
+	int32_t delta[2];
+	int32_t tchSt[2];
+	int32_t tchLt[2];
 };
 
-struct InputState {
-	InputKeyBuffer key;
-	InputCursorState cursor;
-};
-
-using InputDeviceCapabilityFlags = uint32_t;
-enum InputDeviceCapabilityBits : InputDeviceCapabilityFlags {
-    INPUT_DEVICE_CAPABILITY_KEYBOARD_BIT = 1u << 0,
-    INPUT_DEVICE_CAPABILITY_MOUSE_BIT = 1u << 1,
-    INPUT_DEVICE_CAPABILITY_GAMEPAD_BIT = 1u << 2
+enum InputDeviceCapability : uint32_t {
+	INPUT_DEVICE_CAPABILITY_UNDEFINED,
+    INPUT_DEVICE_CAPABILITY_KEYBOARD,
+    INPUT_DEVICE_CAPABILITY_MOUSE,
+	INPUT_DEVICE_CAPABILITY_TOUCHPAD,
+    INPUT_DEVICE_CAPABILITY_GAMEPAD
 };
 
 using InputDeviceSet = void*;
 
 struct InputDeviceDicoverControlInfo {
-	InputDeviceCapabilityFlags flags;
 	uint32_t maxInputDevice;
 };
 
@@ -166,4 +163,4 @@ void enumerateInputDeviceName(InputDeviceSet _InputDeviceSet, uint32_t _Count, c
 int beginInputEventPoll(InputDeviceSet _InputDeviceSet) noexcept;
 void endInputEventPoll(InputDeviceSet _InputDeviceSet) noexcept;
 
-void pollInputs(InputDeviceSet _InputDeviceSet, InputState* pInputState) noexcept;
+void pollInputs(InputDeviceSet _InputDeviceSet, InputCursorState* pCursorState, InputKeyField* pKeyField) noexcept;

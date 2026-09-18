@@ -18,7 +18,6 @@ file(GLOB_RECURSE VORTX_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Input/input.cpp"
 
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/renderer.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/transfer.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/vma.cpp"
     
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp"

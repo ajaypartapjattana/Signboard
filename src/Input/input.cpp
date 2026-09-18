@@ -4,18 +4,6 @@
 
 #include "input.h"
 
-static inline InputKeyModifierBit getKeyModifierBit(const InputKey _Key) noexcept {
-	switch (_Key) {
-	case INPUT_KEY_SHIFT_LEFT: return INPUT_KEY_MODIFIER_SHIFT;
-	case INPUT_KEY_SHIFT_RIGHT: return INPUT_KEY_MODIFIER_SHIFT;
-	case INPUT_KEY_CTRL_LEFT: return INPUT_KEY_MODIFIER_CTRL;
-	case INPUT_KEY_CTRL_RIGHT: return INPUT_KEY_MODIFIER_CTRL;
-	case INPUT_KEY_ALT_LEFT : return INPUT_KEY_MODIFIER_ALT;
-	case INPUT_KEY_ALT_RIGHT : return INPUT_KEY_MODIFIER_ALT;
-	default: return (InputKeyModifierBit)0u;
-	}
-}
-
 #if defined(PLATFORM_WINDOWS)
 
 #elif defined(PLATFORM_LINUX)
@@ -28,139 +16,8 @@ static inline InputKeyModifierBit getKeyModifierBit(const InputKey _Key) noexcep
 
 #include <core/Memory/memory.h>
 
-static inline InputKeyState translateKeyStateImp(const signed int _Value) noexcept {
-	switch (_Value) {
-	case 0: return INPUT_KEY_STATE_RELEASED;
-	case 1: return INPUT_KEY_STATE_PRESSED;
-	case 2: return INPUT_KEY_STATE_REPEAT;
-
-	default: return INPUT_KEY_STATE_UNDEFINED;
-	}
-}
-
-static inline InputButtons translateMouseButtonImp(const uint16_t _Code) noexcept {
-	switch (_Code) {
-	case BTN_LEFT: return INPUT_BUTTON_BIT_LEFT;
-	case BTN_RIGHT: return INPUT_BUTTON_BIT_RIGHT;
-	case BTN_MIDDLE: return INPUT_BUTTON_BIT_MIDDLE;
-	default: return 0u;
-	}
-}
-
-static InputKey translateKeyImp(const unsigned short _Code) noexcept {
-	switch (_Code) {
-	case KEY_A: return INPUT_KEY_A;
-	case KEY_B: return INPUT_KEY_B;
-	case KEY_C: return INPUT_KEY_C;
-	case KEY_D: return INPUT_KEY_D;
-	case KEY_E: return INPUT_KEY_E;
-	case KEY_F: return INPUT_KEY_F;
-	case KEY_G: return INPUT_KEY_G;
-	case KEY_H: return INPUT_KEY_H;
-	case KEY_I: return INPUT_KEY_I;
-	case KEY_J: return INPUT_KEY_J;
-	case KEY_K: return INPUT_KEY_K;
-	case KEY_L: return INPUT_KEY_L;
-	case KEY_M: return INPUT_KEY_M;
-	case KEY_N: return INPUT_KEY_N;
-	case KEY_O: return INPUT_KEY_O;
-	case KEY_P: return INPUT_KEY_P;
-	case KEY_Q: return INPUT_KEY_Q;
-	case KEY_R: return INPUT_KEY_R;
-	case KEY_S: return INPUT_KEY_S;
-	case KEY_T: return INPUT_KEY_T;
-	case KEY_U: return INPUT_KEY_U;
-	case KEY_V: return INPUT_KEY_V;
-	case KEY_W: return INPUT_KEY_W;
-	case KEY_X: return INPUT_KEY_X;
-	case KEY_Y: return INPUT_KEY_Y;
-	case KEY_Z: return INPUT_KEY_Z;
-	case KEY_0: return INPUT_KEY_0;
-	case KEY_1: return INPUT_KEY_1;
-	case KEY_2: return INPUT_KEY_2;
-	case KEY_3: return INPUT_KEY_3;
-	case KEY_4: return INPUT_KEY_4;
-	case KEY_5: return INPUT_KEY_5;
-	case KEY_6: return INPUT_KEY_6;
-	case KEY_7: return INPUT_KEY_7;
-	case KEY_8: return INPUT_KEY_8;
-	case KEY_9: return INPUT_KEY_9;
-	case KEY_ESC: return INPUT_KEY_ESCAPE;
-	case KEY_INSERT: return INPUT_KEY_INSERT;
-	case KEY_DELETE: return INPUT_KEY_DELETE;
-	case KEY_HOME: return INPUT_KEY_HOME;
-	case KEY_END: return INPUT_KEY_END;
-	case KEY_PAGEUP: return INPUT_KEY_PAGE_UP;
-	case KEY_PAGEDOWN: return INPUT_KEY_PAGE_DOWN;
-	case KEY_BACKSPACE: return INPUT_KEY_BACKSPACE;
-	case KEY_TAB: return INPUT_KEY_TAB;
-	case KEY_ENTER: return INPUT_KEY_ENTER;
-	case KEY_SPACE: return INPUT_KEY_SPACE;
-	case KEY_LEFT: return INPUT_KEY_ARROW_LEFT;
-	case KEY_RIGHT: return INPUT_KEY_ARROW_RIGHT;
-	case KEY_UP: return INPUT_KEY_ARROW_UP;
-	case KEY_DOWN: return INPUT_KEY_ARROW_DOWN;
-	case KEY_LEFTSHIFT: return INPUT_KEY_SHIFT_LEFT;
-	case KEY_RIGHTSHIFT: return INPUT_KEY_SHIFT_RIGHT;
-	case KEY_LEFTCTRL: return INPUT_KEY_CTRL_LEFT;
-	case KEY_RIGHTCTRL: return INPUT_KEY_CTRL_RIGHT;
-	case KEY_LEFTALT: return INPUT_KEY_ALT_LEFT;
-	case KEY_RIGHTALT: return INPUT_KEY_ALT_RIGHT;
-	case KEY_CAPSLOCK: return INPUT_KEY_CAPSLOCK;
-	case KEY_NUMLOCK: return INPUT_KEY_NUMLOCK;
-	case KEY_SCROLLLOCK: return INPUT_KEY_SCROLL_LOCK;
-	case KEY_F1: return INPUT_KEY_F1;
-	case KEY_F2: return INPUT_KEY_F2;
-	case KEY_F3: return INPUT_KEY_F3;
-	case KEY_F4: return INPUT_KEY_F4;
-	case KEY_F5: return INPUT_KEY_F5;
-	case KEY_F6: return INPUT_KEY_F6;
-	case KEY_F7: return INPUT_KEY_F7;
-	case KEY_F8: return INPUT_KEY_F8;
-	case KEY_F9: return INPUT_KEY_F9;
-	case KEY_F10: return INPUT_KEY_F10;
-	case KEY_F11: return INPUT_KEY_F11;
-	case KEY_F12: return INPUT_KEY_F12;
-	case KEY_KP0: return INPUT_KEY_NUMPAD_0;
-	case KEY_KP1: return INPUT_KEY_NUMPAD_1;
-	case KEY_KP2: return INPUT_KEY_NUMPAD_2;
-	case KEY_KP3: return INPUT_KEY_NUMPAD_3;
-	case KEY_KP4: return INPUT_KEY_NUMPAD_4;
-	case KEY_KP5: return INPUT_KEY_NUMPAD_5;
-	case KEY_KP6: return INPUT_KEY_NUMPAD_6;
-	case KEY_KP7: return INPUT_KEY_NUMPAD_7;
-	case KEY_KP8: return INPUT_KEY_NUMPAD_8;
-	case KEY_KP9: return INPUT_KEY_NUMPAD_9;
-	case KEY_KPASTERISK: return INPUT_KEY_NUMPAD_MULTIPLY;
-	case KEY_KPMINUS: return INPUT_KEY_NUMPAD_SUBTRACT;
-	case KEY_KPPLUS: return INPUT_KEY_NUMPAD_ADD;
-	case KEY_KPSLASH: return INPUT_KEY_NUMPAD_DIVIDE;
-	case KEY_KPENTER: return INPUT_KEY_NUMPAD_ENTER;
-
-	default: return INPUT_KEY_UNDEFINED;
-	}
-}
-
-template <unsigned short _EventType, unsigned _MaxCodes>
-static int hasBits(const int _FileDescriptorIndex, const int* const pCodes, const size_t _CodeCount) noexcept {
-	uint8_t bits[(_MaxCodes + 7) / 8]{};
-
-	if (ioctl(_FileDescriptorIndex, EVIOCGBIT(_EventType, sizeof(bits)), bits) < 0)
-		return -1;
-
-	const int* const pCodeEnd = pCodes + _CodeCount;
-	for (const int* pCode{ pCodes }; pCode != pCodeEnd; ++pCode) {
-		if (bits[*pCode / 8] & (1u << (*pCode % 8)))
-			continue;
-
-		return -1;
-	}
-
-	return 0;
-}
-
 struct InputDeviceImp {
-	InputDeviceCapabilityFlags capability;
+	InputDeviceCapability capability;
 	udev_device* device;
 	const char* devnode;
 	int fileDescriptorIndex;
@@ -184,8 +41,6 @@ int discoverInputDevices(const InputDeviceDicoverControlInfo* const pDiscoverInf
 
 		udev_list_entry* const devices = udev_enumerate_get_list_entry(_enumerate);
 
-		InputDeviceCapabilityFlags capabilityMask = pDiscoverInfo->flags;
-		
 		if (!pDiscoverInfo->maxInputDevice)
 			break;
 
@@ -212,18 +67,16 @@ int discoverInputDevices(const InputDeviceDicoverControlInfo* const pDiscoverInf
 				if (strncmp(devnode, "/dev/input/event", 16u) != 0)
 					break;
 
-				InputDeviceCapabilityFlags capability = 0u;
+				InputDeviceCapability capability = INPUT_DEVICE_CAPABILITY_UNDEFINED;
 
 				if (udev_device_get_property_value(device, "ID_INPUT_KEYBOARD"))
-					capability |= INPUT_DEVICE_CAPABILITY_KEYBOARD_BIT;
-
-				if (udev_device_get_property_value(device, "ID_INPUT_MOUSE"))
-					capability |= INPUT_DEVICE_CAPABILITY_MOUSE_BIT;
-
-				if (udev_device_get_property_value(device, "ID_INPUT_GAMEPAD"))
-					capability |= INPUT_DEVICE_CAPABILITY_GAMEPAD_BIT;
-
-				capability &= capabilityMask;
+					capability = INPUT_DEVICE_CAPABILITY_KEYBOARD;
+				else if (udev_device_get_property_value(device, "ID_INPUT_MOUSE"))
+					capability = INPUT_DEVICE_CAPABILITY_MOUSE;
+				else if (udev_device_get_property_value(device, "ID_INPUT_TOUCHPAD"))
+					capability = INPUT_DEVICE_CAPABILITY_TOUCHPAD;
+				else if (udev_device_get_property_value(device, "ID_INPUT_GAMEPAD"))
+					capability = INPUT_DEVICE_CAPABILITY_GAMEPAD;
 
 				if (!capability)
 					break;
@@ -335,7 +188,7 @@ void endInputEventPoll(InputDeviceSet const _InputDeviceSet) noexcept {
 	}
 }
 
-constexpr uint32_t INPUT_EVENT_BUFFER_CAPACITY = 32u;
+constexpr uint32_t INPUT_EVENT_BUFFER_CAPACITY = 64u;
 
 static int readFileEvents(int fd, input_event* const pBuffer, uint32_t* pCount) noexcept {
 	constexpr size_t INPUT_EVENT_READ_SIZE = sizeof(input_event) * INPUT_EVENT_BUFFER_CAPACITY;
@@ -357,123 +210,376 @@ static int readFileEvents(int fd, input_event* const pBuffer, uint32_t* pCount) 
 	return 0;
 }
 
-static int resolveKeyboardInputs(const InputDeviceImp* const pDevice, InputState* const pState) noexcept { while (true) {
-	input_event events[INPUT_EVENT_BUFFER_CAPACITY];
-	uint32_t eventCount = 0;
+static InputKey translateKeyImp(const unsigned short _Code) noexcept {
+	switch (_Code) {
+	case KEY_A: return INPUT_KEY_A;
+	case KEY_B: return INPUT_KEY_B;
+	case KEY_C: return INPUT_KEY_C;
+	case KEY_D: return INPUT_KEY_D;
+	case KEY_E: return INPUT_KEY_E;
+	case KEY_F: return INPUT_KEY_F;
+	case KEY_G: return INPUT_KEY_G;
+	case KEY_H: return INPUT_KEY_H;
+	case KEY_I: return INPUT_KEY_I;
+	case KEY_J: return INPUT_KEY_J;
+	case KEY_K: return INPUT_KEY_K;
+	case KEY_L: return INPUT_KEY_L;
+	case KEY_M: return INPUT_KEY_M;
+	case KEY_N: return INPUT_KEY_N;
+	case KEY_O: return INPUT_KEY_O;
+	case KEY_P: return INPUT_KEY_P;
+	case KEY_Q: return INPUT_KEY_Q;
+	case KEY_R: return INPUT_KEY_R;
+	case KEY_S: return INPUT_KEY_S;
+	case KEY_T: return INPUT_KEY_T;
+	case KEY_U: return INPUT_KEY_U;
+	case KEY_V: return INPUT_KEY_V;
+	case KEY_W: return INPUT_KEY_W;
+	case KEY_X: return INPUT_KEY_X;
+	case KEY_Y: return INPUT_KEY_Y;
+	case KEY_Z: return INPUT_KEY_Z;
+	case KEY_0: return INPUT_KEY_0;
+	case KEY_1: return INPUT_KEY_1;
+	case KEY_2: return INPUT_KEY_2;
+	case KEY_3: return INPUT_KEY_3;
+	case KEY_4: return INPUT_KEY_4;
+	case KEY_5: return INPUT_KEY_5;
+	case KEY_6: return INPUT_KEY_6;
+	case KEY_7: return INPUT_KEY_7;
+	case KEY_8: return INPUT_KEY_8;
+	case KEY_9: return INPUT_KEY_9;
+	case KEY_ESC: return INPUT_KEY_ESCAPE;
+	case KEY_INSERT: return INPUT_KEY_INSERT;
+	case KEY_DELETE: return INPUT_KEY_DELETE;
+	case KEY_HOME: return INPUT_KEY_HOME;
+	case KEY_END: return INPUT_KEY_END;
+	case KEY_PAGEUP: return INPUT_KEY_PAGE_UP;
+	case KEY_PAGEDOWN: return INPUT_KEY_PAGE_DOWN;
+	case KEY_BACKSPACE: return INPUT_KEY_BACKSPACE;
+	case KEY_TAB: return INPUT_KEY_TAB;
+	case KEY_ENTER: return INPUT_KEY_ENTER;
+	case KEY_SPACE: return INPUT_KEY_SPACE;
+	case KEY_LEFT: return INPUT_KEY_ARROW_LEFT;
+	case KEY_RIGHT: return INPUT_KEY_ARROW_RIGHT;
+	case KEY_UP: return INPUT_KEY_ARROW_UP;
+	case KEY_DOWN: return INPUT_KEY_ARROW_DOWN;
+	case KEY_LEFTSHIFT: return INPUT_KEY_SHIFT_LEFT;
+	case KEY_RIGHTSHIFT: return INPUT_KEY_SHIFT_RIGHT;
+	case KEY_LEFTCTRL: return INPUT_KEY_CTRL_LEFT;
+	case KEY_RIGHTCTRL: return INPUT_KEY_CTRL_RIGHT;
+	case KEY_LEFTALT: return INPUT_KEY_ALT_LEFT;
+	case KEY_RIGHTALT: return INPUT_KEY_ALT_RIGHT;
+	case KEY_CAPSLOCK: return INPUT_KEY_CAPSLOCK;
+	case KEY_NUMLOCK: return INPUT_KEY_NUMLOCK;
+	case KEY_SCROLLLOCK: return INPUT_KEY_SCROLL_LOCK;
+	case KEY_F1: return INPUT_KEY_F1;
+	case KEY_F2: return INPUT_KEY_F2;
+	case KEY_F3: return INPUT_KEY_F3;
+	case KEY_F4: return INPUT_KEY_F4;
+	case KEY_F5: return INPUT_KEY_F5;
+	case KEY_F6: return INPUT_KEY_F6;
+	case KEY_F7: return INPUT_KEY_F7;
+	case KEY_F8: return INPUT_KEY_F8;
+	case KEY_F9: return INPUT_KEY_F9;
+	case KEY_F10: return INPUT_KEY_F10;
+	case KEY_F11: return INPUT_KEY_F11;
+	case KEY_F12: return INPUT_KEY_F12;
+	case KEY_KP0: return INPUT_KEY_NUMPAD_0;
+	case KEY_KP1: return INPUT_KEY_NUMPAD_1;
+	case KEY_KP2: return INPUT_KEY_NUMPAD_2;
+	case KEY_KP3: return INPUT_KEY_NUMPAD_3;
+	case KEY_KP4: return INPUT_KEY_NUMPAD_4;
+	case KEY_KP5: return INPUT_KEY_NUMPAD_5;
+	case KEY_KP6: return INPUT_KEY_NUMPAD_6;
+	case KEY_KP7: return INPUT_KEY_NUMPAD_7;
+	case KEY_KP8: return INPUT_KEY_NUMPAD_8;
+	case KEY_KP9: return INPUT_KEY_NUMPAD_9;
+	case KEY_KPASTERISK: return INPUT_KEY_NUMPAD_MULTIPLY;
+	case KEY_KPMINUS: return INPUT_KEY_NUMPAD_SUBTRACT;
+	case KEY_KPPLUS: return INPUT_KEY_NUMPAD_ADD;
+	case KEY_KPSLASH: return INPUT_KEY_NUMPAD_DIVIDE;
+	case KEY_KPENTER: return INPUT_KEY_NUMPAD_ENTER;
 
-	int result;
-
-	do {
-		result = readFileEvents(pDevice->fileDescriptorIndex, events, &eventCount);
-
-		if (result == -1)
-			return -1;
-
-	} while (result);
-
-	const input_event* const pEventEnd = events + eventCount;
-	for (const input_event* pEvent{ events }; pEvent != pEventEnd; ++pEvent) {
-		if (pState->key.pNext == pState->key.pEnd)
-			return 0;
-
-		if (pEvent->type != EV_KEY)
-			continue;
-
-		const InputKey key = translateKeyImp(pEvent->code);
-
-		if (key == INPUT_KEY_UNDEFINED)
-			continue;
-		
-		InputKeyEvent* const pEventDst = pState->key.pNext++;
-		pEventDst->key = key;
-		pEventDst->state = translateKeyStateImp(pEvent->value);
-		pEventDst->mod = pState->key.modifier;
-
-		InputKeyModifierBit modifier = getKeyModifierBit(pEventDst->key);
-
-		if (!modifier)
-			continue;
-
-		switch (pEvent->value) {
-		case 0: pState->key.modifier &= ~modifier;
-			break;
-
-		case 1: pState->key.modifier |= modifier;
-			break;
-		}
+	default: return INPUT_KEY_IMP;
 	}
+}
 
-	if (eventCount < INPUT_EVENT_BUFFER_CAPACITY)
-		return 0;
-}}
-
-static int resolveMouseInputs(const InputDeviceImp* const pDevice, InputState* const pState) noexcept { while (true) {
+static void resolveKeyboardInputs(const InputDeviceImp* const pDevice, InputKeyField* const pField) noexcept { 
 	input_event events[INPUT_EVENT_BUFFER_CAPACITY];
-	uint32_t eventCount = 0;
+	
+	while (true) {
+		uint32_t eventCount = 0;
 
-	int result;
+		int result;
 
-	do {
-		result = readFileEvents(pDevice->fileDescriptorIndex, events, &eventCount);
+		do {
+			result = readFileEvents(pDevice->fileDescriptorIndex, events, &eventCount);
 
-		if (result == -1)
-			return -1;
+			if (result == -1)
+				return;
 
-	} while (result);
+		} while (result);
 
-	const input_event* const pEventEnd = events + eventCount;
-	for (const input_event* pEvent{ events }; pEvent != pEventEnd; ++pEvent) {
-		switch (pEvent->type) {
-		case EV_KEY: {
-			const InputButtons button = translateMouseButtonImp(pEvent->code);
+		const input_event* const pEventEnd = events + eventCount;
+		for (const input_event* pEvent{ events }; pEvent != pEventEnd; ++pEvent) {
+			if (pEvent->type != EV_KEY)
+				continue;
 
-			if (!button)
-				break;
+			const InputKey key = translateKeyImp(pEvent->code);
+
+			if (key == INPUT_KEY_IMP)
+				continue;
+
+			const uint32_t keyPage = key >> 6;
+			const uint64_t keyBit = (uint64_t)1u <<	(key & 0x3F);
 
 			switch (pEvent->value) {
 			case 0:
-				pState->cursor.button &= ~button;
+				pField->release[keyPage] |= keyBit;
 				break;
-
+			
 			case 1:
-				pState->cursor.button |= button;
+				pField->press[keyPage] |= keyBit;
 				break;
-			}	
-		}
 
-			break;
-
-		case EV_REL:
-			switch (pEvent->code) {
-			case REL_X:
-				pState->cursor.delX += pEvent->value;
-				break;
-					
-			case REL_Y:
-				pState->cursor.delY += pEvent->value;
+			case 2:
+				pField->repeat[keyPage] |= keyBit;
 				break;
 			}
-
-			break;
 		}
+
+		if (eventCount < INPUT_EVENT_BUFFER_CAPACITY)
+			return;
+	}
+}
+
+static inline InputButton translateMouseButtonImp(const uint16_t _Code) noexcept {
+	switch (_Code) {
+	case BTN_LEFT: return INPUT_BUTTON_LEFT;
+	case BTN_RIGHT: return INPUT_BUTTON_RIGHT;
+	case BTN_MIDDLE: return INPUT_BUTTON_MIDDLE;
+	default: return INPUT_BUTTON_IMP;
+	}
+}
+
+static void resolveMouseInputs(const InputDeviceImp* const pDevice, InputCursorState* const pCursor) noexcept { 
+	input_event events[INPUT_EVENT_BUFFER_CAPACITY];
+	
+	while (true) {
+		uint32_t eventCount = 0;
+
+		int result;
+
+		do {
+			result = readFileEvents(pDevice->fileDescriptorIndex, events, &eventCount);
+
+			if (result == -1)
+				return;
+
+		} while (result);
+
+		const input_event* const pEventEnd = events + eventCount;
+		for (const input_event* pEvent{ events }; pEvent != pEventEnd; ++pEvent) {
+			switch (pEvent->type) {
+			case EV_KEY: {
+				const InputButton button = translateMouseButtonImp(pEvent->code);
+
+				if (button == INPUT_BUTTON_IMP)
+					break;
+
+				const uint32_t buttonBit = (uint32_t)1u << (button & 0x1F);
+
+				switch (pEvent->value) {
+				case 0:
+					pCursor->release |= buttonBit;
+					break;
+
+				case 1:
+					pCursor->press |= buttonBit;
+					break;
+
+				case 2:
+					pCursor->repeat |= buttonBit;
+				}	
+			}
+
+				break;
+
+			case EV_REL:
+				switch (pEvent->code) {
+				case REL_X:
+					pCursor->delta[0] += pEvent->value;
+					break;
+						
+				case REL_Y:
+					pCursor->delta[1] += pEvent->value;
+					break;
+				}
+
+				break;
+			}
+		}
+
+		if (eventCount < INPUT_EVENT_BUFFER_CAPACITY)
+			return;
+	}
+}
+
+static inline InputButton translateTouchpadButtonImp(const unsigned short _Code) noexcept {
+	switch (_Code) {
+	case BTN_LEFT: return INPUT_BUTTON_LEFT;	
+	case BTN_TOOL_DOUBLETAP: return INPUT_BUTTON_RIGHT;
+	case BTN_TOOL_TRIPLETAP: return INPUT_BUTTON_MIDDLE;
+	default: return INPUT_BUTTON_IMP;
+	}
+}
+
+static void resolveTouchpadEvents(const InputDeviceImp* const pDevice, InputCursorState* const pCursor) noexcept { 
+	input_event events[INPUT_EVENT_BUFFER_CAPACITY];
+
+	while (true) {
+		uint32_t eventCount = 0;
+
+		int result;
+
+		do {
+			result = readFileEvents(pDevice->fileDescriptorIndex, events, &eventCount);
+
+			if (result == -1)
+				return;
+
+		} while (result);
+
+		const input_event* const pEventEnd = events + eventCount;
+		for (const input_event* pEvent{ events }; pEvent != pEventEnd; ++pEvent) {
+			switch (pEvent->type) {
+			case EV_KEY: {
+				const InputButton button = translateTouchpadButtonImp(pEvent->code);
+
+				if (button == INPUT_BUTTON_IMP) {
+					switch (pEvent->code) {
+					case BTN_TOUCH:
+						if (pEvent->value == 1) {
+							pCursor->tchSt[0] = INT32_MIN;
+							pCursor->tchSt[1] = INT32_MIN;
+						}
+						else {
+							if (pCursor->tchSt[0] != INT32_MIN) {
+								pCursor->delta[0] += pCursor->tchLt[0] - pCursor->tchSt[0];
+								pCursor->tchSt[0] = INT32_MIN;
+							}
+
+							if (pCursor->tchSt[1] != INT32_MIN) {
+								pCursor->delta[1] += pCursor->tchLt[1] - pCursor->tchSt[1];
+								pCursor->tchSt[1] = INT32_MIN;
+							}
+						}
+						
+						
+
+						break;
+					
+					default:
+						break;
+					}
+				}
+
+				const uint32_t buttonBit = (uint32_t)1u << (button & 0x1F);
+
+				switch (pEvent->value) {
+				case 0:
+					pCursor->release |= buttonBit;
+					break;
+
+				case 1:
+					pCursor->press |= buttonBit;
+					break;
+
+				case 2:
+					pCursor->repeat |= buttonBit;
+					break;
+				}
+			}
+
+				break;
+
+			case EV_ABS:
+				switch (pEvent->code) {
+				case ABS_X:
+					if (pCursor->tchSt[0] == INT32_MIN)
+						pCursor->tchSt[0] = pEvent->value;	
+					
+					pCursor->tchLt[0] = pEvent->value;
+
+					break;
+						
+				case ABS_Y:
+					if (pCursor->tchSt[1] == INT32_MIN)
+						pCursor->tchSt[1] = pEvent->value;
+					
+					pCursor->tchLt[1] = pEvent->value;
+
+					break;
+				}
+
+				break;
+			}
+		}
+
+		if (eventCount < INPUT_EVENT_BUFFER_CAPACITY)
+			break;
+	
 	}
 
-	if (eventCount < INPUT_EVENT_BUFFER_CAPACITY)
-		return 0;
-}}
+	if (pCursor->tchSt[0] != INT32_MIN) {
+		pCursor->delta[0] += pCursor->tchLt[0] - pCursor->tchSt[0];
+		pCursor->tchSt[0] = pCursor->tchLt[0];
+	}
+	
+	if (pCursor->tchSt[1] != INT32_MIN) {
+		pCursor->delta[1] += pCursor->tchLt[1] - pCursor->tchSt[1];
+		pCursor->tchSt[1] = pCursor->tchLt[1];
+	}
+}
 
-void pollInputs(InputDeviceSet const _InputDeviceSet, InputState* const pInputState) noexcept {
-	InputDeviceImp* const pInputDevice = reinterpret_cast<InputDeviceImp*>(_InputDeviceSet);
+void pollInputs(InputDeviceSet const _InputDeviceSet, InputCursorState* const pCursorState, InputKeyField* const pKeyField) noexcept {
+	InputDeviceImp* const pInputDeviceSet = reinterpret_cast<InputDeviceImp*>(_InputDeviceSet);
 
-	const size_t deviceCount = mem_getAllocationSize<InputDeviceImp>(pInputDevice);
+	const size_t deviceCount = mem_getAllocationSize<InputDeviceImp>(pInputDeviceSet);
 
-	const InputDeviceImp* const pInputDeviceEnd = pInputDevice + deviceCount;
-	for (const InputDeviceImp* pDevice{ pInputDevice }; pDevice != pInputDeviceEnd; ++pDevice) {
-		if (pDevice->capability & INPUT_DEVICE_CAPABILITY_KEYBOARD_BIT) {
-			resolveKeyboardInputs(pDevice, pInputState);
-		}
-		else if (pDevice->capability & INPUT_DEVICE_CAPABILITY_MOUSE_BIT) {
-			resolveMouseInputs(pDevice, pInputState);
+	for (size_t page{}; page != KEY_PAGE_COUNT; ++page) {
+		pKeyField->repeat[page] |= pKeyField->press[page];
+		pKeyField->repeat[page] &= ~pKeyField->release[page];
+		pKeyField->press[page] = 0u;
+		pKeyField->release[page] = 0u;
+	}
+
+	pCursorState->repeat |= pCursorState->press;
+	pCursorState->repeat &= ~pCursorState->release;
+	pCursorState->press = 0u;
+	pCursorState->release = 0u;
+
+	const InputDeviceImp* const pInputDeviceEnd = pInputDeviceSet + deviceCount;
+	for (const InputDeviceImp* pDevice{ pInputDeviceSet }; pDevice != pInputDeviceEnd; ++pDevice) {
+		switch (pDevice->capability) {
+		case INPUT_DEVICE_CAPABILITY_KEYBOARD:
+			resolveKeyboardInputs(pDevice, pKeyField);
+			break;
+		
+		case INPUT_DEVICE_CAPABILITY_MOUSE:
+			resolveMouseInputs(pDevice, pCursorState);
+			break;
+
+		case INPUT_DEVICE_CAPABILITY_TOUCHPAD:
+			resolveTouchpadEvents(pDevice, pCursorState);
+			break;
+
+		case INPUT_DEVICE_CAPABILITY_GAMEPAD:
+			break;
+
+		case INPUT_DEVICE_CAPABILITY_UNDEFINED:
+			break;
+
 		}
 	}
 }

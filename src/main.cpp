@@ -98,7 +98,6 @@ int main() {
 
 		{
 			InputDeviceDicoverControlInfo discoverInfo{};
-			discoverInfo.flags = INPUT_DEVICE_CAPABILITY_KEYBOARD_BIT | INPUT_DEVICE_CAPABILITY_MOUSE_BIT;
 			discoverInfo.maxInputDevice = 10u;
 
 			failure = discoverInputDevices(&discoverInfo, &deviceCount, &inputDevice);
@@ -443,13 +442,10 @@ int main() {
 		return EXIT_FAILURE;
 	}
 
-	InputKeyEvent keyEvents[64u];
+	float aspect = getWindowAspect(window);
 
-	InputState inputs{};
-	inputs.key.pEvent = keyEvents;
-	inputs.key.pNext = keyEvents;
-	inputs.key.pEnd = keyEvents + 64u;
-	inputs.key.modifier = 0u;
+	InputKeyField keyField{};
+	InputCursorState cursor{};
 
 	while (true) {
 		WindowStateFlags events = 0;
@@ -476,19 +472,7 @@ int main() {
 			if (failure)
 				break;
 
-			{
-				CameraData data{};
-				data.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-				data.projection = glm::perspective(glm::radians(78.0f), getWindowAspect(window), 0.1f, 10.0f);
-				data.projection[1][1] *= -1;
-
-				CameraWrite write{};
-				write.firstCamera = 0u;
-				write.count = 1u;
-				write.pData = &data;
-
-				updateCamera(camera, &write);
-			}
+			aspect = getWindowAspect(window);
 
 			events &= ~WINDOW_STATE_EXTENT_DIRTY_BIT;
 		}
@@ -501,21 +485,26 @@ int main() {
 		}
 
 		{
-			pollInputs(inputDevice, &inputs);
+			pollInputs(inputDevice, &cursor, &keyField);
 
-			inputs.cursor.posX += inputs.cursor.delX;
-			inputs.cursor.posY += inputs.cursor.delY;
-
-			inputs.cursor.delX = 0;
-			inputs.cursor.delY = 0;
-
-			const InputKeyEvent* const pKeyEventEnd = inputs.key.pNext;
-			for (const InputKeyEvent* pKeyEvent{ keyEvents }; pKeyEvent != pKeyEventEnd; ++pKeyEvent) {
-				if (pKeyEvent->key == INPUT_KEY_W)
-					printf("x = %d, y = %d\n", inputs.cursor.posX, inputs.cursor.posY);
+			if (isKeyDown(&keyField, INPUT_KEY_W)) {
+				printf("\r\033[Kx = %d, y = %d", cursor.delta[0], cursor.delta[1]);
+				fflush(stdout);
 			}
+		}
 
-			inputs.key.pNext = inputs.key.pEvent;
+		{
+			CameraData data{};
+			data.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+			data.projection = glm::perspective(glm::radians(78.0f), aspect, 0.1f, 10.0f);
+			data.projection[1][1] *= -1;
+
+			CameraWrite write{};
+			write.firstCamera = 0u;
+			write.count = 1u;
+			write.pData = &data;
+
+			updateCamera(camera, &write);
 		}
 
 		failure = beginFrame(renderer, surface);
