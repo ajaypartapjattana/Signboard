@@ -45,8 +45,13 @@ void setWindowTitle(DisplayContext _Context, DisplayWindow _Window, const char* 
 
 float getWindowAspect(DisplayWindow _Window) noexcept;
 
-using WindowStateFlags = uint32_t;
-enum WindowStateFlagBit : WindowStateFlags {
+struct DisplayCursor {
+	int16_t x;
+	int16_t y;
+};
+
+using WindowStateField = uint32_t;
+enum WindowStateBit : WindowStateField {
 	WINDOW_STATE_TERMINATION_IMMINENT_BIT = 1u << 0,
 	WINDOW_STATE_MINIMIZED_BIT = 1u << 1,
 	WINDOW_EVENT_FOCUSED_BIT = 1u << 2,
@@ -66,7 +71,7 @@ void destroyEventBuffer(EventBuffer _EventBuffer) noexcept;
 
 bool pollWindowEvents(DisplayContext _Context, EventBuffer _EventBuffer) noexcept;
 bool waitWindowEvents(DisplayContext _Context, EventBuffer _EventBuffer) noexcept;
-void resolveWindowEvents(EventBuffer _EventBuffer, DisplayWindow _Window, WindowStateFlags* pState) noexcept;
+void resolveWindowEvents(EventBuffer _EventBuffer, DisplayWindow _Window, WindowStateField* pState, DisplayCursor* pCursor) noexcept;
 
 struct VulkanSurfaceDependencyInfo {
 	void* context;

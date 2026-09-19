@@ -194,7 +194,7 @@ int createDisplayWindow(const DisplayContext _Context, const WindowCreateInfo* c
 		_window = xcb_generate_id(connection);
 		
 		uint32_t mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
-		uint32_t values[] = { screen->black_pixel, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE | XCB_EVENT_MASK_FOCUS_CHANGE };
+		uint32_t values[] = { screen->black_pixel, XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE | XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_POINTER_MOTION };
 		
 		xcb_void_cookie_t cookie = xcb_create_window_checked(connection, XCB_COPY_FROM_PARENT, _window, screen->root, pCreateInfo->x, pCreateInfo->y, pCreateInfo->width, pCreateInfo->height, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, screen->root_visual, mask, values);
 
@@ -320,6 +320,7 @@ void getVulkanSurfaceDependencyInfo(DisplayContext const _Context, DisplayWindow
 }
 
 enum WindowEventType : uint32_t {
+	WINDOW_EVENT_TYPE_MOTION,
 	WINDOW_EVENT_TYPE_WINDOW_CONFIGURE,
 	WINDOW_EVENT_TYPE_FOCUS_GAINED,
 	WINDOW_EVENT_TYPE_FOCUS_LOST,
@@ -385,6 +386,18 @@ static inline bool translateXCBEvent(DisplayContext const _Context, xcb_generic_
 	const uint8_t type = pXCBEvent->response_type & ~0x80;
 
 	switch (type) {
+	case XCB_MOTION_NOTIFY: {
+		const xcb_motion_notify_event_t* const motion = reinterpret_cast<xcb_motion_notify_event_t*>(pXCBEvent);
+
+		pEvent->window = motion->event;
+		pEvent->type = WINDOW_EVENT_TYPE_MOTION;
+
+		pEvent->position.x = motion->event_x;
+		pEvent->position.y = motion->event_y;
+	}
+
+		return true;
+
 	case XCB_CONFIGURE_NOTIFY: {
 		const xcb_configure_notify_event_t* const configure = reinterpret_cast<xcb_configure_notify_event_t*>(pXCBEvent);
 
@@ -502,18 +515,24 @@ bool waitWindowEvents(DisplayContext const _Context, EventBuffer const _EventBuf
 	return true;
 }
 
-void resolveWindowEvents(EventBuffer const _EventBuffer, DisplayWindow const _Window, WindowStateFlags* const pState) noexcept {
+void resolveWindowEvents(EventBuffer const _EventBuffer, DisplayWindow const _Window, WindowStateField* const pState, DisplayCursor* const pCursor) noexcept {
 	const WindowEvent* const pEventEnd = _EventBuffer->event.pBegin + _EventBuffer->count;
 
 	const xcb_window_t window = _Window->window;
 
-	WindowStateFlags state = 0;
+	WindowStateField state = 0;
 
 	for (const WindowEvent* pEvent{ _EventBuffer->event.pBegin }; pEvent != pEventEnd; ++pEvent) {
 		if (pEvent->window != window)
 			continue;
 
 		switch (pEvent->type) {
+		case WINDOW_EVENT_TYPE_MOTION:
+			pCursor->x = pEvent->position.x;
+			pCursor->y = pEvent->position.y;
+
+			break;
+
 		case WINDOW_EVENT_TYPE_WINDOW_CONFIGURE:
 			if (pEvent->extent.width != _Window->width || pEvent->extent.height != _Window->height) {
 				state |= WINDOW_STATE_EXTENT_DIRTY_BIT;

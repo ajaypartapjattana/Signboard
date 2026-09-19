@@ -132,7 +132,7 @@ enum InputButton : uint16_t {
 	INPUT_BUTTON_IMP
 };
 
-struct InputCursorState {
+struct InputDragField {
 	uint32_t repeat;
 	uint32_t press;
 	uint32_t release;
@@ -163,4 +163,4 @@ void enumerateInputDeviceName(InputDeviceSet _InputDeviceSet, uint32_t _Count, c
 int beginInputEventPoll(InputDeviceSet _InputDeviceSet) noexcept;
 void endInputEventPoll(InputDeviceSet _InputDeviceSet) noexcept;
 
-void pollInputs(InputDeviceSet _InputDeviceSet, InputCursorState* pCursorState, InputKeyField* pKeyField) noexcept;
+void pollInputs(InputDeviceSet _InputDeviceSet, InputDragField* pDragField, InputKeyField* pKeyField) noexcept;

@@ -445,13 +445,15 @@ int main() {
 	float aspect = getWindowAspect(window);
 
 	InputKeyField keyField{};
-	InputCursorState cursor{};
+	InputDragField dragField{};
+
+	DisplayCursor cursor{};
 
 	while (true) {
-		WindowStateFlags events = 0;
+		WindowStateField events = 0;
 
 		while (pollWindowEvents(windowCtx, eventBuffer))
-			resolveWindowEvents(eventBuffer, window, &events);
+			resolveWindowEvents(eventBuffer, window, &events, &cursor);
 
 		if (events & WINDOW_STATE_TERMINATION_IMMINENT_BIT)
 			break;
@@ -479,23 +481,23 @@ int main() {
 
 		if (events & WINDOW_STATE_MINIMIZED_BIT) {
 			if (waitWindowEvents(windowCtx, eventBuffer))
-				resolveWindowEvents(eventBuffer, window, &events);
+				resolveWindowEvents(eventBuffer, window, &events, &cursor);
 			else
 				break;
 		}
 
 		{
-			pollInputs(inputDevice, &cursor, &keyField);
+			pollInputs(inputDevice, &dragField, &keyField);
 
 			if (isKeyDown(&keyField, INPUT_KEY_W)) {
-				printf("\r\033[Kx = %d, y = %d", cursor.delta[0], cursor.delta[1]);
+				printf("\r\033[Kx = %d, y = %d", cursor.x, cursor.y);
 				fflush(stdout);
 			}
 		}
 
 		{
 			CameraData data{};
-			data.view = glm::lookAt(glm::vec3(2.0f, (float)cursor.delta[0] / 100.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+			data.view = glm::lookAt(glm::vec3(2.0f, (float)dragField.delta[0] / 100.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 			data.projection = glm::perspective(glm::radians(78.0f), aspect, 0.1f, 10.0f);
 			data.projection[1][1] *= -1;
 

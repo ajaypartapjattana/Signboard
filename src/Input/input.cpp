@@ -304,21 +304,28 @@ static InputKey translateKeyImp(const unsigned short _Code) noexcept {
 	}
 }
 
-static void resolveKeyboardInputs(const InputDeviceImp* const pDevice, InputKeyField* const pField) noexcept { 
+static void resolveKeyboardInputs(const InputDeviceImp* const pDevice, InputKeyField* const pKeyField) noexcept { 
 	input_event events[INPUT_EVENT_BUFFER_CAPACITY];
 	
 	while (true) {
 		uint32_t eventCount = 0;
 
-		int result;
+		while (true) {
+			int result = readFileEvents(pDevice->fileDescriptorIndex, events, &eventCount);
 
-		do {
-			result = readFileEvents(pDevice->fileDescriptorIndex, events, &eventCount);
+			if (!result)
+				break;
 
 			if (result == -1)
 				return;
+		}
 
-		} while (result);
+		if (!pKeyField) {
+			if (eventCount < INPUT_EVENT_BUFFER_CAPACITY)
+				return;
+
+			continue;
+		}
 
 		const input_event* const pEventEnd = events + eventCount;
 		for (const input_event* pEvent{ events }; pEvent != pEventEnd; ++pEvent) {
@@ -335,15 +342,15 @@ static void resolveKeyboardInputs(const InputDeviceImp* const pDevice, InputKeyF
 
 			switch (pEvent->value) {
 			case 0:
-				pField->release[keyPage] |= keyBit;
+				pKeyField->release[keyPage] |= keyBit;
 				break;
 			
 			case 1:
-				pField->press[keyPage] |= keyBit;
+				pKeyField->press[keyPage] |= keyBit;
 				break;
 
 			case 2:
-				pField->repeat[keyPage] |= keyBit;
+				pKeyField->repeat[keyPage] |= keyBit;
 				break;
 			}
 		}
@@ -362,21 +369,28 @@ static inline InputButton translateMouseButtonImp(const uint16_t _Code) noexcept
 	}
 }
 
-static void resolveMouseInputs(const InputDeviceImp* const pDevice, InputCursorState* const pCursor) noexcept { 
+static void resolveMouseInputs(const InputDeviceImp* const pDevice, InputDragField* const pDragField) noexcept { 
 	input_event events[INPUT_EVENT_BUFFER_CAPACITY];
 	
 	while (true) {
 		uint32_t eventCount = 0;
 
-		int result;
+		while (true) {
+			int result = readFileEvents(pDevice->fileDescriptorIndex, events, &eventCount);
 
-		do {
-			result = readFileEvents(pDevice->fileDescriptorIndex, events, &eventCount);
+			if (!result)
+				break;
 
 			if (result == -1)
 				return;
+		}
 
-		} while (result);
+		if (!pDragField) {
+			if (eventCount < INPUT_EVENT_BUFFER_CAPACITY)
+				return;
+
+			continue;
+		}
 
 		const input_event* const pEventEnd = events + eventCount;
 		for (const input_event* pEvent{ events }; pEvent != pEventEnd; ++pEvent) {
@@ -391,15 +405,15 @@ static void resolveMouseInputs(const InputDeviceImp* const pDevice, InputCursorS
 
 				switch (pEvent->value) {
 				case 0:
-					pCursor->release |= buttonBit;
+					pDragField->release |= buttonBit;
 					break;
 
 				case 1:
-					pCursor->press |= buttonBit;
+					pDragField->press |= buttonBit;
 					break;
 
 				case 2:
-					pCursor->repeat |= buttonBit;
+					pDragField->repeat |= buttonBit;
 				}	
 			}
 
@@ -408,11 +422,11 @@ static void resolveMouseInputs(const InputDeviceImp* const pDevice, InputCursorS
 			case EV_REL:
 				switch (pEvent->code) {
 				case REL_X:
-					pCursor->delta[0] += pEvent->value;
+					pDragField->delta[0] += pEvent->value;
 					break;
 						
 				case REL_Y:
-					pCursor->delta[1] += pEvent->value;
+					pDragField->delta[1] += pEvent->value;
 					break;
 				}
 
@@ -434,21 +448,28 @@ static inline InputButton translateTouchpadButtonImp(const unsigned short _Code)
 	}
 }
 
-static void resolveTouchpadEvents(const InputDeviceImp* const pDevice, InputCursorState* const pCursor) noexcept { 
+static void resolveTouchpadEvents(const InputDeviceImp* const pDevice, InputDragField* const pDragField) noexcept { 
 	input_event events[INPUT_EVENT_BUFFER_CAPACITY];
 
 	while (true) {
 		uint32_t eventCount = 0;
 
-		int result;
+		while (true) {
+			int result = readFileEvents(pDevice->fileDescriptorIndex, events, &eventCount);
 
-		do {
-			result = readFileEvents(pDevice->fileDescriptorIndex, events, &eventCount);
+			if (!result)
+				break;
 
 			if (result == -1)
 				return;
+		}
 
-		} while (result);
+		if (!pDragField) {
+			if (eventCount < INPUT_EVENT_BUFFER_CAPACITY)
+				return;
+
+			continue;
+		}
 
 		const input_event* const pEventEnd = events + eventCount;
 		for (const input_event* pEvent{ events }; pEvent != pEventEnd; ++pEvent) {
@@ -460,18 +481,18 @@ static void resolveTouchpadEvents(const InputDeviceImp* const pDevice, InputCurs
 					switch (pEvent->code) {
 					case BTN_TOUCH:
 						if (pEvent->value == 1) {
-							pCursor->tchSt[0] = INT32_MIN;
-							pCursor->tchSt[1] = INT32_MIN;
+							pDragField->tchSt[0] = INT32_MIN;
+							pDragField->tchSt[1] = INT32_MIN;
 						}
 						else {
-							if (pCursor->tchSt[0] != INT32_MIN) {
-								pCursor->delta[0] += pCursor->tchLt[0] - pCursor->tchSt[0];
-								pCursor->tchSt[0] = INT32_MIN;
+							if (pDragField->tchSt[0] != INT32_MIN) {
+								pDragField->delta[0] += pDragField->tchLt[0] - pDragField->tchSt[0];
+								pDragField->tchSt[0] = INT32_MIN;
 							}
 
-							if (pCursor->tchSt[1] != INT32_MIN) {
-								pCursor->delta[1] += pCursor->tchLt[1] - pCursor->tchSt[1];
-								pCursor->tchSt[1] = INT32_MIN;
+							if (pDragField->tchSt[1] != INT32_MIN) {
+								pDragField->delta[1] += pDragField->tchLt[1] - pDragField->tchSt[1];
+								pDragField->tchSt[1] = INT32_MIN;
 							}
 						}
 						
@@ -488,15 +509,15 @@ static void resolveTouchpadEvents(const InputDeviceImp* const pDevice, InputCurs
 
 				switch (pEvent->value) {
 				case 0:
-					pCursor->release |= buttonBit;
+					pDragField->release |= buttonBit;
 					break;
 
 				case 1:
-					pCursor->press |= buttonBit;
+					pDragField->press |= buttonBit;
 					break;
 
 				case 2:
-					pCursor->repeat |= buttonBit;
+					pDragField->repeat |= buttonBit;
 					break;
 				}
 			}
@@ -506,18 +527,18 @@ static void resolveTouchpadEvents(const InputDeviceImp* const pDevice, InputCurs
 			case EV_ABS:
 				switch (pEvent->code) {
 				case ABS_X:
-					if (pCursor->tchSt[0] == INT32_MIN)
-						pCursor->tchSt[0] = pEvent->value;	
+					if (pDragField->tchSt[0] == INT32_MIN)
+						pDragField->tchSt[0] = pEvent->value;	
 					
-					pCursor->tchLt[0] = pEvent->value;
+					pDragField->tchLt[0] = pEvent->value;
 
 					break;
 						
 				case ABS_Y:
-					if (pCursor->tchSt[1] == INT32_MIN)
-						pCursor->tchSt[1] = pEvent->value;
+					if (pDragField->tchSt[1] == INT32_MIN)
+						pDragField->tchSt[1] = pEvent->value;
 					
-					pCursor->tchLt[1] = pEvent->value;
+					pDragField->tchLt[1] = pEvent->value;
 
 					break;
 				}
@@ -531,18 +552,18 @@ static void resolveTouchpadEvents(const InputDeviceImp* const pDevice, InputCurs
 	
 	}
 
-	if (pCursor->tchSt[0] != INT32_MIN) {
-		pCursor->delta[0] += pCursor->tchLt[0] - pCursor->tchSt[0];
-		pCursor->tchSt[0] = pCursor->tchLt[0];
+	if (pDragField->tchSt[0] != INT32_MIN) {
+		pDragField->delta[0] += pDragField->tchLt[0] - pDragField->tchSt[0];
+		pDragField->tchSt[0] = pDragField->tchLt[0];
 	}
 	
-	if (pCursor->tchSt[1] != INT32_MIN) {
-		pCursor->delta[1] += pCursor->tchLt[1] - pCursor->tchSt[1];
-		pCursor->tchSt[1] = pCursor->tchLt[1];
+	if (pDragField->tchSt[1] != INT32_MIN) {
+		pDragField->delta[1] += pDragField->tchLt[1] - pDragField->tchSt[1];
+		pDragField->tchSt[1] = pDragField->tchLt[1];
 	}
 }
 
-void pollInputs(InputDeviceSet const _InputDeviceSet, InputCursorState* const pCursorState, InputKeyField* const pKeyField) noexcept {
+void pollInputs(InputDeviceSet const _InputDeviceSet, InputDragField* const pDragField, InputKeyField* const pKeyField) noexcept {
 	InputDeviceImp* const pInputDeviceSet = reinterpret_cast<InputDeviceImp*>(_InputDeviceSet);
 
 	const size_t deviceCount = mem_getAllocationSize<InputDeviceImp>(pInputDeviceSet);
@@ -554,10 +575,10 @@ void pollInputs(InputDeviceSet const _InputDeviceSet, InputCursorState* const pC
 		pKeyField->release[page] = 0u;
 	}
 
-	pCursorState->repeat |= pCursorState->press;
-	pCursorState->repeat &= ~pCursorState->release;
-	pCursorState->press = 0u;
-	pCursorState->release = 0u;
+	pDragField->repeat |= pDragField->press;
+	pDragField->repeat &= ~pDragField->release;
+	pDragField->press = 0u;
+	pDragField->release = 0u;
 
 	const InputDeviceImp* const pInputDeviceEnd = pInputDeviceSet + deviceCount;
 	for (const InputDeviceImp* pDevice{ pInputDeviceSet }; pDevice != pInputDeviceEnd; ++pDevice) {
@@ -567,11 +588,11 @@ void pollInputs(InputDeviceSet const _InputDeviceSet, InputCursorState* const pC
 			break;
 		
 		case INPUT_DEVICE_CAPABILITY_MOUSE:
-			resolveMouseInputs(pDevice, pCursorState);
+			resolveMouseInputs(pDevice, pDragField);
 			break;
 
 		case INPUT_DEVICE_CAPABILITY_TOUCHPAD:
-			resolveTouchpadEvents(pDevice, pCursorState);
+			resolveTouchpadEvents(pDevice, pDragField);
 			break;
 
 		case INPUT_DEVICE_CAPABILITY_GAMEPAD:
