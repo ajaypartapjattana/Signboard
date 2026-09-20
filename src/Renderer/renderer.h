@@ -2,12 +2,12 @@
 
 #include <glm/glm.hpp>
 
-#include <core/Memory/memory.h>
+#include <core/memory.h>
 
 struct VulkanContext_T;
 using VulkanContext = VulkanContext_T*;
 
-int requestVulkanContext(mem::stack* pScratch, VulkanContext* pContext) noexcept;
+int requestVulkanContext(mem_stack* pScratch, VulkanContext* pContext) noexcept;
 void destroyVulkanContext(VulkanContext _Context) noexcept;
 
 void getPhysicalDeviceCount(VulkanContext _Context, uint32_t* pCount) noexcept;
@@ -26,7 +26,7 @@ struct EmulatorCreateInfo {
 struct Emulator_T;
 using Emulator = Emulator_T*;
 
-int createEmulator(VulkanContext _Context, const EmulatorCreateInfo* pCreateInfo, mem::stack* pScratch, Emulator* pEmulator) noexcept;
+int createEmulator(VulkanContext _Context, const EmulatorCreateInfo* pCreateInfo, mem_stack* pScratch, Emulator* pEmulator) noexcept;
 void destroyEmulator(Emulator _Emulator) noexcept;
 
 int waitEmulator(Emulator const _Emulator) noexcept;
@@ -78,7 +78,7 @@ struct SurfaceCreateInfo {
 	uint32_t minImageCount;
 };
 
-int createSurface(Emulator _Emulator, const SurfaceCreateInfo* pCreateInfo, mem::stack* pScratch, Surface* pCanvas) noexcept;
+int createSurface(Emulator _Emulator, const SurfaceCreateInfo* pCreateInfo, mem_stack* pScratch, Surface* pCanvas) noexcept;
 void destroySurface(Surface _Surface) noexcept;
 
 int updateSurface(Surface _Surface) noexcept;
@@ -104,7 +104,7 @@ struct RenderPassCreateInfo {
 	Surface surface;
 };
 
-int createRenderPass(Emulator _Emulator, const RenderPassCreateInfo* pCreateInfo, mem::stack* pScratch, RenderPass* pRenderBox) noexcept;
+int createRenderPass(Emulator _Emulator, const RenderPassCreateInfo* pCreateInfo, mem_stack* pScratch, RenderPass* pRenderBox) noexcept;
 void destroyRenderPass(RenderPass _RenderBox) noexcept;
 
 struct RenderPassUpdateInfo {
@@ -123,7 +123,7 @@ struct SceneCreateInfo {
 	uint32_t drawCount;
 };
 
-int createScene(Emulator _Emulator, Renderer _Renderer, const SceneCreateInfo* pCreateInfo, mem::stack* pScratch, Scene* pScene) noexcept;
+int createScene(Emulator _Emulator, Renderer _Renderer, const SceneCreateInfo* pCreateInfo, mem_stack* pScratch, Scene* pScene) noexcept;
 void destroyScene(Scene _Scene) noexcept;
 
 using Transform = glm::mat4;
@@ -148,7 +148,7 @@ struct CameraCreateInfo {
 	uint32_t bindings;
 };
 
-int createCamera(Emulator _Emulator, Renderer _Renderer, const CameraCreateInfo* pCreateInfo, mem::stack* pScratch, Camera* pCamera) noexcept;
+int createCamera(Emulator _Emulator, Renderer _Renderer, const CameraCreateInfo* pCreateInfo, mem_stack* pScratch, Camera* pCamera) noexcept;
 void destroyCamera(Camera _Camera) noexcept;
 
 struct CameraData {

@@ -2,71 +2,83 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
-#include <core/Memory/memory.h>
+#include <core/memory.h>
 #include <core/io/io.h>
 
 #include <Input/input.h>
-#include <Platform/platform.h>
+#include <Platform/display.h>
 #include <Renderer/renderer.h>
 
-int readPng(mem::stack* const pScratch, const char* _Path) noexcept {
-	const mem::marker mark = pScratch->mark();
-	
+int readPng(mem_stack* const pScratch, const char* _Path) noexcept {
 	io::Inflator _inflator = nullptr;
-
+	
 	do {
 		int error;
-
+		
 		size_t fileSize = 0;
 		error = io::getBinarySize(_Path, &fileSize);
+		
+		if (error)
+			return -1;
+		
+		pScratch->frame();
+
+		mem_span<uint8_t> imageBin;
+		mem_stackAllocateSpan<uint8_t>(pScratch, &imageBin, fileSize);
+
+		if (!imageBin.data)
+			break;
+
+		error = io::loadBinary(_Path, fileSize, imageBin.data);
 
 		if (error)
 			break;
 
-		mem::span<uint8_t> imageBin = pScratch->alloc<uint8_t>(fileSize);
-
-		error = io::loadBinary(_Path, fileSize, imageBin);
-
-		if (error)
-			break;;
-
 		io::ImageInfo imageInfo;
-		error = io::fetchPngInfo(imageBin, fileSize, &imageInfo);
+		error = io::fetchPngInfo(imageBin.data, fileSize, &imageInfo);
 
 		if (error)
 			break;
 
 		const size_t imageSize = io::getImageSize(&imageInfo);
-		mem::span<uint8_t> image = pScratch->alloc<uint8_t>(imageSize);
 		
-		io::Inflator inflator = nullptr;
+		mem_span<uint8_t> image;
+		mem_stackAllocateSpan<uint8_t>(pScratch, &image, imageSize);
+
+		if (!image.data)
+			break;
 
 		{
 			size_t resolveMemorySize;
 			io::getInflateBufferSize(&imageInfo, &resolveMemorySize);
-			mem::span<uint8_t> resolveMemory = pScratch->alloc<uint8_t>(resolveMemorySize);
+
+			mem_span<uint8_t> resolveMemory;
+			mem_stackAllocateSpan(pScratch, &resolveMemory, resolveMemorySize);
+
+			if (!resolveMemory.data)
+				break;
 
 			io::InflatorCreateInfo createInfo{};
 			createInfo.imageInfo = &imageInfo;
-			createInfo.pStreamSrc = imageBin.pBegin;
-			createInfo.StreamSize = imageBin.size();
-			createInfo.pDst = image.pBegin;
-			createInfo.pLimit = image.pEnd;
+			createInfo.pStreamSrc = imageBin.data;
+			createInfo.StreamSize = imageBin.count;
+			createInfo.pDst = image.data;
+			createInfo.pLimit = image.end();
 		
-			error = io::createInflator(&createInfo, resolveMemory, &inflator);
+			error = io::createInflator(&createInfo, resolveMemory, &_inflator);
 		}
 
 		if (error)
 			break;
 
-		error = io::decodePng(inflator);
+		error = io::decodePng(_inflator);
 
 		if (error)
 			break;
 
 		io::destroyInflator(_inflator);
 
-		pScratch->restore(mark);
+		pScratch->restore();
 
 		return 0;
 	} while (false);
@@ -74,7 +86,7 @@ int readPng(mem::stack* const pScratch, const char* _Path) noexcept {
 	if (_inflator)
 		io::destroyInflator(_inflator);
 	
-	pScratch->restore(mark);
+	pScratch->restore();
 
 	return -1;
 }
@@ -82,14 +94,10 @@ int readPng(mem::stack* const pScratch, const char* _Path) noexcept {
 int main() {
 	int failure{};
 	
-	mem::stack scratch;
+	mem_stack scratch;
 
-	try {
-		scratch.resize(16u << 20);
-	}
-	catch (const std::exception* _Except) {
+	if (scratch.create(16u << 20))
 		return EXIT_FAILURE;
-	}
 
 	InputDeviceSet inputDevice = nullptr;
 
@@ -106,19 +114,21 @@ int main() {
 		if (failure)
 			break;
 
-		scratch.mark();
+		scratch.frame();
 
-		mem::span<const char*> deviceName = scratch.alloc<const char*>((size_t)deviceCount);
+		mem_span<const char*> deviceName;
 
-		if (!deviceName) {
+		mem_stackAllocateSpan(&scratch, &deviceName, (size_t)deviceCount);
+
+		if (!deviceName.count) {
 			scratch.restore();
 			break;
 		}
 
-		enumerateInputDeviceName(inputDevice, deviceCount, deviceName);
+		enumerateInputDeviceName(inputDevice, deviceCount, deviceName.data);
 
-		const char** const pNameEnd = deviceName.pEnd;
-		for (const char** pName{ deviceName.pBegin }; pName != pNameEnd; ++pName)
+		const char** const pNameEnd = deviceName.end();
+		for (const char** pName{ deviceName.data }; pName != pNameEnd; ++pName)
 			printf("input_device : {%s}\n", *pName);
 
 		printf("\n");
@@ -191,7 +201,7 @@ int main() {
 		if (!deviceCount)
 			break;
 
-		int device;
+		int device = -1;
 
 		int powerOptimal = -1;
 		queryBatteryOptimalDevice(vulkanCtx, 0u, &powerOptimal);

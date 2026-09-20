@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <cassert>
 
-#include <core/Memory/memory.h>
+#include <core/memory.h>
 #include <core/util.h>
 
 namespace io {
@@ -255,29 +255,29 @@ namespace io {
 	};
 
 	struct ResolveBuffer{
-		mem::span<uint8_t> storage;
+		mem_span<uint8_t> storage;
 		uint8_t* pCurrent;
 		const uint8_t* pResolve;
 
 		ResolveBuffer() noexcept = default;
 
-		ResolveBuffer(mem::span<uint8_t> _Span) noexcept
+		ResolveBuffer(mem_span<uint8_t> _Span) noexcept
 			: storage(_Span)
-			, pCurrent(_Span.pBegin)
-			, pResolve(_Span.pBegin)
+			, pCurrent(_Span.data)
+			, pResolve(_Span.data)
 		{
 		
 		}
 
-		inline void memory(const mem::span<uint8_t> _Span) noexcept {
+		inline void memory(const mem_span<uint8_t> _Span) noexcept {
 			storage = _Span;
-			pCurrent = _Span.pBegin;
-			pResolve = _Span.pBegin;
+			pCurrent = _Span.data;
+			pResolve = _Span.data;
 		}
 
 		inline void clear() noexcept {
-			pResolve = storage.pBegin;
-			pCurrent = storage.pBegin;
+			pResolve = storage.data;
+			pCurrent = storage.data;
 		}
 
 		inline void extern_copy(const size_t _Size) noexcept {
@@ -606,7 +606,7 @@ namespace io {
 		*pSize = (rowBytes + 1) * pImageInfo->height;
 	}
 
-	int createInflator(InflatorCreateInfo* const pCreateInfo, mem::span<uint8_t> _ResolveMemory, Inflator* const pInflator) noexcept {
+	int createInflator(InflatorCreateInfo* const pCreateInfo, mem_span<uint8_t> _ResolveMemory, Inflator* const pInflator) noexcept {
 		Inflator inflator = new(std::nothrow) Inflator_T;
 
 		if (!inflator)

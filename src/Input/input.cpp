@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <cstring>
-#include <cassert>
+#include <cerrno>
 
 #include "input.h"
 
@@ -14,7 +14,7 @@
 #include <linux/input-event-codes.h>
 #include <libudev.h>
 
-#include <core/Memory/memory.h>
+#include <core/memory.h>
 
 struct InputDeviceImp {
 	InputDeviceCapability capability;
@@ -24,9 +24,11 @@ struct InputDeviceImp {
 };
 
 int discoverInputDevices(const InputDeviceDicoverControlInfo* const pDiscoverInfo, uint32_t* const pCount, InputDeviceSet* const pInputDeviceSet) noexcept {
+	const size_t inputDeviceCount = pDiscoverInfo->maxInputDevice;
+	
 	udev* _udev = nullptr;
 	udev_enumerate* _enumerate = nullptr;
-	mem::span<InputDeviceImp> _inputDevice;
+	InputDeviceImp* _inputDevice = nullptr;
 
 	do {
 		_udev = udev_new();
@@ -44,15 +46,15 @@ int discoverInputDevices(const InputDeviceDicoverControlInfo* const pDiscoverInf
 		if (!pDiscoverInfo->maxInputDevice)
 			break;
 
-		_inputDevice = mem::allocate_range<InputDeviceImp>((size_t)pDiscoverInfo->maxInputDevice);
+		_inputDevice = mem_allocateRange<InputDeviceImp>(inputDeviceCount);
 
 		if (!_inputDevice)
 			break;
 
-		_inputDevice.assign_default();
+		mem_nullifyRange(_inputDevice, inputDeviceCount);
 
-		const InputDeviceImp* const pDeviceDstEnd = _inputDevice.pEnd;
-		InputDeviceImp* pDeviceDst = _inputDevice.pBegin;
+		InputDeviceImp* pDeviceDst = _inputDevice;
+		const InputDeviceImp* const pDeviceDstEnd = _inputDevice + inputDeviceCount;
 
 		udev_list_entry* entry;
 		udev_list_entry_foreach(entry, devices) {
@@ -91,16 +93,16 @@ int discoverInputDevices(const InputDeviceDicoverControlInfo* const pDiscoverInf
 				break;
 		}
 
-		size_t deviceCount = static_cast<size_t>(pDeviceDst - _inputDevice.pBegin);
+		size_t deviceCount = static_cast<size_t>(pDeviceDst - _inputDevice);
 
 		InputDeviceImp* const device = mem_allocateSizeRange<InputDeviceImp>(deviceCount);
 
 		if (!device)
 			break;
 		
-		memcpy(device, _inputDevice.pBegin, sizeof(InputDeviceImp) * deviceCount);
+		memcpy(device, _inputDevice, sizeof(InputDeviceImp) * deviceCount);
 		
-		mem::free_range(_inputDevice);
+		mem_freeRange<InputDeviceImp>(_inputDevice);
 
 		*pCount = deviceCount;
 		*pInputDeviceSet = device;
@@ -113,13 +115,13 @@ int discoverInputDevices(const InputDeviceDicoverControlInfo* const pDiscoverInf
 	} while (false);
 
 	if (_inputDevice) {
-		const InputDeviceImp* const pDeviceEnd = _inputDevice.pEnd;
-		for (const InputDeviceImp* pDevice{ _inputDevice.pBegin }; pDevice != pDeviceEnd && pDevice->device; ++pDevice) {
+		const InputDeviceImp* const pDeviceEnd = _inputDevice + inputDeviceCount;
+		for (const InputDeviceImp* pDevice{ _inputDevice }; pDevice != pDeviceEnd && pDevice->device; ++pDevice) {
 			close(pDevice->fileDescriptorIndex);
 			udev_device_unref(pDevice->device);
 		}
 
-		mem::free_range(_inputDevice);
+		mem_freeRange<InputDeviceImp>(_inputDevice);
 	}
 
 	udev_enumerate_unref(_enumerate);
@@ -131,7 +133,7 @@ int discoverInputDevices(const InputDeviceDicoverControlInfo* const pDiscoverInf
 void destroyInputDeviceSet(InputDeviceSet const _InputDeviceSet) noexcept {
 	InputDeviceImp* pDeviceSet = reinterpret_cast<InputDeviceImp*>(_InputDeviceSet);
 
-	const size_t deviceCount = mem_getAllocationSize<InputDeviceImp>(pDeviceSet);
+	const size_t deviceCount = mem_getSizeAllocationSize<InputDeviceImp>(pDeviceSet);
 
 	const InputDeviceImp* const pDeviceEnd = pDeviceSet + deviceCount;
 	for (const InputDeviceImp* pDevice{ pDeviceSet }; pDevice != pDeviceEnd; ++pDevice)
@@ -153,7 +155,7 @@ void enumerateInputDeviceName(InputDeviceSet const _InputDeviceSet, const uint32
 int beginInputEventPoll(InputDeviceSet const _InputDeviceSet) noexcept {
 	InputDeviceImp* const pInputDevice = reinterpret_cast<InputDeviceImp*>(_InputDeviceSet);
 
-	const size_t deviceCount = mem_getAllocationSize<InputDeviceImp>(pInputDevice);
+	const size_t deviceCount = mem_getSizeAllocationSize<InputDeviceImp>(pInputDevice);
 
 	int fd{};
 
@@ -179,7 +181,7 @@ int beginInputEventPoll(InputDeviceSet const _InputDeviceSet) noexcept {
 void endInputEventPoll(InputDeviceSet const _InputDeviceSet) noexcept {
 	InputDeviceImp* const pInputDevice = reinterpret_cast<InputDeviceImp*>(_InputDeviceSet);
 
-	const size_t deviceCount = mem_getAllocationSize<InputDeviceImp>(pInputDevice);
+	const size_t deviceCount = mem_getSizeAllocationSize<InputDeviceImp>(pInputDevice);
 
 	const InputDeviceImp* const pInputDeviceEnd = pInputDevice + deviceCount;
 	for (InputDeviceImp* pDevice{ pInputDevice }; pDevice != pInputDeviceEnd; ++pDevice) {
@@ -566,7 +568,7 @@ static void resolveTouchpadEvents(const InputDeviceImp* const pDevice, InputDrag
 void pollInputs(InputDeviceSet const _InputDeviceSet, InputDragField* const pDragField, InputKeyField* const pKeyField) noexcept {
 	InputDeviceImp* const pInputDeviceSet = reinterpret_cast<InputDeviceImp*>(_InputDeviceSet);
 
-	const size_t deviceCount = mem_getAllocationSize<InputDeviceImp>(pInputDeviceSet);
+	const size_t deviceCount = mem_getSizeAllocationSize<InputDeviceImp>(pInputDeviceSet);
 
 	for (size_t page{}; page != KEY_PAGE_COUNT; ++page) {
 		pKeyField->repeat[page] |= pKeyField->press[page];

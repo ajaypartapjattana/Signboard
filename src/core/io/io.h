@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-#include <core/Memory/memory.h>
+#include <core/memory.h>
 
 namespace io {
 
@@ -36,7 +36,7 @@ namespace io {
 	using Inflator = Inflator_T*;
 
 	void getInflateBufferSize(const ImageInfo* const pImageInfo, size_t* const pSize) noexcept;
-	int createInflator(InflatorCreateInfo* const pCreateInfo, mem::span<uint8_t> _ResolveMemory, Inflator* const pInflator) noexcept;
+	int createInflator(InflatorCreateInfo* const pCreateInfo, mem_span<uint8_t> _ResolveMemory, Inflator* const pInflator) noexcept;
 
 	void destroyInflator(Inflator const _Inflator) noexcept;
 

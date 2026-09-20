@@ -14,11 +14,13 @@ file(GLOB_RECURSE VORTX_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/core/io/binary.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/core/io/png.cpp"
 
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/Platform/window.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/Platform/display.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Input/input.cpp"
 
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/renderer.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/vma.cpp"
+
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/Platform/virmem.cpp"
     
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"

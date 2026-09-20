@@ -1,13 +1,11 @@
 #include <stdlib.h>
-#include <cstring>
-#include <cassert>
 #include <new>
 
 #include <vulkan/vulkan.h>
 
-#include <core/Memory/memory.h>
+#include <core/memory.h>
 
-#include "platform_core.h"
+#include "display.h"
 
 #if defined(PLATFORM_WINDOWS)
 
@@ -344,14 +342,14 @@ struct WindowEvent {
 
 struct EventBuffer_T {
 	uint32_t count;
-	mem::span<WindowEvent> event;
+	WindowEvent* event;
 };
 
 int createEventBuffer(const EventBufferCreateInfo* const pCreateInfo, EventBuffer* const pEventBuffer) noexcept {
-	mem::span<WindowEvent> _event;
+	WindowEvent* _event = nullptr;
 
 	do {
-		_event = { new(std::nothrow) WindowEvent[pCreateInfo->size], (size_t)pCreateInfo->size };
+		_event = mem_allocateSizeRange<WindowEvent>(pCreateInfo->size);
 
 		if (!_event)
 			break;
@@ -371,13 +369,13 @@ int createEventBuffer(const EventBufferCreateInfo* const pCreateInfo, EventBuffe
 	} while (false);
 
 	if (_event)
-		delete[] _event;
+		mem_freeSizeRange<WindowEvent>(_event);
 
 	return -1;
 }
 
 void destroyEventBuffer(EventBuffer const _EventBuffer) noexcept {
-	delete[] _EventBuffer->event;
+	mem_freeSizeRange<WindowEvent>(_EventBuffer->event);
 	
 	delete _EventBuffer;
 }
@@ -483,8 +481,8 @@ static inline bool translateXCBEvent(DisplayContext const _Context, xcb_generic_
 bool pollWindowEvents(DisplayContext const _Context, EventBuffer const _EventBuffer) noexcept {
 	xcb_connection_t* const connection = _Context->connection;
 
-	WindowEvent* pEvent = _EventBuffer->event.pBegin;
-	const WindowEvent* const pEventEnd = _EventBuffer->event.pEnd;
+	WindowEvent* pEvent = _EventBuffer->event;
+	const WindowEvent* const pEventEnd = mem_getSizeAllcoationEnd(_EventBuffer->event);
 	while (pEvent != pEventEnd) {
 		xcb_generic_event_t* const event = xcb_poll_for_event(connection);
 
@@ -497,7 +495,7 @@ bool pollWindowEvents(DisplayContext const _Context, EventBuffer const _EventBuf
 		std::free(event);
 	}
 
-	_EventBuffer->count = static_cast<uint32_t>(pEvent - _EventBuffer->event.pBegin);
+	_EventBuffer->count = static_cast<uint32_t>(pEvent - _EventBuffer->event);
 
 	return _EventBuffer->count != 0;
 }
@@ -508,7 +506,7 @@ bool waitWindowEvents(DisplayContext const _Context, EventBuffer const _EventBuf
 	if (!event)
 		return false;
 
-	if (translateXCBEvent(_Context, event, _EventBuffer->event.pBegin + _EventBuffer->count))
+	if (translateXCBEvent(_Context, event, _EventBuffer->event + _EventBuffer->count))
 		_EventBuffer->count++;
 
 	std::free(event);
@@ -516,13 +514,13 @@ bool waitWindowEvents(DisplayContext const _Context, EventBuffer const _EventBuf
 }
 
 void resolveWindowEvents(EventBuffer const _EventBuffer, DisplayWindow const _Window, WindowStateField* const pState, DisplayCursor* const pCursor) noexcept {
-	const WindowEvent* const pEventEnd = _EventBuffer->event.pBegin + _EventBuffer->count;
+	const WindowEvent* const pEventEnd = _EventBuffer->event + _EventBuffer->count;
 
 	const xcb_window_t window = _Window->window;
 
 	WindowStateField state = 0;
 
-	for (const WindowEvent* pEvent{ _EventBuffer->event.pBegin }; pEvent != pEventEnd; ++pEvent) {
+	for (const WindowEvent* pEvent{ _EventBuffer->event }; pEvent != pEventEnd; ++pEvent) {
 		if (pEvent->window != window)
 			continue;
 

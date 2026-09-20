@@ -1,12 +1,9 @@
 #pragma once
 
+#include <cstdlib>
+#include <cstddef>
 #include <cstring>
-#include <utility>
-#include <cassert>
-#include <stdexcept>
 #include <type_traits>
-
-#include <core/Math/memMath.h>
 
 inline void* mem_allocate(const size_t _Size) noexcept {
 	return std::malloc(_Size);
@@ -91,17 +88,31 @@ _Ty* mem_allocateSizeRange(const size_t _Count) noexcept {
 }
 
 template <typename _Ty, typename _Meta>
-_Meta* mem_getAllocationMeta(_Ty* const _Ptr) noexcept {
+inline _Meta* mem_getMetaAllocationMeta(_Ty* const _Ptr) noexcept {
 	constexpr size_t offset = (sizeof(_Meta) + alignof(_Ty) - 1) & ~(alignof(_Ty) - 1);
 
 	return reinterpret_cast<_Meta*>(reinterpret_cast<char*>(_Ptr) - offset);
 }
 
 template <typename _Ty>
-size_t mem_getAllocationSize(const _Ty* const _Ptr) noexcept {
+inline size_t mem_getSizeAllocationSize(const _Ty* const _Ptr) noexcept {
 	constexpr size_t offset = (sizeof(size_t) + alignof(_Ty) - 1) & ~(alignof(_Ty) - 1);
 
 	return *reinterpret_cast<const size_t*>(reinterpret_cast<const char*>(_Ptr) - offset);
+}
+
+template <typename _Ty>
+inline const _Ty* mem_getSizeAllcoationEnd(const _Ty* const _Ptr) noexcept {
+	constexpr size_t offset = (sizeof(size_t) + alignof(_Ty) - 1) & ~(alignof(_Ty) - 1);
+
+	return _Ptr + *reinterpret_cast<const size_t*>(reinterpret_cast<const char*>(_Ptr) - offset);
+}
+
+template <typename _Ty>
+inline _Ty* mem_getSizeAllcoationEnd(_Ty* const _Ptr) noexcept {
+	constexpr size_t offset = (sizeof(size_t) + alignof(_Ty) - 1) & ~(alignof(_Ty) - 1);
+
+	return _Ptr + *reinterpret_cast<size_t*>(reinterpret_cast<char*>(_Ptr) - offset);
 }
 
 template <typename _Ty>
@@ -135,313 +146,253 @@ void mem_freeSizeRange(const _Ty* const _Ptr) noexcept {
 }
 
 template <typename _Ty>
+inline void mem_nullifyRange(_Ty* const _Ptr, const size_t _Count) noexcept {
+	const size_t size = sizeof(_Ty) * _Count;
+
+	std::memset(_Ptr, 0, size);
+}
+
+template <typename _Ty>
+inline void mem_nullifySizeRange(_Ty* const _Ptr) noexcept {
+	const size_t count = mem_getSizeAllocationSize(_Ptr);
+	mem_nullifyRange(_Ptr, count);
+}
+
+template <typename _Ty>
+inline void mem_assignRange(_Ty* const _Ptr, const size_t _Count, const _Ty& _Val) noexcept(std::is_nothrow_copy_assignable_v<_Ty>) {
+	const _Ty* const pEnd = _Ptr + _Count;
+
+	for (_Ty* pElem{ _Ptr }; pElem != pEnd; ++pElem)
+		*pElem = _Val;
+}
+
+template <typename _Ty>
 struct mem_span {
-	_Ty* pData;
+	_Ty* data;
 	size_t count;
+
+	_Ty* end() noexcept {
+		return this->data + this->count;
+	}
+
+	const _Ty* end() const noexcept {
+		return this->data + this->count;
+	}
 };
 
 template <typename _Ty>
 void mem_allocateSpan(mem_span<_Ty>* const pSpan, const size_t _Count) noexcept {
 	_Ty* const data = mem_allocateRange<_Ty>(_Count);
 
-	pSpan->pData = data;
+	pSpan->data = data;
 	pSpan->count = data ? _Count : 0u;
 }
 
 template <typename _Ty>
 void mem_freeSpan(mem_span<_Ty>* const pSpan) noexcept {
-	mem_freeRange(pSpan->pData);
+	mem_freeRange(pSpan->data);
 }
 
-#if defined(PLATFORM_WINDOWS)
+#include <Platform/virmem.h>
+#include <core/Math/memMath.h>
 
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-
-#include <Windows.h>
-
-inline void* virmem_reserve(void* _AllocHint, size_t* pCapacity) noexcept {
-	const size_t allocGran = virmem_allocationGranularity();	
-	
-	size_t allocSize = *pCapacity;
-	allocSize = allocSize ? alignUp(allocSize, allocGran) :allocGran;
-
-	void* const pAlloc = VirtualAlloc(_AllocHint, allocSize, MEM_RESERVE, PAGE_READWRITE);
-
-	if (!pAlloc) {
-		*pCapacity = 0ull;
-		return nullptr;
-	}
-
-	*pCapacity = allocSize;
-	return pAlloc;
-}
-
-inline void* virmem_commit(void* _Hint, size_t* pSize) noexcept {
-	const size_t pageSize = virmem_pageSize();
-	
-	size_t allocSize = *pSize;
-	allocSize = allocSize ? alignUp(allocSize, pageSize) : pageSize;
-
-	void* const pAlloc = VirtualAlloc(_Hint, allocSize, MEM_COMMIT, PAGE_READWRITE);
-
-	if (!pAlloc) {
-		*pSize = 0ull;
-		return nullptr;
-	}
-
-	*pSize = allocSize;
-	return pAlloc;
-}
-
-inline void* virmem_decommit(void* _Hint, size_t* pSize) noexcept {
-	const size_t pageSize = virmem_pageSize();
-	
-	uint8_t* pBase = alignDown<uint8_t>(_Hint, pageSize);
-	uint8_t* pEnd = alignUp<uint8_t>(reinterpret_cast<uint8_t*>(_Hint) + *pSize, pageSize);
-
-	const size_t releaseSize = static_cast<size_t>(pEnd - pBase);
-
-	int result;
-
-	result = VirtualFree((void*)pBase, releaseSize, MEM_DECOMMIT) != FALSE;
-	
-	if (!result) {
-		*pSize = 0;
-		return nullptr;
-	}
-
-	*pSize = releaseSize;
-	return _Hint;
-}
-
-inline void virmem_free(void* const pAlloc, size_t _Size) noexcept {
-	VirtualFree(pAlloc, 0, MEM_RELEASE);
-}
-
-#elif defined(PLATFORM_LINUX)
-
-#include <unistd.h>
-#include <sys/mman.h>
-
-inline size_t virmem_pageSize() noexcept {
-	return static_cast<size_t>(sysconf(_SC_PAGESIZE));
-}
-
-inline size_t virmem_allocationGranularity() noexcept {
-	return static_cast<size_t>(sysconf(_SC_PAGESIZE));
-}
-
-inline void* virmem_reserve(void* _AllocHint, size_t* pCapacity) noexcept {
-	const size_t allocGran = virmem_allocationGranularity();	
-	
-	size_t allocSize = *pCapacity;
-	allocSize = allocSize ? alignUp(allocSize, allocGran) :allocGran;
-
-	void* const _pAlloc = mmap(_AllocHint, allocSize, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-	void* const pAlloc = _pAlloc != MAP_FAILED ? _pAlloc : nullptr;
-
-	if (!pAlloc) {
-		*pCapacity = 0ull;
-		return nullptr;
-	}
-
-	*pCapacity = allocSize;
-	return pAlloc;
-}
-
-inline void* virmem_commit(void* _Hint, size_t* pSize) noexcept {
-	const size_t pageSize = virmem_pageSize();
-	
-	size_t allocSize = *pSize;
-	allocSize = allocSize ? alignUp(allocSize, pageSize) : pageSize;
-
-	int result = mprotect(_Hint, allocSize, PROT_READ | PROT_WRITE);
-	void* const pAlloc = result == 0 ? _Hint : nullptr;
-
-	if (!pAlloc) {
-		*pSize = 0ull;
-		return nullptr;
-	}
-
-	*pSize = allocSize;
-	return pAlloc;
-}
-
-inline void* virmem_decommit(void* _Hint, size_t* pSize) noexcept {
-	const size_t pageSize = virmem_pageSize();
-	
-	uint8_t* pBase = alignDown<uint8_t>(_Hint, pageSize);
-	uint8_t* pEnd = alignUp<uint8_t>(reinterpret_cast<uint8_t*>(_Hint) + *pSize, pageSize);
-
-	const size_t releaseSize = static_cast<size_t>(pEnd - pBase);
-
-	int result;
-
-	result = madvise((void*)pBase, releaseSize, MADV_DONTNEED) == 0;
-	
-	if (!result) {
-		*pSize = 0;
-		return nullptr;
-	}
-
-	*pSize = releaseSize;
-	return _Hint;
-}
-
-inline void virmem_free(void* const pAlloc, size_t _Size) noexcept {
-	const size_t allocGran = virmem_allocationGranularity();
-
-	_Size = alignUp(_Size, allocGran);
-	munmap(pAlloc, _Size);
-}
-
-#else
-  #error "Unsupported platform"
-#endif
-
-struct mem_stack {
+class mem_stack {
+private:
 	uint8_t* pBase;
 	uint8_t* pFrame;
 	uint8_t* pCurrent;
 	uint8_t* pEnd;
 	uint8_t* pCap;
-	
+
 	struct FrameMeta {
 		uint8_t* pParent;
 	};
-};
 
-inline bool mem_stackEnsure(mem_stack* const pStack, const void* const _Ptr) {
-	const uint8_t* const ptr8 = reinterpret_cast<const uint8_t*>(_Ptr);
+	bool ensure(const void* const _Ptr) noexcept {
+		const uint8_t* const ptr8 = reinterpret_cast<const uint8_t*>(_Ptr);
 
-	if (ptr8 <= pStack->pEnd)
+		if (ptr8 <= this->pEnd)
+			return 0;
+
+		if (ptr8 > this->pCap)
+			return -1;
+		
+		size_t commitSize = ptr8 - this->pEnd;
+
+		void* pAlloc = virmem_commit(this->pEnd, &commitSize);
+
+		if (!pAlloc)
+			return -1;
+
+		this->pEnd += commitSize;
+
 		return 0;
-
-	if (ptr8 > pStack->pCap)
-		return -1;
-	
-	size_t commitSize = ptr8 - pStack->pEnd;
-
-	void* pAlloc = virmem_commit(pStack->pEnd, &commitSize);
-
-	if (!pAlloc)
-		return -1;
-
-	pStack->pEnd += commitSize;
-
-	return 0;
-}
-
-inline void mem_stackCreate(mem_stack* const pStack, const size_t _Size) noexcept {
-	uint8_t* _pAlloc = nullptr;
-	
-	do {
-		size_t capacity = _Size;
-		
-		_pAlloc = reinterpret_cast<uint8_t*>(virmem_reserve(nullptr, &capacity));
-
-		if (!_pAlloc)
-			break;
-
-		pStack->pBase = _pAlloc;
-		
-		pStack->pCurrent = _pAlloc;
-		pStack->pEnd = _pAlloc;
-		pStack->pCap = _pAlloc + capacity;
-		pStack->pFrame = nullptr;
-
-		if (mem_stackEnsure(pStack, _pAlloc + _Size))
-			break;
-
-		return;
-
-	} while (false);
-
-	if (_pAlloc)
-		virmem_free(_pAlloc, _Size);
-
-	pStack->pBase = nullptr;
-	pStack->pEnd = nullptr;
-	pStack->pCap = nullptr;
-}
-
-inline void mem_stackReset(mem_stack* const pStack) noexcept {
-	virmem_free(pStack->pBase, static_cast<size_t>(pStack->pCap - pStack->pBase));
-}
-
-inline bool mem_stackFrame(mem_stack* const pStack) noexcept {
-	if (pStack->pCurrent == pStack->pBase)
-		return true;
-
-	const size_t parentOffset = pStack->pFrame ? static_cast<size_t>(pStack->pFrame - pStack->pBase) : 0u;
-
-	uint8_t* const pAligned = alignUp<uint8_t>(pStack->pCurrent, alignof(mem_stack::FrameMeta));
-	uint8_t* const pEnd = pAligned + sizeof(mem_stack::FrameMeta);
-
-	if (mem_stackEnsure(pStack, pEnd))
-		return false;
-
-	memcpy(pAligned, &parentOffset, sizeof(mem_stack::FrameMeta));
-
-	pStack->pFrame = pAligned;
-	pStack->pCurrent = pEnd;
-
-	return true;
-}
-
-inline void mem_stackRestore(mem_stack* const pStack) noexcept {
-	mem_stack::FrameMeta* pFrame = reinterpret_cast<mem_stack::FrameMeta*>(pStack->pFrame);
-
-	if (!pFrame) {
-		pStack->pCurrent = pStack->pBase;
-
-		return;
 	}
 
-	mem_stack::FrameMeta meta;
-	memcpy(&meta, pFrame, sizeof(mem_stack::FrameMeta));
+public:
+	size_t capacity() const noexcept {
+		return static_cast<size_t>(this->pCap - this->pBase);
+	}
 
-	pStack->pCurrent = pStack->pFrame;
+	int create(const size_t _Size) noexcept {
+		uint8_t* _pAlloc = nullptr;
+		
+		do {
+			size_t capacity = _Size;
+			
+			_pAlloc = reinterpret_cast<uint8_t*>(virmem_reserve(nullptr, &capacity));
 
-	pFrame = meta.pParent ? reinterpret_cast<mem_stack::FrameMeta*>(meta.pParent) : nullptr;
-}
+			if (!_pAlloc)
+				break;
 
-inline void* mem_stackAlloc(mem_stack* const pStack, const size_t _Size, const size_t _Align) noexcept {
-	if (!_Size)
-		return nullptr;
+			this->pBase = _pAlloc;
+			this->pCurrent = _pAlloc;
+			this->pEnd = _pAlloc;
+			this->pCap = _pAlloc + capacity;
+			this->pFrame = nullptr;
 
-	uint8_t* pBegin = alignUp<uint8_t>(pStack->pCurrent, _Align);
-	uint8_t* pEnd = pBegin + _Size;
+			if (this->ensure(_pAlloc + _Size))
+				break;
 
-	if (mem_stackEnsure(pStack, pEnd))
-		return nullptr;
+			return 0;
 
-	pStack->pCurrent = pEnd;
+		} while (false);
 
-	return pBegin;
-}
+		if (_pAlloc)
+			virmem_free(_pAlloc, _Size);
 
-inline void* mem_stackRealloc(mem_stack* const pStack, void* const pAlloc, const size_t _NewSize) noexcept {
-	void* const pEnd = reinterpret_cast<uint8_t*>(pAlloc) + _NewSize;
+		this->pBase = nullptr;
+		this->pEnd = nullptr;
+		this->pCap = nullptr;
 
-	if (mem_stackEnsure(pStack, pEnd))
-		return nullptr;
+		return -1;
+	}
+	
+	void reset() noexcept {
+		virmem_free(this->pBase, static_cast<size_t>(this->pCap - this->pBase));
+	}
 
-	pStack->pCurrent = reinterpret_cast<uint8_t*>(pEnd);
+	bool frame() noexcept {
+		if (this->pCurrent == this->pBase)
+			return true;
 
-	return pAlloc;
+		const size_t parentOffset = this->pFrame ? static_cast<size_t>(this->pFrame - this->pBase) : 0u;
+
+		uint8_t* const pAligned = alignUp<uint8_t>(this->pCurrent, alignof(FrameMeta));
+		uint8_t* const pAllocEnd = pAligned + sizeof(FrameMeta);
+
+		if (this->ensure(pAllocEnd))
+			return false;
+
+		memcpy(pAligned, &parentOffset, sizeof(FrameMeta));
+
+		this->pFrame = pAligned;
+		this->pCurrent = pAllocEnd;
+
+		return true;
+	}
+
+	void restore() noexcept {
+		FrameMeta* pFrame = reinterpret_cast<FrameMeta*>(this->pFrame);
+
+		if (!pFrame) {
+			this->pCurrent = this->pBase;
+
+			return;
+		}
+
+		FrameMeta meta;
+		memcpy(&meta, pFrame, sizeof(FrameMeta));
+
+		this->pCurrent = this->pFrame;
+
+		this->pFrame = meta.pParent ? meta.pParent : nullptr;
+	}
+	
+	void* alloc(const size_t _Size, const size_t _Align) noexcept {
+		if (!_Size)
+			return nullptr;
+
+		uint8_t* pBegin = alignUp<uint8_t>(this->pCurrent, _Align);
+		uint8_t* pAllocEnd = pBegin + _Size;
+
+		if (this->ensure(pAllocEnd))
+			return nullptr;
+
+		this->pCurrent = pAllocEnd;
+
+		return pBegin;
+	}
+
+	void* realloc(void* const pAlloc, const size_t _NewSize) noexcept {
+		void* const pAllocEnd = reinterpret_cast<uint8_t*>(pAlloc) + _NewSize;
+
+		if (this->ensure(pAllocEnd))
+			return nullptr;
+
+		this->pCurrent = reinterpret_cast<uint8_t*>(pAllocEnd);
+
+		return pAlloc;
+	}
+};
+
+template <typename _Ty>
+_Ty* mem_stackAllocateRange(mem_stack* const pStack, const size_t _Count) noexcept {
+	const size_t allocSize = sizeof(_Ty) * _Count;
+
+	return reinterpret_cast<_Ty*>(pStack->alloc(allocSize, alignof(_Ty)));
 }
 
 template <typename _Ty>
-inline void mem_stackAllocateSpan(mem_stack* const pStack, mem_span<_Ty>* const pSpan, const size_t _Count) noexcept {
+void mem_stackAllocateSpan(mem_stack* const pStack, mem_span<_Ty>* const pSpan, const size_t _Count) noexcept {
 	const size_t allocSize = sizeof(_Ty) * _Count;
 
-	_Ty* const pAlloc = reinterpret_cast<_Ty*>(mem_stackAlloc(pStack, allocSize, alignof(_Ty)));
+	_Ty* const pAlloc = reinterpret_cast<_Ty*>(pStack->alloc(allocSize, alignof(_Ty)));
 
-	pSpan->pData = pAlloc;
+	pSpan->data = pAlloc;
 	pSpan->count = pAlloc ? _Count : 0u;
 }
+
+template <typename _Ty>
+struct mem_smallset {
+	_Ty* data;
+	_Ty* pCurrent;
+
+	bool empty() const noexcept {
+		return pCurrent == data;
+	}
+
+	size_t size() const noexcept {
+		return static_cast<size_t>(this->pCurrent - this->data);
+	}
+
+	void push(const _Ty& _Val) noexcept {
+		for (const _Ty* pVal{ this->data }; pVal != this->pCurrent; ++pVal) {
+			if (*pVal == _Val)
+				return;
+		}
+
+		*(pCurrent++) = _Val;
+	}
+};
+
+template <typename _Ty>
+void mem_stackAllocateSmallSet(mem_stack* const pStack, mem_smallset<_Ty>* const pSmallset, const size_t _Count) noexcept {
+	const size_t size = sizeof(_Ty) * _Count;
+
+	_Ty* const pAlloc = static_cast<_Ty*>(pStack->alloc(size, alignof(_Ty)));
+
+	pSmallset->data = pAlloc;
+	pSmallset->pCurrent = pAlloc;
+}
+
+#if 0
+
+#include <cstring>
+#include <utility>
+#include <cassert>
+#include <stdexcept>
+#include <type_traits>
 
 namespace mem {
 
@@ -1327,3 +1278,4 @@ namespace mem {
 	};
 
 }
+#endif
