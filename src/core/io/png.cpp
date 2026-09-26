@@ -14,10 +14,10 @@ namespace io {
 		const uint8_t* pCursor;
 		const uint8_t* pEnd;
 
-		void source(const void* const _pBegin, const void* const _pEnd) noexcept {
+		void source(const void* const _pBegin, const size_t _Size) noexcept {
 			pBegin = reinterpret_cast<const uint8_t*>(_pBegin);
 			pCursor = reinterpret_cast<const uint8_t*>(_pBegin);
-			pEnd = reinterpret_cast<const uint8_t*>(_pEnd);
+			pEnd = reinterpret_cast<const uint8_t*>(_pBegin) + _Size;
 		}
 	};
 
@@ -221,82 +221,76 @@ namespace io {
 	};
 
 	struct ResolveTarget {
-		uint16_t filter = 0u;
+		uint16_t filter;
 		uint16_t texelSize;
 		uint32_t rowSize;
 
-		uint8_t* pDst = nullptr;
-		uint8_t* pImage = nullptr;
+		uint8_t* pDst;
+		uint8_t* pImage;
 		uint8_t* pScanLine;
 
 		const uint8_t* pLimit;
 
-		int setTarget(const ImageInfo* const pInfo) noexcept {
+		int setTarget(const ImageInfo* const pInfo, void* const _Dst) noexcept {
 			if ((pInfo->bitDepth * pInfo->channels) & 7u)
 				return -1;
 			
-			filter = 0u;
-			texelSize = (pInfo->bitDepth * pInfo->channels) >> 3;
-			rowSize = texelSize * pInfo->width;	
+			this->filter = 0u;
+			this->texelSize = (pInfo->bitDepth * pInfo->channels) >> 3;
+			this->rowSize = texelSize * pInfo->width;
+
+			this->pDst = reinterpret_cast<uint8_t*>(_Dst);
+			this->pImage = reinterpret_cast<uint8_t*>(_Dst);
+			this->pScanLine = reinterpret_cast<uint8_t*>(_Dst);
+
+			this->pLimit = reinterpret_cast<uint8_t*>(_Dst) + pInfo->height * rowSize;
 
 			return 0;
 		}
-
-		void setTargetRegion(void* const _Dst, const void* const _End) noexcept {
-			const size_t writeOffset = static_cast<size_t>(pDst - pImage);
-
-			pDst = reinterpret_cast<uint8_t*>(_Dst);
-			pImage = pDst - writeOffset;
-			pScanLine = pImage + (writeOffset / rowSize) * rowSize;
-
-			pLimit = reinterpret_cast<const uint8_t*>(_End);
-		}
-
 	};
 
 	struct ResolveBuffer{
-		mem_span<uint8_t> storage;
+		uint8_t* pBase;
 		uint8_t* pCurrent;
 		const uint8_t* pResolve;
 
 		ResolveBuffer() noexcept = default;
 
-		ResolveBuffer(mem_span<uint8_t> _Span) noexcept
-			: storage(_Span)
-			, pCurrent(_Span.data)
-			, pResolve(_Span.data)
+		ResolveBuffer(uint8_t* const pRegion) noexcept
+			: pBase(pRegion)
+			, pCurrent(pRegion)
+			, pResolve(pRegion)
 		{
 		
 		}
 
-		inline void memory(const mem_span<uint8_t> _Span) noexcept {
-			storage = _Span;
-			pCurrent = _Span.data;
-			pResolve = _Span.data;
+		inline void bind(uint8_t* const pRegion) noexcept {
+			this->pBase = pRegion;
+			this->pCurrent = pRegion;
+			this->pResolve = pRegion;
 		}
 
 		inline void clear() noexcept {
-			pResolve = storage.data;
-			pCurrent = storage.data;
+			this->pResolve = this->pBase;
+			this->pCurrent = this->pBase;
 		}
 
 		inline void extern_copy(const size_t _Size) noexcept {
-			pCurrent += _Size;
+			this->pCurrent += _Size;
 		}
 
 		inline void push_Literal(const uint8_t _Val) noexcept {
-			*pCurrent++ = _Val;
+			*this->pCurrent++ = _Val;
 		}
 
 		inline void copyDistance(const size_t _Distance, size_t _Length) noexcept {
-			uint8_t* src = pCurrent - _Distance;
-			while (_Length--) {
-				*pCurrent++ = *src++;
-			}
+			const uint8_t* src = this->pCurrent - _Distance;
+			while (_Length--)
+				*this->pCurrent++ = *src++;
 		}
 
 		inline bool empty() const noexcept {
-			return (pResolve == pCurrent);
+			return (this->pResolve == this->pCurrent);
 		}
 
 	};
@@ -577,87 +571,24 @@ namespace io {
 		DEFLATE_BLOCK_PROGRESSION_TYPE_TERMINAL = 1u
 	};
 
-	enum DeflateStreamStage : uint32_t {
-		DEFLATE_STREAM_STAGE_HEADER = 0u,
-		DEFLATE_STREAM_STAGE_INSTREAM = 1u
-	};
-
 	enum DeflateBlockType : uint16_t {
 		DEFLATE_BLOCK_TYPE_RAW = 0u,
 		DEFLATE_BLOCK_TYPE_STATIC = 1u,
 		DEFLATE_BLOCK_TYPE_DYNAMIC = 2u,
 	};
 	
-	struct Inflator_T {
-		HflEntry LiteralLengthTable[HLIT_TABLE_SIZE];
-		HflEntry distanceTable[HDIST_TABLE_SIZE];
-		ResolveTarget target;
-		ResolveBuffer resolveBuffer;
-		DeflateStreamStage stage;
-		DeflateBlockProgressionType prog;
-		DeflateBlockType env;
-		ParserState parser;
-	};
-
-	void getInflateBufferSize(const ImageInfo* const pImageInfo, size_t* const pSize) noexcept {
-		assert(pImageInfo && pSize);
-
+	static size_t getInflateRequirement(const ImageInfo* const pImageInfo) noexcept {
 		const size_t rowBytes = ((size_t)pImageInfo->width * pImageInfo->channels * pImageInfo->bitDepth + 7) >> 3;
-		*pSize = (rowBytes + 1) * pImageInfo->height;
-	}
-
-	int createInflator(InflatorCreateInfo* const pCreateInfo, mem_span<uint8_t> _ResolveMemory, Inflator* const pInflator) noexcept {
-		Inflator inflator = new(std::nothrow) Inflator_T;
-
-		if (!inflator)
-			return -1;
-
-		const void* const pStreamEnd = reinterpret_cast<const uint8_t*>(pCreateInfo->pStreamSrc) + pCreateInfo->StreamSize;
-		inflator->parser.source(reinterpret_cast<const uint8_t*>(pCreateInfo->pStreamSrc) + 8u, pStreamEnd);
-		
-		inflator->stage = DEFLATE_STREAM_STAGE_HEADER;
-		inflator->resolveBuffer.memory(_ResolveMemory);
-		
-		if (inflator->target.setTarget(pCreateInfo->imageInfo)) {
-			delete inflator;
-			return -1;
-		}
-
-		inflator->target.setTargetRegion(pCreateInfo->pDst, pCreateInfo->pLimit);
-
-		*pInflator = inflator;
-
-		return 0;
-	}
-
-	void destroyInflator(Inflator const _Inflator) noexcept {
-		delete _Inflator;
-	}
-
-	int bindInflateSource(Inflator const _Inflator, const ImageInfo* const pNewImageInfo, const void* const pNewSrc, const size_t _NewSize) noexcept {
-		if (_Inflator->target.setTarget(pNewImageInfo))
-			return -1;
-
-		_Inflator->resolveBuffer.clear();
-		_Inflator->stage = DEFLATE_STREAM_STAGE_HEADER;
-
-		const void* const pNewEnd = reinterpret_cast<const uint8_t*>(pNewSrc) + _NewSize;
-		_Inflator->parser.source(reinterpret_cast<const uint8_t*>(pNewSrc) + 8u, pNewEnd);
-
-		return 0;
-	}
-
-	void bindInflateTarget(Inflator const _Inflator, void* const pDst, const void* const pLimit) noexcept {
-		_Inflator->target.setTargetRegion(pDst, pLimit);
+		return (rowBytes + 1) * pImageInfo->height;
 	}
 
 	using ScanlineResolveFn = int(*)(ResolveBuffer* const pBuffer, ResolveTarget* const pTarget) noexcept;
 	
 	template <ChunkExtractFn extractChunk, ScanlineResolveFn resolveScanlines>
-	int inflate(Inflator const _Inflator) noexcept {
-		BitStream<extractChunk> stream{ &_Inflator->parser };
+	static int inflate(ParserState* const pParser, ResolveBuffer* const pBuffer, ResolveTarget* const pTarget) noexcept {
+		BitStream<extractChunk> stream{ pParser };
 
-		if (_Inflator->stage == DEFLATE_STREAM_STAGE_HEADER) {
+		{
 			if (stream.endsBefore(2))
 				return -1;
 
@@ -672,44 +603,38 @@ namespace io {
 
 			if (((uint16_t(cmf) << 8) | flg) % 31 != 0)
 				return -1;
-
-			_Inflator->stage = DEFLATE_STREAM_STAGE_INSTREAM;
 		}
 
 		uint8_t lengths[MAX_LENGTH_CODE_COUNT];
 
-		ResolveBuffer* const buffer = &_Inflator->resolveBuffer;
-		ResolveTarget* const target = &_Inflator->target;
+		HflEntry LiteralLengthTable[HLIT_TABLE_SIZE];
+		HflEntry distanceTable[HDIST_TABLE_SIZE];
 
-		if (!buffer->empty()){
-			const int result = resolveScanlines(buffer, target);
-
-			if (result != 1)
-				return result;
-		}
+		DeflateBlockProgressionType prog;
+		DeflateBlockType env;
 
 		do {
 			if (stream.endsBefore(1))
-					return -1;
+				return -1;
 
-			_Inflator->prog = static_cast<DeflateBlockProgressionType>(stream.read(1));
-			_Inflator->env = static_cast<DeflateBlockType>(stream.read(2));
+			prog = static_cast<DeflateBlockProgressionType>(stream.read(1));
+			env = static_cast<DeflateBlockType>(stream.read(2));
 
-			if (_Inflator->env == DEFLATE_BLOCK_TYPE_RAW) {
+			if (env == DEFLATE_BLOCK_TYPE_RAW) {
 				uint16_t BLEN = intrin_byteSwap16(static_cast<uint16_t>(stream.read(16)));
 				uint16_t NBLEN = intrin_byteSwap16(static_cast<uint16_t>(stream.read(16)));
 
 				if (static_cast<uint16_t>(~BLEN) != NBLEN)
 					return -1;
 
-				if (stream.copy_raw(buffer->pCurrent, BLEN))
+				if (stream.copy_raw(pBuffer->pCurrent, BLEN))
 					return -1;
 
 				stream.consumeBytes(BLEN);
-				buffer->extern_copy(BLEN);
+				pBuffer->extern_copy(BLEN);
 			}
 			else {
-				switch (_Inflator->env) {
+				switch (env) {
 				case DEFLATE_BLOCK_TYPE_STATIC: {
 					const size_t HLIT = generateStaticHLIT(lengths);
 					generateStaticHDIST(lengths + HLIT);
@@ -717,8 +642,8 @@ namespace io {
 					uint8_t* const LIT_base = lengths;
 					uint8_t* const DIST_base = lengths + HLIT;
 						
-					createHuffmanLookupTable<9, createEntryTypeLIT>(_Inflator->LiteralLengthTable, LIT_base, 288);
-					createHuffmanLookupTable<6, createEntryTypeDIST>(_Inflator->distanceTable, DIST_base, 32);
+					createHuffmanLookupTable<9, createEntryTypeLIT>(LiteralLengthTable, LIT_base, 288);
+					createHuffmanLookupTable<6, createEntryTypeDIST>(distanceTable, DIST_base, 32);
 				}
 					
 					break;
@@ -734,9 +659,9 @@ namespace io {
 					for (const uint8_t* order{ DYNAMIC_HUFFMAN_LENGTH_ORDER }; order != orderEnd; ++order)
 						lengths[*order] = static_cast<uint8_t>(stream.read(3));
 
-					createHuffmanLookupTable<7, createEntryTypeCLEN>(_Inflator->LiteralLengthTable, lengths, 19u);
+					createHuffmanLookupTable<7, createEntryTypeCLEN>(LiteralLengthTable, lengths, 19u);
 
-					const HflEntry* const LLTable = _Inflator->LiteralLengthTable;
+					const HflEntry* const LLTable = LiteralLengthTable;
 					uint8_t* pLength = lengths;
 					const uint8_t* const pLengthsEnd = lengths + HLIT + HDIST;
 					while (pLength < pLengthsEnd) {
@@ -778,8 +703,8 @@ namespace io {
 					uint8_t* const LIT_base = lengths;
 					uint8_t* const DIST_base = lengths + HLIT;
 
-					createHuffmanLookupTable<9, createEntryTypeLIT>(_Inflator->LiteralLengthTable, LIT_base, HLIT);
-					createHuffmanLookupTable<6, createEntryTypeDIST>(_Inflator->distanceTable, DIST_base, HDIST);
+					createHuffmanLookupTable<9, createEntryTypeLIT>(LiteralLengthTable, LIT_base, HLIT);
+					createHuffmanLookupTable<6, createEntryTypeDIST>(distanceTable, DIST_base, HDIST);
 				}
 
 					break;
@@ -788,8 +713,8 @@ namespace io {
 					return -1;
 				}
 
-				const HflEntry* const LLTable = _Inflator->LiteralLengthTable;
-				const HflEntry* const DTable = _Inflator->distanceTable;
+				const HflEntry* const LLTable = LiteralLengthTable;
+				const HflEntry* const DTable = distanceTable;
 
 				while (true) {
 					HflEntry entry = LLTable[stream.peek(9)];
@@ -809,7 +734,7 @@ namespace io {
 
 					switch (type) {
 					case HFL_ENTRY_TYPE_LITERAL_BIT:
-						buffer->push_Literal(static_cast<uint8_t>(entry.value()));
+						pBuffer->push_Literal(static_cast<uint8_t>(entry.value()));
 
 						break;
 
@@ -828,7 +753,7 @@ namespace io {
 						extra = entry.extraBits();
 						const uint32_t distance = extra ? entry.value() + uint32_t(stream.read(extra)) : entry.value();
 
-						buffer->copyDistance(distance, length);
+						pBuffer->copyDistance(distance, length);
 					}
 												  
 						break;
@@ -840,12 +765,12 @@ namespace io {
 				}
 			}
 
-			const int result = resolveScanlines(buffer, target);
+			const int result = resolveScanlines(pBuffer, pTarget);
 
-			if (result != 1)
-				return result;
+			if (result)
+				return result == -1 ? -1 : 0;
 
-		} while (_Inflator->prog != DEFLATE_BLOCK_PROGRESSION_TYPE_TERMINAL);
+		} while (prog != DEFLATE_BLOCK_PROGRESSION_TYPE_TERMINAL);
 
 		return 0;
 	}
@@ -908,7 +833,8 @@ namespace io {
 		while (pParser->pCursor < pParser->pEnd) {
 			const uint8_t* chunk = pParser->pCursor;
 
-			assert(static_cast<size_t>(pParser->pEnd - chunk) >= 12);
+			if (static_cast<size_t>(pParser->pEnd - chunk) < 12)
+				return false;
 
 			const uint32_t length = read_u32_be(chunk);
 			const uint8_t* signature = chunk + 4;
@@ -919,7 +845,8 @@ namespace io {
 			const uint8_t* data = chunk + 8;
 			const uint8_t* next = data + length + 4;
 
-			assert(next <= pParser->pEnd);
+			if (next > pParser->pEnd)
+				return false;
 
 			pParser->pCursor = next;
 
@@ -962,12 +889,9 @@ namespace io {
 			const size_t byteOffset = static_cast<size_t>(pTarget->pDst - pTarget->pScanLine);
 
 			const size_t rowLimit = (size_t)pTarget->rowSize - byteOffset;
-			const size_t targetLimit = static_cast<size_t>(pTarget->pLimit - pTarget->pDst);
-
-			const size_t remaining = std::min<size_t>(rowLimit, targetLimit);
 			const size_t available = static_cast<size_t>(reinterpret_cast<const uint8_t*>(pEnd) - cursor);
 
-			size_t byteResolve = std::min<size_t>(remaining, available);
+			size_t byteResolve = std::min<size_t>(rowLimit, available);
 
 			switch (pTarget->filter) {
 			case 0:
@@ -1157,15 +1081,41 @@ namespace io {
 
 		if (pTarget->pDst == pTarget->pLimit) {
 			pBuffer->pResolve = cursor;
-			return 0;				
+			return 1;
 		}
 
 		pBuffer->pResolve = pEnd;
-		return 1;
+		return 0;
 	}
 
-	int decodePng(Inflator const _Inflator) noexcept {
-		return inflate<ExtractChunk_PNG, resolveScanlines_PNG>(_Inflator);
+	int decodePng(mem_stack* const pScratch, const ImageDecodeInfo* const pDecodeInfo) noexcept {
+		ParserState parser;
+		parser.source(reinterpret_cast<const uint8_t*>(pDecodeInfo->bin) + 8u, pDecodeInfo->binSize);
+		
+		pScratch->frame();
+		
+		const size_t size = getInflateRequirement(pDecodeInfo->imageInfo);
+		uint8_t* const mem = mem_stackAllocateRange<uint8_t>(pScratch, size);
+		
+		if (!mem) {
+			pScratch->restore();
+			return -1;
+		}
+
+		ResolveBuffer buffer;
+		buffer.bind(mem);
+
+		ResolveTarget target;
+		if (target.setTarget(pDecodeInfo->imageInfo, pDecodeInfo->pDst)) {
+			pScratch->restore();
+			return -1;
+		}
+
+		int result = inflate<ExtractChunk_PNG, resolveScanlines_PNG>(&parser, &buffer, &target);
+
+		pScratch->restore();
+
+		return result;
 	}
 
 }

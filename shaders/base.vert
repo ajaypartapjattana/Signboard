@@ -22,14 +22,14 @@ layout(push_constant) uniform PushConstants {
 };
 
 layout(location = 0) in vec2 inPosition;
-layout(location = 1) in vec3 inColor;
+layout(location = 1) in vec2 inUV;
 
-layout(location = 0) out vec3 fragColor;
+layout(location = 0) out vec2 fragUV;
 
 void main() {
     Camera camera = cameras[cameraIndex];
     Object object = objects[gl_InstanceIndex];
 
     gl_Position = camera.proj * camera.view * object.model * vec4(inPosition, 0.0, 1.0);
-    fragColor = inColor;
+    fragUV = inUV;
 }

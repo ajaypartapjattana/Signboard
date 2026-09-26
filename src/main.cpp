@@ -1,5 +1,6 @@
 #include <iostream>
 
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <core/memory.h>
@@ -9,9 +10,7 @@
 #include <Platform/display.h>
 #include <Renderer/renderer.h>
 
-int readPng(mem_stack* const pScratch, const char* _Path) noexcept {
-	io::Inflator _inflator = nullptr;
-	
+int loadPng(mem_stack* const pScratch, const char* _Path) noexcept {
 	do {
 		int error;
 		
@@ -23,96 +22,89 @@ int readPng(mem_stack* const pScratch, const char* _Path) noexcept {
 		
 		pScratch->frame();
 
-		mem_span<uint8_t> imageBin;
-		mem_stackAllocateSpan<uint8_t>(pScratch, &imageBin, fileSize);
+		uint8_t* imageBin = mem_stackAllocateRange<uint8_t>(pScratch, fileSize);
 
-		if (!imageBin.data)
+		if (!imageBin)
 			break;
 
-		error = io::loadBinary(_Path, fileSize, imageBin.data);
+		error = io::loadBinary(_Path, fileSize, imageBin);
 
 		if (error)
 			break;
 
 		io::ImageInfo imageInfo;
-		error = io::fetchPngInfo(imageBin.data, fileSize, &imageInfo);
+		error = io::fetchPngInfo(imageBin, fileSize, &imageInfo);
 
 		if (error)
 			break;
 
 		const size_t imageSize = io::getImageSize(&imageInfo);
 		
-		mem_span<uint8_t> image;
-		mem_stackAllocateSpan<uint8_t>(pScratch, &image, imageSize);
+		uint8_t* image = mem_allocateSizeRange<uint8_t>(imageSize);
 
-		if (!image.data)
+		if (!image)
 			break;
 
 		{
-			size_t resolveMemorySize;
-			io::getInflateBufferSize(&imageInfo, &resolveMemorySize);
+			io::ImageDecodeInfo decodeInfo{};
+			decodeInfo.imageInfo = &imageInfo;
+			decodeInfo.bin = imageBin;
+			decodeInfo.binSize = fileSize;
+			decodeInfo.pDst = image;
 
-			mem_span<uint8_t> resolveMemory;
-			mem_stackAllocateSpan(pScratch, &resolveMemory, resolveMemorySize);
-
-			if (!resolveMemory.data)
-				break;
-
-			io::InflatorCreateInfo createInfo{};
-			createInfo.imageInfo = &imageInfo;
-			createInfo.pStreamSrc = imageBin.data;
-			createInfo.StreamSize = imageBin.count;
-			createInfo.pDst = image.data;
-			createInfo.pLimit = image.end();
-		
-			error = io::createInflator(&createInfo, resolveMemory, &_inflator);
+			error = io::decodePng(pScratch, &decodeInfo);
 		}
 
-		if (error)
-			break;
-
-		error = io::decodePng(_inflator);
+		mem_freeSizeRange<uint8_t>(image);
 
 		if (error)
 			break;
-
-		io::destroyInflator(_inflator);
 
 		pScratch->restore();
 
 		return 0;
 	} while (false);
 
-	if (_inflator)
-		io::destroyInflator(_inflator);
-	
 	pScratch->restore();
 
 	return -1;
 }
 
 int main() {
-	int failure{};
-	
 	mem_stack scratch;
 
 	if (scratch.create(16u << 20))
 		return EXIT_FAILURE;
 
-	InputDeviceSet inputDevice = nullptr;
+	InputDeviceSet inputDevice;
 
-	do {
+	DisplayContext windowCtx;
+	DisplayWindow window;
+	EventBuffer eventBuffer;
+
+	VulkanContext vulkanCtx;
+	__Renderer renderDevice;
+
+	Collection collection;
+	Scene scene;
+	Camera camera;
+	Texture texture;
+
+	float aspect;
+
+	InputKeyField keyField{};
+	InputDragField dragField{};
+
+	DisplayCursor cursor{};
+
+	{
 		uint32_t deviceCount;
 
-		{
-			InputDeviceDicoverControlInfo discoverInfo{};
-			discoverInfo.maxInputDevice = 10u;
+		InputDeviceDicoverControlInfo discoverInfo{};
+		discoverInfo.maxInputDevice = 10u;
 
-			failure = discoverInputDevices(&discoverInfo, &deviceCount, &inputDevice);
-		}
-
-		if (failure)
-			break;
+		if (discoverInputDevices(&discoverInfo, &deviceCount, &inputDevice))
+			goto cleanup_0;
 
 		scratch.frame();
 
@@ -122,7 +114,7 @@ int main() {
 
 		if (!deviceName.count) {
 			scratch.restore();
-			break;
+			goto cleanup_1;
 		}
 
 		enumerateInputDeviceName(inputDevice, deviceCount, deviceName.data);
@@ -134,21 +126,11 @@ int main() {
 		printf("\n");
 			
 		scratch.restore();
+	}
 
-	} while (false);
-
-	if (failure)
-		return EXIT_FAILURE;
-
-	DisplayContext windowCtx = nullptr;
-	DisplayWindow window = nullptr;
-	EventBuffer eventBuffer = nullptr;
-
-	do {
-		failure = requestDisplayContext(&windowCtx);
-
-		if (failure)
-			break;
+	{
+		if (requestDisplayContext(&windowCtx))
+			goto cleanup_1;
 
 		{
 			WindowCreateInfo createInfo{};
@@ -159,47 +141,30 @@ int main() {
 			createInfo.y = 0u;
 			createInfo.title = "My Window";
 
-			failure = createDisplayWindow(windowCtx, &createInfo, &window);
+			if (createDisplayWindow(windowCtx, &createInfo, &window))
+				goto cleanup_2;
 		}
 
-		if (failure)
-			break;
+		aspect = getWindowAspect(window);
 
-		{
-			EventBufferCreateInfo createInfo{};
-			createInfo.size = 64u;
+		EventBufferCreateInfo createInfo{};
+		createInfo.size = 64u;
 			
-			failure = createEventBuffer(&createInfo, &eventBuffer);
-		}
-
-	} while (false);
-
-	if (failure) {
-		if (eventBuffer)
-			destroyEventBuffer(eventBuffer);
-
-		if (window)
-			destroyDisplayWindow(windowCtx, window);
-
-		destroyDisplayContext(windowCtx);
-
-		return EXIT_FAILURE;
+		if (createEventBuffer(&createInfo, &eventBuffer))
+			goto cleanup_3;
 	}
 
-	VulkanContext vulkanCtx = nullptr;
-	Emulator emulator = nullptr;
+	{
+		if (createVulkanContext(&scratch, &vulkanCtx))
+			goto cleanup_4;
 
-	do {
-		failure = requestVulkanContext(&scratch, &vulkanCtx);
-
-		if (failure)
-			break;
-			
 		uint32_t deviceCount;
 		getPhysicalDeviceCount(vulkanCtx, &deviceCount);
 		
-		if (!deviceCount)
-			break;
+		if (!deviceCount) {
+			printf("FAILURE : no_vulkan_support.\n");
+			goto cleanup_5;
+		}
 
 		int device = -1;
 
@@ -217,7 +182,7 @@ int main() {
 
 		if (device == -1) {
 			printf("FAILURE : no_optimal_device_found.\n");
-			break;
+			goto cleanup_5;
 		}
 
 		const char* deviceName;
@@ -228,236 +193,108 @@ int main() {
 
 		printf("\n");
 
-		{
-			VulkanSurfaceDependencyInfo surfaceInfo;
-			getVulkanSurfaceDependencyInfo(windowCtx, window, &surfaceInfo);
+		VulkanSurfaceDependencyInfo surfaceInfo;
+		getVulkanSurfaceDependencyInfo(windowCtx, window, &surfaceInfo);
 
-			EmulatorCreateInfo createInfo{};
-			createInfo.physicalDevice = device;
-			createInfo.windowContext = surfaceInfo.context;
-			createInfo.windowHandle = surfaceInfo.window;
+		EmulatorCreateInfo createInfo{};
+		createInfo.windowContext = surfaceInfo.context;
+		createInfo.windowHandle = surfaceInfo.window;
+		createInfo.physicalDevice = device;
+		createInfo.imageCount = 2u;
+		createInfo.renderProcess = 2u;
+		createInfo.transferProcess = 3u;
+		createInfo.stageCapacity = (size_t)16u << 20;
 
-			failure = createEmulator(vulkanCtx, &createInfo, &scratch, &emulator);
-		}
-			
-	} while (false);
-
-	if (failure) {
-		if (emulator)
-			destroyEmulator(emulator);
-			
-		destroyVulkanContext(vulkanCtx);
-
-		destroyEventBuffer(eventBuffer);
-		destroyDisplayWindow(windowCtx, window);
-		destroyDisplayContext(windowCtx);
-
-		destroyInputDeviceSet(inputDevice);
-
-		return EXIT_FAILURE;
+		if (createRenderDevice(vulkanCtx, &createInfo, &scratch, &renderDevice))
+			goto cleanup_5;
 	}
 
 	raiseDisplayWindow(windowCtx, window);
 
-	Surface surface = nullptr;
-	Renderer renderer = nullptr;
-	Loader loader = nullptr;	
+	{
+		const Vertex vertexData[] = {
+			{ { -0.5f, -0.5f }, { 0.0f, 0.0f } },
+			{ {  0.5f, -0.5f }, { 1.0f, 0.0f } },
+			{ {  0.5f,  0.5f }, { 1.0f, 1.0f } },
+			{ { -0.5f,  0.5f }, { 0.0f, 1.0f } }
+		};
 
-	do {
-		{
-			SurfaceCreateInfo createInfo{};
-			createInfo.minImageCount = 2u;
+		const Index indexData[] = {
+			0, 1, 2, 2, 3, 0
+		};
 
-			failure = createSurface(emulator, &createInfo, &scratch, &surface);
-		}
+		ModelInfo model[1]{};
+		model[0].vertexCount = 4u;
+		model[0].pVertex = vertexData;
+		model[0].indexCount = 6u;
+		model[0].pIndex = indexData;
 
-		if (failure)
-			break;
+		CollectionCreateInfo createInfo{};
+		createInfo.modelCount = 1u;
+		createInfo.pModelInfos = model;
 
-		{
-			RendererCreateInfo createInfo{};
-			createInfo.maxRenderProcess = 2u;
-
-			failure = createRenderer(emulator, &createInfo, &renderer);
-		}
-		
-		if (failure)
-			break;
-
-		{
-			LoaderCreateInfo createInfo{};
-			createInfo.stageSize = 16ull << 20;
-			createInfo.maxLoadProcess = 2u;
-
-			failure = createLoader(emulator, &createInfo, &loader);
-		}
-	} while (false);
-
-	if (failure) {
-		if (loader)
-			destroyLoader(loader);
-		
-		if (renderer)
-			destroyRenderer(renderer);
-
-		destroySurface(surface);
-
-		destroyEmulator(emulator);
-		destroyVulkanContext(vulkanCtx);
-
-		destroyEventBuffer(eventBuffer);
-		destroyDisplayWindow(windowCtx, window);
-		destroyDisplayContext(windowCtx);
-
-		destroyInputDeviceSet(inputDevice);
-
-		return EXIT_FAILURE;
+		if (createCollection(renderDevice, &createInfo, &collection))
+			goto cleanup_6;
 	}
 
-	RenderPass renderPass = nullptr;
-	Collection collection = nullptr;
-	Scene scene = nullptr;
-	Camera camera = nullptr;
+	{
+		SceneCreateInfo createInfo{};
+		createInfo.collection = collection;
+		createInfo.instanceCount = 4u;
+		createInfo.drawCount = 10u;
 
-	do {
-		{
-			RenderPassCreateInfo createInfo{};
-			createInfo.surface = surface;
-
-			failure = createRenderPass(emulator, &createInfo, &scratch, &renderPass);
-		}
-		
-		if (failure)
-			break;
-
-		{
-			const Vertex vertexData[] = {
-				{ { -0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f } },
-				{ {  0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f } },
-				{ {  0.5f,  0.5f }, { 1.0f, 1.0f, 1.0f } },
-				{ { -0.5f,  0.5f }, { 1.0f, 1.0f, 1.0f } }
-			};
-
-			const Index indexData[] = {
-				0, 1, 2, 2, 3, 0
-			};
-
-			ModelInfo model[1]{};
-			model[0].vertexCount = 4u;
-			model[0].pVertex = vertexData;
-			model[0].indexCount = 6u;
-			model[0].pIndex = indexData;
-
-			CollectionCreateInfo createInfo{};
-			createInfo.modelCount = 1u;
-			createInfo.pModelInfos = model;
-
-			failure = createCollection(emulator, loader, &createInfo, nullptr, &collection);
-		}
-
-		if (failure)
-			break;
-
-		failure = waitLoader(loader);
-
-		if (failure)
-			break;
-
-		{
-			SceneCreateInfo createInfo{};
-			createInfo.collection = collection;
-			createInfo.renderBox = renderPass;
-			createInfo.instanceCount = 4u;
-			createInfo.drawCount = 10u;
-
-			failure = createScene(emulator, renderer, &createInfo, &scratch, &scene);
-		}
-
-		if (failure)
-			break;
-
-		{
-			const InstanceData data[1] = { glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) };
-
-			ObjectInstance instance{};
-			instance.model = 0u;
-			instance.instanceCount = 1u;
-			instance.pInstances = data;
-
-			failure = pushObjectInstance(scene, &instance);
-		}
-
-		if (failure)
-			break;
-
-		{
-			CameraCreateInfo createInfo{};
-			createInfo.renderBox = renderPass;
-			createInfo.bindings = 2u;
-
-			failure = createCamera(emulator, renderer, &createInfo, &scratch, &camera);
-		}
-
-		if (failure)
-			break;
-
-		{
-			CameraData data[1]{};
-			data[0].view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-			data[0].projection = glm::perspective(glm::radians(78.0f), getWindowAspect(window), 0.1f, 10.0f);
-			data[0].projection[1][1] *= -1;
-
-			CameraWrite write{};
-			write.firstCamera = 0u;
-			write.count = 1u;
-			write.pData = data;
-
-			updateCamera(camera, &write);
-		}
-
-		failure = beginInputEventPoll(inputDevice);
-
-	} while (false);
-
-	
-
-	if (failure) {
-		if (camera)
-			destroyCamera(camera);
-
-		if (scene)
-			destroyScene(scene);
-			
-		while (waitLoader(loader));
-
-		if (collection)
-			destroyCollection(collection);
-
-		destroyRenderPass(renderPass);
-		
-		destroyLoader(loader);
-		destroyRenderer(renderer);
-
-		destroySurface(surface);
-
-		destroyEmulator(emulator);
-		destroyVulkanContext(vulkanCtx);
-
-		destroyEventBuffer(eventBuffer);
-		destroyDisplayWindow(windowCtx, window);
-		destroyDisplayContext(windowCtx);
-
-		destroyInputDeviceSet(inputDevice);
-
-		return EXIT_FAILURE;
+		if (createScene(renderDevice, &createInfo, &scratch, &scene))
+			goto cleanup_7;
 	}
 
-	float aspect = getWindowAspect(window);
+	{
+		const InstanceData data[1] = { glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) };
 
-	InputKeyField keyField{};
-	InputDragField dragField{};
+		ObjectInstance instance{};
+		instance.model = 0u;
+		instance.instanceCount = 1u;
+		instance.pInstances = data;
 
-	DisplayCursor cursor{};
+		if (pushObjectInstance(renderDevice, scene, &instance))
+			goto cleanup_8;
+	}
+
+	{
+		CameraCreateInfo createInfo{};
+		createInfo.bindings = 2u;
+
+		if (createCamera(renderDevice, &createInfo, &scratch, &camera))
+			goto cleanup_8;
+	}
+
+	{
+		CameraData data[2]{};
+		data[0].view = glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+		data[0].projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
+		data[0].projection[1][1] *= -1;
+
+		data[1].view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+		data[1].projection = glm::ortho(-10.0f, 10.0f, -5.0f, 5.0f, 0.1f, 100.0f);
+		data[1].projection[1][1] *= -1;
+
+		CameraWrite write{};
+		write.firstCamera = 0u;
+		write.count = 2u;
+		write.pData = data;
+
+		updateCamera(renderDevice, camera, &write);
+	}
+
+	{
+		TextureCreateInfo createInfo{};
+		createInfo.path = "assets/textures/seaside.png";
+
+		if (createTexture(renderDevice, &createInfo, &scratch, &texture))
+			goto cleanup_9;
+	}
+
+	if (beginInputEventPoll(inputDevice))
+		goto cleanup_10;
 
 	while (true) {
 		WindowStateField events = 0;
@@ -465,24 +302,16 @@ int main() {
 		while (pollWindowEvents(windowCtx, eventBuffer))
 			resolveWindowEvents(eventBuffer, window, &events, &cursor);
 
-		if (events & WINDOW_STATE_TERMINATION_IMMINENT_BIT)
+		if (events & WINDOW_STATE_TERMINATION_IMMINENT_BIT) {
+			while(waitRenderDevice(renderDevice));
 			break;
+		}
 			
 		if (events & WINDOW_STATE_EXTENT_DIRTY_BIT) {
-			failure = updateSurface(surface);
-
-			if (failure)
+			if (configureRenderDevice(renderDevice)) {
+				while(waitRenderDevice(renderDevice));
 				break;
-
-			{
-				RenderPassUpdateInfo updateInfo{};
-				updateInfo.surface = surface;
-
-				failure = updateRenderPass(renderPass, &updateInfo);
 			}
-
-			if (failure)
-				break;
 
 			aspect = getWindowAspect(window);
 
@@ -504,80 +333,88 @@ int main() {
 				fflush(stdout);
 			}
 		}
+		
+		if (events & WINDOW_STATE_POINTER_MOTION_BIT)
+			events &= ~WINDOW_STATE_POINTER_MOTION_BIT;
 
 		{
-			CameraData data{};
-			data.view = glm::lookAt(glm::vec3(2.0f, (float)dragField.delta[0] / 100.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-			data.projection = glm::perspective(glm::radians(78.0f), aspect, 0.1f, 10.0f);
-			data.projection[1][1] *= -1;
+			CameraData data[2]{};
+			data[0].view = glm::lookAt(glm::vec3((float)dragField.delta[0] / 100.0f, (float)dragField.delta[1] / 100.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+			data[0].projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
+			data[0].projection[1][1] *= -1;
+
+			data[1].view = glm::lookAt(glm::vec3((float)dragField.delta[0] / 100.0f, (float)dragField.delta[1] / 100.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+			data[1].projection = glm::ortho(-1.5f, 1.5f, -1.5f, 1.5f, 0.1f, 100.0f);
+			data[1].projection[1][1] *= -1;
 
 			CameraWrite write{};
 			write.firstCamera = 0u;
-			write.count = 1u;
-			write.pData = &data;
+			write.count = 2u;
+			write.pData = data;
 
-			updateCamera(camera, &write);
+			updateCamera(renderDevice, camera, &write);
 		}
 
-		failure = beginFrame(renderer, surface);
-
-		if (failure) {
-			if (failure < 0)
-				break;
-					
+		switch (beginFrame(renderDevice)) {
+		case 0:
+			break;
+		case 1:
 			events |= WINDOW_STATE_EXTENT_DIRTY_BIT;
 			continue;
+		default:
+			while(waitRenderDevice(renderDevice));
+			goto cleanup_11;
 		}
 
-		beginRenderPass(renderer, renderPass, camera);
+		render(renderDevice, collection, scene, texture, camera, isKeyDown(&keyField, INPUT_KEY_NUMPAD_0) ? 1u : 0u);
 
-		setActiveCamera(renderer, 0u);
-		render(renderer, collection, scene);
-
-		endPass(renderer);
-
-		failure = endFrame(renderer, surface);
-
-		if (failure)
+		switch (endFrame(renderDevice)) {
+		case 0:
 			break;
-
-		failure = presentFrame(renderer, surface);
-
-		if (failure) {
-			if (failure < 0)
-				break;
-
+		case 1:
 			events |= WINDOW_STATE_EXTENT_DIRTY_BIT;
+			break;
+		default:
+			while(waitRenderDevice(renderDevice));
+			goto cleanup_11;
 		}
 	}
 
+cleanup_11:
 	endInputEventPoll(inputDevice);
 
-	while (waitRenderer(renderer));
-	while (waitSurface(surface));
+cleanup_10:
+	destroyTexture(renderDevice, texture);
 
-	while (waitLoader(loader));
+cleanup_9:
+	destroyCamera(renderDevice, camera);
 
-	destroyCamera(camera);
-	destroyScene(scene);
-	destroyCollection(collection);
-	destroyLoader(loader);
+cleanup_8:
+	destroyScene(renderDevice, scene);
 
-	destroyRenderer(renderer);
-	destroyRenderPass(renderPass);
-	destroySurface(surface);
+cleanup_7:
+	destroyCollection(renderDevice, collection);
 
-	destroyEmulator(emulator);
+cleanup_6:
+	destroyRenderDevice(vulkanCtx, renderDevice);
+
+cleanup_5:
 	destroyVulkanContext(vulkanCtx);
 
+cleanup_4:
 	destroyEventBuffer(eventBuffer);
+
+cleanup_3:
 	destroyDisplayWindow(windowCtx, window);
+
+cleanup_2:
 	destroyDisplayContext(windowCtx);
 
+cleanup_1:
 	destroyInputDeviceSet(inputDevice);
 
-	if (failure)
-		return EXIT_FAILURE;
+cleanup_0:
+	scratch.reset();
 
-	return EXIT_SUCCESS;
+	return 0;
 }

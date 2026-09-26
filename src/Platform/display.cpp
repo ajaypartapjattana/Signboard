@@ -529,6 +529,8 @@ void resolveWindowEvents(EventBuffer const _EventBuffer, DisplayWindow const _Wi
 			pCursor->x = pEvent->position.x;
 			pCursor->y = pEvent->position.y;
 
+			state |= WINDOW_STATE_POINTER_MOTION_BIT;
+
 			break;
 
 		case WINDOW_EVENT_TYPE_WINDOW_CONFIGURE:
@@ -547,12 +549,12 @@ void resolveWindowEvents(EventBuffer const _EventBuffer, DisplayWindow const _Wi
 			break;
 			
 		case WINDOW_EVENT_TYPE_FOCUS_GAINED:
-			state |= WINDOW_EVENT_FOCUSED_BIT;
+			state |= WINDOW_STATE_FOCUSED_BIT;
 
 			break;
 
 		case WINDOW_EVENT_TYPE_FOCUS_LOST:
-			state &= ~WINDOW_EVENT_FOCUSED_BIT;
+			state &= ~WINDOW_STATE_FOCUSED_BIT;
 
 			break;
 
