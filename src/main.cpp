@@ -337,13 +337,18 @@ int main() {
 		if (events & WINDOW_STATE_POINTER_MOTION_BIT)
 			events &= ~WINDOW_STATE_POINTER_MOTION_BIT;
 
+		if (isKeyPressed(&keyField, INPUT_KEY_R)) {
+			dragField.delta[0] = 0u;
+			dragField.delta[1] = 0u;
+		}
+
 		{
 			CameraData data[2]{};
-			data[0].view = glm::lookAt(glm::vec3((float)dragField.delta[0] / 100.0f, (float)dragField.delta[1] / 100.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+			data[0].view = glm::lookAt(glm::vec3((float)dragField.delta[0] / 100.0f, -(float)dragField.delta[1] / 100.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
 			data[0].projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
 			data[0].projection[1][1] *= -1;
 
-			data[1].view = glm::lookAt(glm::vec3((float)dragField.delta[0] / 100.0f, (float)dragField.delta[1] / 100.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+			data[1].view = glm::lookAt(glm::vec3((float)dragField.delta[0] / 100.0f, -(float)dragField.delta[1] / 100.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
 			data[1].projection = glm::ortho(-1.5f, 1.5f, -1.5f, 1.5f, 0.1f, 100.0f);
 			data[1].projection[1][1] *= -1;
 
