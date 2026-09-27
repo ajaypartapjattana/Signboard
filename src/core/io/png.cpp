@@ -614,9 +614,6 @@ namespace io {
 		DeflateBlockType env;
 
 		do {
-			if (stream.endsBefore(1))
-				return -1;
-
 			prog = static_cast<DeflateBlockProgressionType>(stream.read(1));
 			env = static_cast<DeflateBlockType>(stream.read(2));
 
@@ -862,7 +859,7 @@ namespace io {
 	}
 
 	inline uint8_t paeth(uint8_t a, uint8_t b, uint8_t c) noexcept {
-		const int p = int(a) + int(b) + int(c);
+		const int p = int(a) + int(b) - int(c);
 
 		const int pa = abs(p - int(a));
 		const int pb = abs(p - int(b));

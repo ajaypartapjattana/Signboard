@@ -13,7 +13,7 @@
 int main() {
 	mem_stack scratch;
 
-	if (scratch.create(16u << 20))
+	if (scratch.create(32u << 20))
 		return EXIT_FAILURE;
 
 	InputDeviceSet inputDevice;
@@ -36,6 +36,8 @@ int main() {
 	InputDragField dragField{};
 
 	DisplayCursor cursor{};
+
+	float fov = 45.0f;
 
 	{
 		uint32_t deviceCount;
@@ -188,7 +190,7 @@ int main() {
 	}
 
 	{
-		InstanceData data[5];
+		InstanceData data[1];
 		data[0] = { glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) };
 
 		ObjectInstance instance{};
@@ -210,7 +212,7 @@ int main() {
 
 	{
 		TextureCreateInfo createInfo{};
-		createInfo.path = "assets/textures/seaside.png";
+		createInfo.path = "assets/textures/test_LP.png";
 
 		if (createTexture(renderDevice, &createInfo, &scratch, &texture))
 			goto cleanup_9;
@@ -265,13 +267,19 @@ int main() {
 			dragField.delta[1] = 0u;
 		}
 
+		if (isKeyDown(&keyField, INPUT_KEY_ARROW_UP))
+			fov -= 0.1;
+
+		if (isKeyDown(&keyField, INPUT_KEY_ARROW_DOWN))
+			fov += 0.1;
+
 		{
 			CameraData data[2]{};
-			data[0].view = glm::lookAt(glm::vec3((float)dragField.delta[0] / 100.0f, -(float)dragField.delta[1] / 100.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-			data[0].projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
+			data[0].view = glm::lookAt(glm::vec3((float)dragField.delta[0] * fov / 5000.0f, -(float)dragField.delta[1] * fov / 5000.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+			data[0].projection = glm::perspective(glm::radians(fov), aspect, 0.1f, 100.0f);
 			data[0].projection[1][1] *= -1;
 
-			data[1].view = glm::lookAt(glm::vec3((float)dragField.delta[0] / 100.0f, -(float)dragField.delta[1] / 100.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+			data[1].view = glm::lookAt(glm::vec3((float)dragField.delta[0] * fov / 5000.0f, -(float)dragField.delta[1] * fov / 5000.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
 			data[1].projection = glm::ortho(-1.5f, 1.5f, -1.5f, 1.5f, 0.1f, 100.0f);
 			data[1].projection[1][1] *= -1;
 

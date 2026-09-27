@@ -480,8 +480,8 @@ static int createBasePassResources(const VkDevice device, const VkFormat format,
 		createInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 		createInfo.pNext = nullptr;
 		createInfo.flags = 0;
-		createInfo.magFilter = VK_FILTER_LINEAR;
-		createInfo.minFilter = VK_FILTER_LINEAR;
+		createInfo.magFilter = VK_FILTER_NEAREST;
+		createInfo.minFilter = VK_FILTER_NEAREST;
 		createInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 		createInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		createInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
