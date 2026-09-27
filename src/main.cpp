@@ -10,66 +10,6 @@
 #include <Platform/display.h>
 #include <Renderer/renderer.h>
 
-int loadPng(mem_stack* const pScratch, const char* _Path) noexcept {
-	do {
-		int error;
-		
-		size_t fileSize = 0;
-		error = io::getBinarySize(_Path, &fileSize);
-		
-		if (error)
-			return -1;
-		
-		pScratch->frame();
-
-		uint8_t* imageBin = mem_stackAllocateRange<uint8_t>(pScratch, fileSize);
-
-		if (!imageBin)
-			break;
-
-		error = io::loadBinary(_Path, fileSize, imageBin);
-
-		if (error)
-			break;
-
-		io::ImageInfo imageInfo;
-		error = io::fetchPngInfo(imageBin, fileSize, &imageInfo);
-
-		if (error)
-			break;
-
-		const size_t imageSize = io::getImageSize(&imageInfo);
-		
-		uint8_t* image = mem_allocateSizeRange<uint8_t>(imageSize);
-
-		if (!image)
-			break;
-
-		{
-			io::ImageDecodeInfo decodeInfo{};
-			decodeInfo.imageInfo = &imageInfo;
-			decodeInfo.bin = imageBin;
-			decodeInfo.binSize = fileSize;
-			decodeInfo.pDst = image;
-
-			error = io::decodePng(pScratch, &decodeInfo);
-		}
-
-		mem_freeSizeRange<uint8_t>(image);
-
-		if (error)
-			break;
-
-		pScratch->restore();
-
-		return 0;
-	} while (false);
-
-	pScratch->restore();
-
-	return -1;
-}
-
 int main() {
 	mem_stack scratch;
 
@@ -248,7 +188,8 @@ int main() {
 	}
 
 	{
-		const InstanceData data[1] = { glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) };
+		InstanceData data[5];
+		data[0] = { glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) };
 
 		ObjectInstance instance{};
 		instance.model = 0u;
@@ -265,24 +206,6 @@ int main() {
 
 		if (createCamera(renderDevice, &createInfo, &scratch, &camera))
 			goto cleanup_8;
-	}
-
-	{
-		CameraData data[2]{};
-		data[0].view = glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-		data[0].projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
-		data[0].projection[1][1] *= -1;
-
-		data[1].view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-		data[1].projection = glm::ortho(-10.0f, 10.0f, -5.0f, 5.0f, 0.1f, 100.0f);
-		data[1].projection[1][1] *= -1;
-
-		CameraWrite write{};
-		write.firstCamera = 0u;
-		write.count = 2u;
-		write.pData = data;
-
-		updateCamera(renderDevice, camera, &write);
 	}
 
 	{

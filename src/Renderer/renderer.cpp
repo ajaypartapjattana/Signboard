@@ -2076,14 +2076,14 @@ void destroyCollection(const __Renderer renderer, Collection const _Collection) 
 }
 
 struct Texture_T {
+	uint32_t family;
+
 	VkImage image;
 	VmaAllocation allocation;
 	VkImageView imageView;
 
 	VkDescriptorPool descriptorPool;
 	VkDescriptorSet* descriptorSet;
-
-	VkSemaphore creationSemaphore;
 };
 
 int createTexture(const __Renderer renderer, const TextureCreateInfo* pCreateInfo, mem_stack* pScratch, Texture* pTexture) noexcept {
@@ -2378,8 +2378,6 @@ int createTexture(const __Renderer renderer, const TextureCreateInfo* pCreateInf
 			goto failure_4;
 		}
 
-		const VkSemaphore semaphore = renderer->transfer.thisSemaphore();
-
 		{
 			VkSubmitInfo submitInfo{};
 			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -2389,8 +2387,8 @@ int createTexture(const __Renderer renderer, const TextureCreateInfo* pCreateInf
 			submitInfo.pWaitDstStageMask = nullptr;
 			submitInfo.commandBufferCount = 1u;
 			submitInfo.pCommandBuffers = &commandBuffer;
-			submitInfo.signalSemaphoreCount = 1u;
-			submitInfo.pSignalSemaphores = &semaphore;
+			submitInfo.signalSemaphoreCount = 0u;
+			submitInfo.pSignalSemaphores = nullptr;
 
 			if (vkQueueSubmit(renderer->queue.transfer, 1u, &submitInfo, fence) != VK_SUCCESS) {
 				goto failure_4;
@@ -2398,11 +2396,14 @@ int createTexture(const __Renderer renderer, const TextureCreateInfo* pCreateInf
 		}
 
 		*pRegion = head;
-
-		texture->creationSemaphore = semaphore;
 		
+		texture->family = renderer->queueFamily.transfer;
+
 		proceedStackedSubmission(&renderer->transfer);
 	}
+
+	if (waitStackedSubmission(renderer->device, &renderer->transfer))
+		goto failure_4;
 
 	*pTexture = texture;
 
@@ -3057,13 +3058,13 @@ int beginFrame(__Renderer renderer) noexcept {
 void render(const __Renderer renderer, const Collection _Collection, const Scene _Scene, const Texture texture, const Camera camera, const uint32_t cameraIndex) noexcept {
 	const VkCommandBuffer commandBuffer = renderer->graphics.thisCommandBuffer();
 
-	if (texture->creationSemaphore) {
+	if (texture->family == renderer->queueFamily.transfer) {
 		VkImageMemoryBarrier barrier{};
 		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 		barrier.pNext = nullptr;
 		barrier.srcAccessMask = 0;
 		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-		barrier.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		barrier.srcQueueFamilyIndex = renderer->queueFamily.transfer;
 		barrier.dstQueueFamilyIndex = renderer->queueFamily.graphics;
@@ -3072,7 +3073,7 @@ void render(const __Renderer renderer, const Collection _Collection, const Scene
 
 		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1u, &barrier);
 
-		texture->creationSemaphore = VK_NULL_HANDLE;
+		texture->family = renderer->queueFamily.graphics;
 	}
 
 	const VkRect2D renderArea = { { 0, 0 }, renderer->extent };
