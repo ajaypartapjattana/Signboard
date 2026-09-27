@@ -2075,8 +2075,14 @@ void destroyCollection(const __Renderer renderer, Collection const _Collection) 
 	delete _Collection;
 }
 
+using ResourceStateFlags = uint32_t;
+enum ResourceStateBit : ResourceStateFlags {
+	RESOURCE_STATE_PENDING_TRANSFER_ACQUIRE = 1u << 0,
+	RESOURCE_STATE_PENDING_TRANSFER_WAIT = 1u << 1
+};
+
 struct Texture_T {
-	uint32_t family;
+	ResourceStateFlags state;
 
 	VkImage image;
 	VmaAllocation allocation;
@@ -2397,14 +2403,14 @@ int createTexture(const __Renderer renderer, const TextureCreateInfo* pCreateInf
 
 		*pRegion = head;
 		
-		texture->family = renderer->queueFamily.transfer;
-
 		proceedStackedSubmission(&renderer->transfer);
 	}
-
+		
 	if (waitStackedSubmission(renderer->device, &renderer->transfer))
 		goto failure_4;
-
+	
+	texture->state = RESOURCE_STATE_PENDING_TRANSFER_ACQUIRE;
+	
 	*pTexture = texture;
 
 	return 0;
@@ -3058,7 +3064,7 @@ int beginFrame(__Renderer renderer) noexcept {
 void render(const __Renderer renderer, const Collection _Collection, const Scene _Scene, const Texture texture, const Camera camera, const uint32_t cameraIndex) noexcept {
 	const VkCommandBuffer commandBuffer = renderer->graphics.thisCommandBuffer();
 
-	if (texture->family == renderer->queueFamily.transfer) {
+	if (texture->state & RESOURCE_STATE_PENDING_TRANSFER_ACQUIRE) {
 		VkImageMemoryBarrier barrier{};
 		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 		barrier.pNext = nullptr;
@@ -3073,7 +3079,7 @@ void render(const __Renderer renderer, const Collection _Collection, const Scene
 
 		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1u, &barrier);
 
-		texture->family = renderer->queueFamily.graphics;
+		texture->state &= ~RESOURCE_STATE_PENDING_TRANSFER_ACQUIRE;
 	}
 
 	const VkRect2D renderArea = { { 0, 0 }, renderer->extent };
