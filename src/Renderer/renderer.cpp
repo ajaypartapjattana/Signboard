@@ -412,7 +412,7 @@ static void destroySubmissionResource(const VkDevice device, const SubmissionRes
 
 struct BasePass {
 	VkRenderPass renderPass;
-	VkClearValue clearValue[1];
+	VkClearValue clearValue[2];
 	VkSampler sampler;
 	VkDescriptorSetLayout cameraSetLayout;
 	VkDescriptorSetLayout objectSetLayout;
@@ -421,10 +421,10 @@ struct BasePass {
 	VkPipeline pipeline;
 };
 
-static int createBasePassResources(const VkDevice device, const VkFormat format, mem_stack* const pScratch, BasePass* const pPass) noexcept {
+static int createBasePassResources(const VkDevice device, const VkFormat colorFormat, const VkFormat depthFormat, mem_stack* const pScratch, BasePass* const pPass) noexcept {
 	{
-		VkAttachmentDescription attachment[1]{};
-		attachment[0].format = format;
+		VkAttachmentDescription attachment[2]{};
+		attachment[0].format = colorFormat;
 		attachment[0].samples = VK_SAMPLE_COUNT_1_BIT;
 		attachment[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		attachment[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -433,9 +433,21 @@ static int createBasePassResources(const VkDevice device, const VkFormat format,
 		attachment[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		attachment[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-		VkAttachmentReference reference{};
-		reference.attachment = 0;
-		reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		attachment[1].format = depthFormat;
+		attachment[1].samples = VK_SAMPLE_COUNT_1_BIT;
+		attachment[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		attachment[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		attachment[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		attachment[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		attachment[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		attachment[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentReference reference[2]{};
+		reference[0].attachment = 0;
+		reference[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		reference[1].attachment = 1;
+		reference[1].layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 		VkSubpassDescription subpass{};
 		subpass.flags = 0;
@@ -443,30 +455,30 @@ static int createBasePassResources(const VkDevice device, const VkFormat format,
 		subpass.inputAttachmentCount = 0;
 		subpass.pInputAttachments = nullptr;
 		subpass.colorAttachmentCount = 1;
-		subpass.pColorAttachments = &reference;
+		subpass.pColorAttachments = &reference[0];
 		subpass.pResolveAttachments = nullptr;
-		subpass.pDepthStencilAttachment = nullptr;
+		subpass.pDepthStencilAttachment = &reference[1];
 		subpass.preserveAttachmentCount = 0;
 		subpass.pPreserveAttachments = nullptr;
 
 		VkSubpassDependency dependency{};
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 		dependency.srcAccessMask = VK_ACCESS_NONE;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 		dependency.dependencyFlags = 0;
 
 		VkRenderPassCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 		createInfo.pNext = nullptr;
 		createInfo.flags = 0;
-		createInfo.attachmentCount = 1;
+		createInfo.attachmentCount = 2u;
 		createInfo.pAttachments = attachment;
-		createInfo.subpassCount = 1;
+		createInfo.subpassCount = 1u;
 		createInfo.pSubpasses = &subpass;
-		createInfo.dependencyCount = 1;
+		createInfo.dependencyCount = 1u;
 		createInfo.pDependencies = &dependency;
 
 		if (vkCreateRenderPass(device, &createInfo, nullptr, &pPass->renderPass) != VK_SUCCESS)
@@ -474,6 +486,7 @@ static int createBasePassResources(const VkDevice device, const VkFormat format,
 	}
 
 	pPass->clearValue[0] = { { { 0.0f, 0.0f, 0.0f, 1.0f } } };
+	pPass->clearValue[1] = { 1.0f, 0 };
 
 	{
 		VkSamplerCreateInfo createInfo{};
@@ -691,7 +704,7 @@ static int createBasePassResources(const VkDevice device, const VkFormat format,
 		VkVertexInputAttributeDescription attribute[2]{};
 		attribute[0].binding = 0;
 		attribute[0].location = 0;
-		attribute[0].format = VK_FORMAT_R32G32_SFLOAT;
+		attribute[0].format = VK_FORMAT_R32G32B32_SFLOAT;
 		attribute[0].offset = offsetof(Vertex, Vertex::pos);
 
 		attribute[1].binding = 0;
@@ -731,7 +744,7 @@ static int createBasePassResources(const VkDevice device, const VkFormat format,
 		rasterizationState.depthClampEnable = VK_FALSE;
 		rasterizationState.rasterizerDiscardEnable = VK_FALSE;
 		rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
-		rasterizationState.cullMode = VK_CULL_MODE_NONE;
+		rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
 		rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		rasterizationState.depthBiasEnable = VK_FALSE;
 		rasterizationState.depthBiasConstantFactor = 0.0f;
@@ -754,9 +767,9 @@ static int createBasePassResources(const VkDevice device, const VkFormat format,
 		depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 		depthStencilState.pNext = nullptr;
 		depthStencilState.flags = 0;
-		depthStencilState.depthTestEnable = VK_FALSE;
-		depthStencilState.depthWriteEnable = VK_FALSE;
-		depthStencilState.depthCompareOp = VK_COMPARE_OP_ALWAYS;
+		depthStencilState.depthTestEnable = VK_TRUE;
+		depthStencilState.depthWriteEnable = VK_TRUE;
+		depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS;
 		depthStencilState.depthBoundsTestEnable = VK_FALSE;
 		depthStencilState.stencilTestEnable = VK_FALSE;
 		depthStencilState.front = {};
@@ -874,13 +887,17 @@ struct __Renderer_T {
 	
 	VkSurfaceFormatKHR format;
 	VkPresentModeKHR presentMode;
+	VkFormat depthFormat;
 
 	VkSwapchainKHR swapchain;
 	VkExtent2D extent;
 	uint32_t layers;
 	uint32_t imageCount;
 	VkImage* image;
+	VkImage depthImage;
+	VmaAllocation depthImageAllocation;
 	VkImageView* imageView;
+	VkImageView depthImageView;
 	VkFence* imageFence;
 	
 	BasePass pass;
@@ -1238,11 +1255,67 @@ int createRenderDevice(VulkanContext const context, const EmulatorCreateInfo* co
 
 	if (vkGetSwapchainImagesKHR(renderer->device, renderer->swapchain, &renderer->imageCount, renderer->image))
 		goto failure_5;
+
+	{
+		constexpr VkFormat preferredDepthFormat[] = {
+			VK_FORMAT_D32_SFLOAT
+		};
+
+		const VkFormat* pDepthFormat = nullptr;
+
+		const VkFormat* const pPreferredDepthFormatEnd = preferredDepthFormat + 1u;
+		for (const VkFormat* pPreferredDepthFormat{ preferredDepthFormat }; pPreferredDepthFormat != pPreferredDepthFormatEnd; ++pPreferredDepthFormat) {
+			VkFormatProperties formatProp;
+			vkGetPhysicalDeviceFormatProperties(renderer->physicalDevice, *pPreferredDepthFormat, &formatProp);
+
+			if (formatProp.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+				pDepthFormat = pPreferredDepthFormat;
+				break;
+			}
+		}
+
+		if (!pDepthFormat)
+			goto failure_5;
+
+		renderer->depthFormat = *pDepthFormat;
+	}
+
+	{
+		VkImageCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		createInfo.pNext = nullptr;
+		createInfo.flags = 0;
+		createInfo.imageType = VK_IMAGE_TYPE_2D;
+		createInfo.format = renderer->depthFormat;
+		createInfo.extent = { renderer->extent.width, renderer->extent.height, 1u };
+		createInfo.mipLevels = 1u;
+		createInfo.arrayLayers = 1u;
+		createInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		createInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		createInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		createInfo.queueFamilyIndexCount = 0u;
+		createInfo.pQueueFamilyIndices = nullptr;
+		createInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		VmaAllocationCreateInfo allocationCreateInfo{};
+		allocationCreateInfo.flags = 0;
+		allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+		allocationCreateInfo.requiredFlags = 0;
+		allocationCreateInfo.preferredFlags = 0;
+		allocationCreateInfo.memoryTypeBits = 0;
+		allocationCreateInfo.pool = VK_NULL_HANDLE;
+		allocationCreateInfo.pUserData = nullptr;
+		allocationCreateInfo.priority = 0.0f;
+
+		if (vmaCreateImage(renderer->allocator, &createInfo, &allocationCreateInfo, &renderer->depthImage, &renderer->depthImageAllocation, nullptr) != VK_SUCCESS)
+			goto failure_5;
+	}
 			
 	renderer->imageView = mem_allocateRange<VkImageView>(renderer->imageCount);
 
 	if (!renderer->imageView)
-		goto failure_5;
+		goto failure_6;
 
 	mem_nullifyRange<VkImageView>(renderer->imageView, renderer->imageCount);
 
@@ -1256,41 +1329,59 @@ int createRenderDevice(VulkanContext const context, const EmulatorCreateInfo* co
 		createInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 		createInfo.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
 
-		VkImageView* pImageView = renderer->imageView;
+		const VkImage* pImage = renderer->image;
 
-		const VkImage* const pImageEnd = renderer->image + renderer->imageCount;
-		for (const VkImage* pImage{ renderer->image }; pImage != pImageEnd; ++pImage) {
-			createInfo.image = *pImage;
-			if (vkCreateImageView(renderer->device, &createInfo, nullptr, pImageView++) != VK_SUCCESS)
-				goto failure_6;
+		const VkImageView* const pImageViewEnd = renderer->imageView + renderer->imageCount;
+		for (VkImageView* pImageView{ renderer->imageView }; pImageView != pImageViewEnd; ++pImageView) {
+			createInfo.image = *pImage++;
+			if (vkCreateImageView(renderer->device, &createInfo, nullptr, pImageView) != VK_SUCCESS)
+				goto failure_7;
 		}
+	}
+
+	{
+		VkImageViewCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		createInfo.pNext = nullptr;
+		createInfo.flags = 0;
+		createInfo.image = renderer->depthImage;
+		createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		createInfo.format = renderer->depthFormat;
+		createInfo.components = { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY };
+		createInfo.subresourceRange = { VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 };
+
+		if (vkCreateImageView(renderer->device, &createInfo, nullptr, &renderer->depthImageView) != VK_SUCCESS)
+			goto failure_7;
 	}
 
 	renderer->imageFence = mem_allocateRange<VkFence>(renderer->imageCount);
 		
 	if (!renderer->imageFence)
-		goto failure_6;
+		goto failure_8;
 
 	mem_nullifyRange<VkFence>(renderer->imageFence, renderer->imageCount);
 
-	if (createBasePassResources(renderer->device, renderer->format.format, pScratch, &renderer->pass))
-		goto failure_7;
+	if (createBasePassResources(renderer->device, renderer->format.format, renderer->depthFormat, pScratch, &renderer->pass))
+		goto failure_9;
 
 	renderer->framebuffer = mem_allocateRange<VkFramebuffer>(renderer->imageCount);
 
 	if (!renderer->framebuffer)
-		goto failure_8;
+		goto failure_10;
 
 	mem_nullifyRange<VkFramebuffer>(renderer->framebuffer, renderer->imageCount);
 
 	{
+		VkImageView attachment[2]{};
+		attachment[1] = renderer->depthImageView;
+		
 		VkFramebufferCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		createInfo.pNext = nullptr;
 		createInfo.flags = 0;
 		createInfo.renderPass = renderer->pass.renderPass;
-		createInfo.attachmentCount = 1u;
-
+		createInfo.attachmentCount = 2u;
+		createInfo.pAttachments = attachment;		
 		createInfo.width = renderer->extent.width;
 		createInfo.height = renderer->extent.height;
 		createInfo.layers = 1u;
@@ -1300,9 +1391,9 @@ int createRenderDevice(VulkanContext const context, const EmulatorCreateInfo* co
 
 		const VkFramebuffer* const pFramebufferEnd = renderer->framebuffer + renderer->imageCount;
 		while (pFramebuffer != pFramebufferEnd) {
-			createInfo.pAttachments = pImageView++;		
+			attachment[0] = *pImageView++;
 			if (vkCreateFramebuffer(renderer->device, &createInfo, nullptr, pFramebuffer++) != VK_SUCCESS)
-				goto failure_9;
+				goto failure_11;
 		}
 	}
 
@@ -1311,7 +1402,7 @@ int createRenderDevice(VulkanContext const context, const EmulatorCreateInfo* co
 	renderer->imageAvailable = mem_allocateRange<VkSemaphore>(pCreateInfo->renderProcess);
 
 	if (!renderer->imageAvailable)
-		goto failure_9;
+		goto failure_11;
 
 	mem_nullifyRange<VkSemaphore>(renderer->imageAvailable, pCreateInfo->renderProcess);
 
@@ -1324,11 +1415,11 @@ int createRenderDevice(VulkanContext const context, const EmulatorCreateInfo* co
 		const VkSemaphore* const pSemaphoreEnd = renderer->imageAvailable + pCreateInfo->renderProcess;
 		for (VkSemaphore* pSemaphore{ renderer->imageAvailable }; pSemaphore != pSemaphoreEnd; ++pSemaphore)
 			if (vkCreateSemaphore(renderer->device, &createInfo, nullptr, pSemaphore) != VK_SUCCESS)
-				goto failure_10;
+				goto failure_12;
 	}
 
 	if (createSubmissionResource(renderer->device, renderer->queueFamily.graphics, pCreateInfo->renderProcess, &renderer->graphics))
-		goto failure_10;
+		goto failure_12;
 
 	{
 		VkBufferCreateInfo createInfo{};
@@ -1353,7 +1444,7 @@ int createRenderDevice(VulkanContext const context, const EmulatorCreateInfo* co
 
 		VmaAllocationInfo allocationInfo;
 		if (vmaCreateBuffer(renderer->allocator, &createInfo, &allocationCreateInfo, &renderer->stagingBuffer, &renderer->stagingAllocation, &allocationInfo) != VK_SUCCESS)
-			goto failure_11;
+			goto failure_13;
 
 		renderer->stage = { reinterpret_cast<uint8_t*>(allocationInfo.pMappedData), (size_t)allocationInfo.size };
 	}
@@ -1361,27 +1452,27 @@ int createRenderDevice(VulkanContext const context, const EmulatorCreateInfo* co
 	renderer->region = mem_allocateRange<uint8_t*>(pCreateInfo->transferProcess);
 
 	if (!renderer->region)
-		goto failure_12;
+		goto failure_14;
 
 	mem_nullifyRange<uint8_t*>(renderer->region, pCreateInfo->transferProcess);
 
 	if (createSubmissionResource(renderer->device, renderer->queueFamily.transfer, pCreateInfo->transferProcess, &renderer->transfer))
-		goto failure_13;
+		goto failure_15;
 
 	*pRenderer = renderer;
 
 	return 0;
 
-failure_13:
+failure_15:
 	mem_freeRange<uint8_t*>(renderer->region);
 	
-failure_12:
+failure_14:
 	vmaDestroyBuffer(renderer->allocator, renderer->stagingBuffer, renderer->stagingAllocation);
 
-failure_11:
+failure_13:
 	destroySubmissionResource(renderer->device, &renderer->graphics);
 
-failure_10:
+failure_12:
 	{
 		const VkSemaphore* const pSemaphoreEnd = renderer->imageAvailable + pCreateInfo->renderProcess;
 		for (const VkSemaphore* pSemaphore{ renderer->imageAvailable }; pSemaphore != pSemaphoreEnd && *pSemaphore; ++pSemaphore)
@@ -1390,7 +1481,7 @@ failure_10:
 
 	mem_freeRange<VkSemaphore>(renderer->imageAvailable);
 	
-failure_9:
+failure_11:
 	{
 		const VkFramebuffer* const pFramebufferEnd = renderer->framebuffer + renderer->imageCount;
 		for (const VkFramebuffer* pFramebuffer{ renderer->framebuffer }; pFramebuffer != pFramebufferEnd && *pFramebuffer; ++pFramebuffer)
@@ -1400,13 +1491,16 @@ failure_9:
 	
 	mem_freeRange<VkFramebuffer>(renderer->framebuffer);
 
-failure_8:
+failure_10:
 	destroyBasePassResources(renderer->device, &renderer->pass);
 
-failure_7:
+failure_9:
 	mem_freeRange<VkFence>(renderer->imageFence);
 
-failure_6:
+failure_8:
+	vkDestroyImageView(renderer->device, renderer->depthImageView, nullptr);
+
+failure_7:
 	{
 		const VkImageView* const pImageViewEnd = renderer->imageView + renderer->imageCount;
 		for (const VkImageView* pImageView{ renderer->imageView }; pImageView != pImageViewEnd && *pImageView; ++pImageView)
@@ -1414,6 +1508,9 @@ failure_6:
 	}
 
 	mem_freeRange<VkImageView>(renderer->imageView);
+
+failure_6:
+	vmaDestroyImage(renderer->allocator, renderer->depthImage, renderer->depthImageAllocation);
 
 failure_5:
 	mem_freeRange<VkImage>(renderer->image);
@@ -1457,11 +1554,16 @@ void destroyRenderDevice(VulkanContext const context, __Renderer const renderer)
 	destroyBasePassResources(renderer->device, &renderer->pass);
 	mem_freeRange<VkFence>(renderer->imageFence);
 
+	vkDestroyImageView(renderer->device, renderer->depthImageView, nullptr);
+
 	const VkImageView* const pImageViewEnd = renderer->imageView + renderer->imageCount;
 	for (const VkImageView* pImageView{ renderer->imageView }; pImageView != pImageViewEnd; ++pImageView)
 		vkDestroyImageView(renderer->device, *pImageView, nullptr);
 
 	mem_freeRange<VkImageView>(renderer->imageView);
+
+	vmaDestroyImage(renderer->allocator, renderer->depthImage, renderer->depthImageAllocation);
+
 	mem_freeRange<VkImage>(renderer->image);
 
 	vkDestroySwapchainKHR(renderer->device, renderer->swapchain, nullptr);
@@ -1487,7 +1589,10 @@ int configureRenderDevice(const __Renderer renderer) noexcept {
 
 	VkSwapchainKHR _swapchain ;
 	VkImage* _image;
-	VkImageView* _imageView;
+	VkImage _depthImage;
+	VmaAllocation _depthImageAllocation;
+	VkImageView* _imageView = nullptr;
+	VkImageView _depthImageView;
 	VkFence* _fence;
 	VkFramebuffer* _framebuffer;
 
@@ -1532,80 +1637,130 @@ int configureRenderDevice(const __Renderer renderer) noexcept {
 		}
 
 		extent = surfaceCapabilities.currentExtent;
+	}
 
-		if (vkGetSwapchainImagesKHR(renderer->device, _swapchain, &count, nullptr))
-			goto failure_0;
+	if (vkGetSwapchainImagesKHR(renderer->device, _swapchain, &count, nullptr))
+		goto failure_0;
 
-		_image = mem_allocateRange<VkImage>(count);
+	_image = mem_allocateRange<VkImage>(count);
 
-		if (!_image)
-			goto failure_0;
+	if (!_image)
+		goto failure_0;
 
-		if (vkGetSwapchainImagesKHR(renderer->device, _swapchain, &count, _image) != VK_SUCCESS)
-			goto failure_1;
+	if (vkGetSwapchainImagesKHR(renderer->device, _swapchain, &count, _image) != VK_SUCCESS)
+		goto failure_1;
 
-		_imageView = mem_allocateRange<VkImageView>(count);
+	{
+		VkImageCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		createInfo.pNext = nullptr;
+		createInfo.flags = 0;
+		createInfo.imageType = VK_IMAGE_TYPE_2D;
+		createInfo.format = renderer->depthFormat;
+		createInfo.extent = { extent.width, extent.height, 1u };
+		createInfo.mipLevels = 1u;
+		createInfo.arrayLayers = 1u;
+		createInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		createInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		createInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		createInfo.queueFamilyIndexCount = 0u;
+		createInfo.pQueueFamilyIndices = nullptr;
+		createInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-		if (!_imageView)
-			goto failure_1;
+		VmaAllocationCreateInfo allocationCreateInfo{};
+		allocationCreateInfo.flags = 0;
+		allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+		allocationCreateInfo.requiredFlags = 0;
+		allocationCreateInfo.preferredFlags = 0;
+		allocationCreateInfo.memoryTypeBits = 0;
+		allocationCreateInfo.pool = VK_NULL_HANDLE;
+		allocationCreateInfo.pUserData = nullptr;
+		allocationCreateInfo.priority = 0.0f;
 
-		mem_nullifyRange(_imageView, count);
-
-		{
-			VkImageViewCreateInfo createInfo{};
-			createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			createInfo.pNext = nullptr;
-			createInfo.flags = 0;
-			createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			createInfo.format = renderer->format.format;
-			createInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-			createInfo.subresourceRange= { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-
-			VkImageView* pImageView = _imageView;
-			const VkImage* pImage = _image;
-
-			const VkImageView* const pImageViewEnd = _imageView + count;
-			while (pImageView != pImageViewEnd){
-				createInfo.image = *pImage++;
-				if (vkCreateImageView(renderer->device, &createInfo, nullptr, pImageView++) != VK_SUCCESS)
-					goto failure_2;
-			}
-		}
-
-		_fence = mem_allocateRange<VkFence>(count);
-
-		if (!_fence)
-			goto failure_2;
-
-		mem_nullifyRange(_fence, count);
-
-		_framebuffer = mem_allocateRange<VkFramebuffer>(count);
-
-		if (!_framebuffer)
+		if (vmaCreateImage(renderer->allocator, &createInfo, &allocationCreateInfo, &_depthImage, &_depthImageAllocation, nullptr) != VK_SUCCESS)
 			goto failure_3;
+	}
+	
+	_imageView = mem_allocateRange<VkImageView>(count);
 
-		mem_nullifyRange<VkFramebuffer>(_framebuffer, count);
+	if (!_imageView)
+		goto failure_2;
 
-		{
-			VkFramebufferCreateInfo createInfo{};
-			createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			createInfo.pNext = nullptr;
-			createInfo.flags = 0;
-			createInfo.renderPass = renderer->pass.renderPass;
-			createInfo.attachmentCount = 1u;
-			createInfo.width = extent.width;
-			createInfo.height = extent.height;
-			createInfo.layers = 1u;
+	mem_nullifyRange(_imageView, count);
 
-			VkFramebuffer* pFramebuffer = _framebuffer;
-			const VkImageView* pImageView = _imageView;
+	{
+		VkImageViewCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		createInfo.pNext = nullptr;
+		createInfo.flags = 0;
+		createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		createInfo.format = renderer->format.format;
+		createInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+		createInfo.subresourceRange= { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
 
-			const VkFramebuffer* const pFramebufferEnd = _framebuffer + count;
-			while (pFramebuffer != pFramebufferEnd) {
-				createInfo.pAttachments = pImageView++;
-				if (vkCreateFramebuffer(renderer->device, &createInfo, nullptr, pFramebuffer++) != VK_SUCCESS)
-					goto failure_4;
-			}
+		const VkImage* pImage = _image;
+
+		const VkImageView* const pImageViewEnd = _imageView + count;
+		for (VkImageView* pImageView{ _imageView }; pImageView != pImageViewEnd; ++pImageView) {
+			createInfo.image = *pImage++;
+			if (vkCreateImageView(renderer->device, &createInfo, nullptr, pImageView) != VK_SUCCESS)
+				goto failure_3;
+		}
+	}
+
+	{
+		VkImageViewCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		createInfo.pNext = nullptr;
+		createInfo.flags = 0;
+		createInfo.image = _depthImage;
+		createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		createInfo.format = renderer->depthFormat;
+		createInfo.components = { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY };
+		createInfo.subresourceRange = { VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 };
+
+		if (vkCreateImageView(renderer->device, &createInfo, nullptr, &_depthImageView) != VK_SUCCESS)
+			goto failure_4;
+	}
+
+	_fence = mem_allocateRange<VkFence>(count);
+
+	if (!_fence)
+		goto failure_4;
+
+	mem_nullifyRange(_fence, count);
+
+	_framebuffer = mem_allocateRange<VkFramebuffer>(count);
+
+	if (!_framebuffer)
+		goto failure_5;
+
+	mem_nullifyRange<VkFramebuffer>(_framebuffer, count);
+
+	{
+		VkImageView attachment[2]{};
+		attachment[1] = _depthImageView;
+
+		VkFramebufferCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		createInfo.pNext = nullptr;
+		createInfo.flags = 0;
+		createInfo.renderPass = renderer->pass.renderPass;
+		createInfo.attachmentCount = 2u;
+		createInfo.pAttachments = attachment;
+		createInfo.width = extent.width;
+		createInfo.height = extent.height;
+		createInfo.layers = 1u;
+
+		VkFramebuffer* pFramebuffer = _framebuffer;
+		const VkImageView* pImageView = _imageView;
+
+		const VkFramebuffer* const pFramebufferEnd = _framebuffer + count;
+		while (pFramebuffer != pFramebufferEnd) {
+			attachment[0] = *pImageView++;
+			if (vkCreateFramebuffer(renderer->device, &createInfo, nullptr, pFramebuffer++) != VK_SUCCESS)
+				goto failure_6;
 		}
 	}
 
@@ -1616,7 +1771,7 @@ int configureRenderDevice(const __Renderer renderer) noexcept {
 				continue;
 
 			if (vkWaitForFences(renderer->device, 1u, pFence, VK_TRUE, UINT64_MAX) != VK_SUCCESS)
-				goto failure_4;
+				goto failure_6;
 		}
 	}
 
@@ -1628,12 +1783,17 @@ int configureRenderDevice(const __Renderer renderer) noexcept {
 		mem_freeRange<VkFramebuffer>(renderer->framebuffer);
 
 		mem_freeRange<VkFence>(renderer->imageFence);
+		
+		vkDestroyImageView(renderer->device, renderer->depthImageView, nullptr);
 
 		const VkImageView* const pImageViewEnd = renderer->imageView + renderer->imageCount;
 		for (const VkImageView* pImageView{ renderer->imageView }; pImageView != pImageViewEnd; ++pImageView)
 			vkDestroyImageView(renderer->device, *pImageView, nullptr);
 
 		mem_freeRange<VkImageView>(renderer->imageView);
+
+		vmaDestroyImage(renderer->allocator, renderer->depthImage, renderer->depthImageAllocation);				
+
 		mem_freeRange<VkImage>(renderer->image);
 
 		vkDestroySwapchainKHR(renderer->device, renderer->swapchain, nullptr);
@@ -1641,7 +1801,10 @@ int configureRenderDevice(const __Renderer renderer) noexcept {
 
 	renderer->framebuffer = _framebuffer;
 	renderer->imageFence = _fence;
+	renderer->depthImageView = _depthImageView;
 	renderer->imageView = _imageView;
+	renderer->depthImageAllocation = _depthImageAllocation;
+	renderer->depthImage = _depthImage;
 	renderer->image = _image;
 	renderer->swapchain = _swapchain;
 	renderer->imageCount = count;
@@ -1649,7 +1812,7 @@ int configureRenderDevice(const __Renderer renderer) noexcept {
 
 	return 0;
 
-failure_4:
+failure_6:
 	{
 		const VkFramebuffer* const pFramebufferEnd = _framebuffer + count;
 		for (const VkFramebuffer* pFramebuffer{ _framebuffer }; pFramebuffer != pFramebufferEnd; ++pFramebuffer)
@@ -1658,10 +1821,13 @@ failure_4:
 
 	mem_freeRange<VkFramebuffer>(_framebuffer);
 
-failure_3:
+failure_5:
 	mem_freeRange<VkFence>(_fence);
 
-failure_2:
+failure_4:
+	vkDestroyImageView(renderer->device, _depthImageView, nullptr);
+
+failure_3:
 	{
 		const VkImageView* const pImageViewEnd = _imageView + count;
 		for (const VkImageView* pImageView{ _imageView }; pImageView != pImageViewEnd && *pImageView; ++pImageView)
@@ -1669,6 +1835,9 @@ failure_2:
 	}
 
 	mem_freeRange<VkImageView>(_imageView);
+
+failure_2:
+	vmaDestroyImage(renderer->allocator, _depthImage, _depthImageAllocation);
 
 failure_1:
 	mem_freeRange<VkImage>(_image);
@@ -3091,7 +3260,7 @@ void render(const __Renderer renderer, const Collection _Collection, const Scene
 		beginInfo.renderPass = renderer->pass.renderPass;
 		beginInfo.framebuffer = renderer->framebuffer[renderer->acquire];
 		beginInfo.renderArea = renderArea;
-		beginInfo.clearValueCount = 1u;
+		beginInfo.clearValueCount = 2u;
 		beginInfo.pClearValues = renderer->pass.clearValue;
 
 		vkCmdBeginRenderPass(commandBuffer, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);

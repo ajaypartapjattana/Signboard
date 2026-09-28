@@ -1,4 +1,4 @@
-#include <iostream>
+#include <stdio.h>
 
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/gtc/matrix_transform.hpp>
@@ -9,6 +9,46 @@
 #include <Input/input.h>
 #include <Platform/display.h>
 #include <Renderer/renderer.h>
+
+constexpr void generateCubeVertexData(const float size, Vertex* const pVertex, Index* const pIndex) noexcept {
+	constexpr glm::vec3 CUBE_VERTEX[] = {
+		{ -0.5f, -0.5f, -0.5f },
+		{  0.5f, -0.5f, -0.5f },
+		{ -0.5f,  0.5f, -0.5f },
+		{ -0.5f, -0.5f,  0.5f },
+		{ -0.5f,  0.5f,  0.5f },
+		{  0.5f, -0.5f,  0.5f },
+		{  0.5f,  0.5f, -0.5f },
+		{  0.5f,  0.5f,  0.5f }
+	};
+
+	constexpr Index CUBE_INDEX[] = {
+		0, 2, 1,
+		1, 2, 6,
+		3, 5, 4,
+		5, 7, 4,
+		0, 3, 2,
+		2, 3, 4,
+		1, 6, 5,
+		5, 6, 7,
+		0, 1, 3,
+		1, 5, 3,
+		2, 4, 6,
+		4, 7, 6
+	};
+
+	const glm::vec3* pPosData = CUBE_VERTEX;
+
+	const Vertex* const pVertEnd = pVertex + 8u;
+	for (Vertex* pVert = pVertex; pVert != pVertEnd; ++pVert)
+		*pVert = { *pPosData++ * size, { 0.0f, 0.0f } };
+
+	const Index* pIndexData = CUBE_INDEX;
+
+	const Index* const pIndexEnd = pIndex + 36u;
+	for (Index* pIdx = pIndex; pIdx != pIndexEnd; ++pIdx)
+		*pIdx = *pIndexData++;
+}
 
 int main() {
 	mem_stack scratch;
@@ -155,10 +195,10 @@ int main() {
 
 	{
 		const Vertex vertexData[] = {
-			{ { -0.5f, -0.5f }, { 0.0f, 0.0f } },
-			{ {  0.5f, -0.5f }, { 1.0f, 0.0f } },
-			{ {  0.5f,  0.5f }, { 1.0f, 1.0f } },
-			{ { -0.5f,  0.5f }, { 0.0f, 1.0f } }
+			{ { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f } },
+			{ {  0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f } },
+			{ {  0.5f,  0.5f, 0.0f }, { 1.0f, 1.0f } },
+			{ { -0.5f,  0.5f, 0.0f }, { 0.0f, 1.0f } }
 		};
 
 		const Index indexData[] = {
@@ -212,7 +252,7 @@ int main() {
 
 	{
 		TextureCreateInfo createInfo{};
-		createInfo.path = "assets/textures/test_LP.png";
+		createInfo.path = "assets/textures/seaside.png";
 
 		if (createTexture(renderDevice, &createInfo, &scratch, &texture))
 			goto cleanup_9;
@@ -250,17 +290,10 @@ int main() {
 				break;
 		}
 
-		{
-			pollInputs(inputDevice, &dragField, &keyField);
-
-			if (isKeyDown(&keyField, INPUT_KEY_W)) {
-				printf("\r\033[Kx = %d, y = %d", cursor.x, cursor.y);
-				fflush(stdout);
-			}
-		}
-		
 		if (events & WINDOW_STATE_POINTER_MOTION_BIT)
 			events &= ~WINDOW_STATE_POINTER_MOTION_BIT;
+			
+		pollInputs(inputDevice, &dragField, &keyField);
 
 		if (isKeyPressed(&keyField, INPUT_KEY_R)) {
 			dragField.delta[0] = 0u;

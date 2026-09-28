@@ -41,7 +41,7 @@ struct Collection_T;
 using Collection = Collection_T*;
 
 struct Vertex {
-	glm::vec2 pos;
+	glm::vec3 pos;
 	glm::vec2 uv;
 };
 
