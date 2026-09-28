@@ -276,15 +276,16 @@ public:
 		if (this->pCurrent == this->pBase)
 			return true;
 
-		const size_t parentOffset = this->pFrame ? static_cast<size_t>(this->pFrame - this->pBase) : 0u;
-
 		uint8_t* const pAligned = alignUp<uint8_t>(this->pCurrent, alignof(FrameMeta));
 		uint8_t* const pAllocEnd = pAligned + sizeof(FrameMeta);
 
 		if (this->ensure(pAllocEnd))
 			return false;
 
-		memcpy(pAligned, &parentOffset, sizeof(FrameMeta));
+		FrameMeta meta{};
+		meta.pParent = this->pFrame;
+
+		memcpy(pAligned, &meta, sizeof(FrameMeta));
 
 		this->pFrame = pAligned;
 		this->pCurrent = pAllocEnd;
@@ -293,11 +294,8 @@ public:
 	}
 
 	void restore() noexcept {
-		FrameMeta* pFrame = reinterpret_cast<FrameMeta*>(this->pFrame);
-
-		if (!pFrame) {
+		if (!this->pFrame) {
 			this->pCurrent = this->pBase;
-
 			return;
 		}
 
@@ -305,8 +303,7 @@ public:
 		memcpy(&meta, pFrame, sizeof(FrameMeta));
 
 		this->pCurrent = this->pFrame;
-
-		this->pFrame = meta.pParent ? meta.pParent : nullptr;
+		this->pFrame = meta.pParent;
 	}
 	
 	void* alloc(const size_t _Size, const size_t _Align) noexcept {

@@ -37,14 +37,14 @@ struct VulkanContext_T {
 };
 
 int createVulkanContext(mem_stack* const pScratch, VulkanContext* const pContext) noexcept {
-	VkInstance _instance = VK_NULL_HANDLE;
+	const VulkanContext context = new(std::nothrow) VulkanContext_T;
 
-	PhysicalDeviceInfo* _deviceInfo = nullptr;
-	
-	do {
-		VkResult result;
-		
-	#if defined(_DEBUG)
+	if (!context)
+		return -1;
+
+
+	{
+		#if defined(_DEBUG)
 		constexpr std::array<const char*, 1> instanceLayers{
 			"VK_LAYER_KHRONOS_validation"
 		};
@@ -108,142 +108,130 @@ int createVulkanContext(mem_stack* const pScratch, VulkanContext* const pContext
 	  #endif
 	#endif
 
-		{
-			VkApplicationInfo appInfo{};
-			appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-			appInfo.pNext = nullptr;
-			appInfo.pApplicationName = "My Application";
-			appInfo.applicationVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
-			appInfo.pEngineName = "My Engine";
-			appInfo.engineVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
-			appInfo.apiVersion = VK_API_VERSION_1_3;
+		VkApplicationInfo appInfo{};
+		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+		appInfo.pNext = nullptr;
+		appInfo.pApplicationName = "My Application";
+		appInfo.applicationVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
+		appInfo.pEngineName = "My Engine";
+		appInfo.engineVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
+		appInfo.apiVersion = VK_API_VERSION_1_3;
 
-			VkInstanceCreateInfo createInfo{};
-			createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-			createInfo.pNext = nullptr;
-			createInfo.flags = 0;
-			createInfo.pApplicationInfo = &appInfo;
-			createInfo.enabledLayerCount = static_cast<uint32_t>(instanceLayers.size());
-			createInfo.ppEnabledLayerNames = instanceLayers.data();
-			createInfo.enabledExtensionCount = static_cast<uint32_t>(instanceExtensions.size());
-			createInfo.ppEnabledExtensionNames = instanceExtensions.data();
+		VkInstanceCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+		createInfo.pNext = nullptr;
+		createInfo.flags = 0;
+		createInfo.pApplicationInfo = &appInfo;
+		createInfo.enabledLayerCount = static_cast<uint32_t>(instanceLayers.size());
+		createInfo.ppEnabledLayerNames = instanceLayers.data();
+		createInfo.enabledExtensionCount = static_cast<uint32_t>(instanceExtensions.size());
+		createInfo.ppEnabledExtensionNames = instanceExtensions.data();
 
-			result = vkCreateInstance(&createInfo, nullptr, &_instance);
-		}
+		if (vkCreateInstance(&createInfo, nullptr, &context->instance) != VK_SUCCESS)
+			goto failure_0;
+	}
 
-		if (result != VK_SUCCESS)
-			return -1;
-
+	{
+		uint32_t count;
+		if (vkEnumeratePhysicalDevices(context->instance, &count, nullptr) != VK_SUCCESS)
+			goto failure_1;
+			
+		context->deviceInfo = mem_allocateSizeRange<PhysicalDeviceInfo>(count);
+		
+		if (!context->deviceInfo)
+			goto failure_1;
+		
 		pScratch->frame();
 
-		uint32_t physicalDeviceCount;
-
-		result = vkEnumeratePhysicalDevices(_instance, &physicalDeviceCount, nullptr);
-
-		if (result != VK_SUCCESS)
-			break;
-
-		_deviceInfo = mem_allocateSizeRange<PhysicalDeviceInfo>((size_t)physicalDeviceCount);
-
-		if (!_deviceInfo)
-			break;
-
-		mem_span<VkPhysicalDevice> physicalDevice;
-		mem_stackAllocateSpan<VkPhysicalDevice>(pScratch, &physicalDevice, (size_t)physicalDeviceCount);
-
-		if (!physicalDevice.data)
-			break;
-
-		result = vkEnumeratePhysicalDevices(_instance, &physicalDeviceCount, physicalDevice.data);
+		VkPhysicalDevice* const physicalDevice = mem_stackAllocateRange<VkPhysicalDevice>(pScratch, count);
 		
-		if (result != VK_SUCCESS)
-			break;
+		if (!physicalDevice) {
+			pScratch->restore();
+			goto failure_2;
+		}
 
-		PhysicalDeviceInfo* pDeviceInfo = _deviceInfo;
+		if (vkEnumeratePhysicalDevices(context->instance, &count, physicalDevice) != VK_SUCCESS) {
+			pScratch->restore();
+			goto failure_2;
+		}
 
-		const VkPhysicalDevice* const pPhysicalDeviceEnd = physicalDevice.end();
-		for (const VkPhysicalDevice* pPhysicalDevice{ physicalDevice.data }; pPhysicalDevice != pPhysicalDeviceEnd;) {
+		const VkPhysicalDevice* pPhysicalDevice = physicalDevice;
+
+		const PhysicalDeviceInfo* const pDeviceInfoEnd = context->deviceInfo + count;
+		for (PhysicalDeviceInfo* pDeviceInfo{ context->deviceInfo }; pDeviceInfo != pDeviceInfoEnd; ++pDeviceInfo) {
 			const VkPhysicalDevice device = *pPhysicalDevice++;
 
 			vkGetPhysicalDeviceProperties(device, &pDeviceInfo->properties);
 			vkGetPhysicalDeviceMemoryProperties(device, &pDeviceInfo->memory);
 			vkGetPhysicalDeviceFeatures(device, &pDeviceInfo->features);
 
-			pDeviceInfo++->handle = device;
+			pDeviceInfo->handle = device;
 		}
-		
-		VulkanContext const context = new(std::nothrow) VulkanContext_T;
-		
-		if (!context)
-			break;
-		
+
 		pScratch->restore();
+	}
 
-		context->instance = _instance;
-		context->deviceInfo = _deviceInfo;
-		
-		*pContext = context;
-		
-		return 0;
+	*pContext = context;
 
-	} while (false);
+	return 0;
 
-	pScratch->restore();
+failure_2:
+	mem_freeSizeRange<PhysicalDeviceInfo>(context->deviceInfo);
 
-	if (_deviceInfo)
-		mem_freeSizeRange<PhysicalDeviceInfo>(_deviceInfo);
+failure_1:
+	vkDestroyInstance(context->instance, nullptr);
 
-	if (_instance)
-		vkDestroyInstance(_instance, nullptr);
+failure_0:
+	delete context;
 
 	return -1;
 }
 
-void destroyVulkanContext(VulkanContext const _Context) noexcept {
-	mem_freeSizeRange<PhysicalDeviceInfo>(_Context->deviceInfo);
-	vkDestroyInstance(_Context->instance, nullptr);
+void destroyVulkanContext(const VulkanContext context) noexcept {
+	mem_freeSizeRange<PhysicalDeviceInfo>(context->deviceInfo);
+	vkDestroyInstance(context->instance, nullptr);
 
-	delete _Context;
+	delete context;
 }
 
-void getPhysicalDeviceCount(VulkanContext const _Context, uint32_t* const pCount) noexcept {
-	*pCount = static_cast<uint32_t>(mem_getSizeAllocationSize(_Context->deviceInfo));
+void getPhysicalDeviceCount(const VulkanContext context, uint32_t* const pCount) noexcept {
+	*pCount = static_cast<uint32_t>(mem_getSizeAllocationSize(context->deviceInfo));
 }
 
-void queryPerformaceOptimalDevice(VulkanContext const _Context, const uint32_t minIndex, int* const pIndex) noexcept {
-	const PhysicalDeviceInfo* const pDeviceEnd = mem_getSizeAllcoationEnd(_Context->deviceInfo);
-	for (const PhysicalDeviceInfo* pDevice{ _Context->deviceInfo + minIndex }; pDevice != pDeviceEnd; ++pDevice) {
+void queryPerformaceOptimalDevice(const VulkanContext context, const uint32_t minIndex, int* const pIndex) noexcept {
+	const PhysicalDeviceInfo* const pDeviceEnd = mem_getSizeAllcoationEnd(context->deviceInfo);
+	for (const PhysicalDeviceInfo* pDevice{ context->deviceInfo + minIndex }; pDevice != pDeviceEnd; ++pDevice) {
 		if (pDevice->properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
 			continue;
 
-		*pIndex = static_cast<uint32_t>(pDevice - _Context->deviceInfo);
+		*pIndex = static_cast<uint32_t>(pDevice - context->deviceInfo);
 		return;
 	}
 
 	*pIndex = -1;
 }
 
-void queryBatteryOptimalDevice(VulkanContext const _Context, const uint32_t minIndex, int* const pIndex) noexcept {
-	const PhysicalDeviceInfo* const pDeviceEnd = mem_getSizeAllcoationEnd(_Context->deviceInfo);
-	for (const PhysicalDeviceInfo* pDevice{ _Context->deviceInfo + minIndex }; pDevice != pDeviceEnd; ++pDevice) {
+void queryBatteryOptimalDevice(const VulkanContext context, const uint32_t minIndex, int* const pIndex) noexcept {
+	const PhysicalDeviceInfo* const pDeviceEnd = mem_getSizeAllcoationEnd(context->deviceInfo);
+	for (const PhysicalDeviceInfo* pDevice{ context->deviceInfo + minIndex }; pDevice != pDeviceEnd; ++pDevice) {
 		if (pDevice->properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
 			continue;
 
-		*pIndex = static_cast<uint32_t>(pDevice - _Context->deviceInfo);
+		*pIndex = static_cast<uint32_t>(pDevice - context->deviceInfo);
 		return;
 	}
 
 	*pIndex = -1;
 }
 
-void getPhysicalDeviceName(VulkanContext const _Context, const uint32_t index, const char** pName) noexcept {
-	const PhysicalDeviceInfo* const pDevice = _Context->deviceInfo + index;
+void getPhysicalDeviceName(const VulkanContext context, const uint32_t index, const char** pName) noexcept {
+	const PhysicalDeviceInfo* const pDevice = context->deviceInfo + index;
 
 	*pName = pDevice->properties.deviceName;
 }
 
-void enumeratePhysicalDeviceName(VulkanContext const _Context, const uint32_t minIndex, const uint32_t count, const char** const pDeviceNames) noexcept {
-	const PhysicalDeviceInfo* pDeviceInfo = _Context->deviceInfo + minIndex;
+void enumeratePhysicalDeviceName(const VulkanContext context, const uint32_t minIndex, const uint32_t count, const char** const pDeviceNames) noexcept {
+	const PhysicalDeviceInfo* pDeviceInfo = context->deviceInfo + minIndex;
 	
 	const char** const pNameEnd = pDeviceNames + count;
 	for(const char** pName{ pDeviceNames }; pName != pNameEnd; ++pName)

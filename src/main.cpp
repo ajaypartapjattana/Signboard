@@ -105,8 +105,6 @@ int main() {
 		for (const char** pName{ deviceName.data }; pName != pNameEnd; ++pName)
 			printf("input_device : {%s}\n", *pName);
 
-		printf("\n");
-			
 		scratch.restore();
 	}
 
@@ -172,8 +170,6 @@ int main() {
 
 		printf("graphics_device : {%s}\n", deviceName);
 		printf("compute_device : {%s}\n", deviceName);
-
-		printf("\n");
 
 		VulkanSurfaceDependencyInfo surfaceInfo;
 		getVulkanSurfaceDependencyInfo(windowCtx, window, &surfaceInfo);
