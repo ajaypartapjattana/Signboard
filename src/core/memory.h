@@ -102,14 +102,14 @@ inline size_t mem_getSizeAllocationSize(const _Ty* const _Ptr) noexcept {
 }
 
 template <typename _Ty>
-inline const _Ty* mem_getSizeAllcoationEnd(const _Ty* const _Ptr) noexcept {
+inline const _Ty* mem_getSizeAllocationEnd(const _Ty* const _Ptr) noexcept {
 	constexpr size_t offset = (sizeof(size_t) + alignof(_Ty) - 1) & ~(alignof(_Ty) - 1);
 
 	return _Ptr + *reinterpret_cast<const size_t*>(reinterpret_cast<const char*>(_Ptr) - offset);
 }
 
 template <typename _Ty>
-inline _Ty* mem_getSizeAllcoationEnd(_Ty* const _Ptr) noexcept {
+inline _Ty* mem_getSizeAllocationEnd(_Ty* const _Ptr) noexcept {
 	constexpr size_t offset = (sizeof(size_t) + alignof(_Ty) - 1) & ~(alignof(_Ty) - 1);
 
 	return _Ptr + *reinterpret_cast<size_t*>(reinterpret_cast<char*>(_Ptr) - offset);

@@ -10,6 +10,62 @@
 #include <Platform/display.h>
 #include <Renderer/renderer.h>
 
+constexpr uint32_t sphereVertexDataRequirement(const uint32_t resolution) noexcept {
+	return (resolution + 1u) * (resolution + 1u);
+}
+
+constexpr uint32_t sphereIndexDataRequirement(const uint32_t resolution) noexcept {
+	return resolution * resolution * 6u;
+}
+
+constexpr void generateSphereVertexData(const uint32_t resolution, const float size, Vertex* const pVertex, uint32_t* const pIndex) noexcept {
+	const float radius = size * 0.5f;
+
+	const uint32_t segments = resolution;
+	const uint32_t rings = resolution;
+
+	const float pi = glm::pi<float>();
+
+	for (uint32_t y = 0; y <= rings; ++y) {
+		const float v = static_cast<float>(y) / static_cast<float>(rings);
+		const float phi = v * pi;
+
+		const float sinPhi = std::sin(phi);
+		const float cosPhi = std::cos(phi);
+
+		for (uint32_t x = 0; x <= segments; ++x) {
+			const float u = static_cast<float>(x) / static_cast<float>(segments);
+			const float theta = u * (2.0f * pi);
+
+			const float sinTheta = std::sin(theta);
+			const float cosTheta = std::cos(theta);
+
+			const uint32_t vertex = y * (segments + 1u) + x;
+
+			pVertex[vertex] = { { radius * sinPhi * cosTheta, radius * cosPhi, radius * sinPhi * sinTheta }, { u, v } };
+		}
+	}
+
+	uint32_t index = 0;
+
+	for (uint32_t y = 0; y < rings; ++y) {
+		for (uint32_t x = 0; x < segments; ++x) {
+			const uint32_t a = y * (segments + 1u) + x;
+			const uint32_t b = a + 1u;
+			const uint32_t c = a + (segments + 1u);
+			const uint32_t d = c + 1u;
+
+			pIndex[index++] = a;
+			pIndex[index++] = c;
+			pIndex[index++] = b;
+
+			pIndex[index++] = b;
+			pIndex[index++] = c;
+			pIndex[index++] = d;
+		}
+	}
+}
+
 constexpr void generateCubeVertexData(const float size, Vertex* const pVertex, Index* const pIndex) noexcept {
 	constexpr glm::vec3 CUBE_VERTEX[] = {
 		{ -0.5f, -0.5f, -0.5f },
@@ -63,9 +119,9 @@ int main() {
 	EventBuffer eventBuffer;
 
 	VulkanContext vulkanCtx;
-	__Renderer renderDevice;
+	RenderDevice renderDevice;
 
-	Collection collection;
+	GeometryPage geometry;
 	Scene scene;
 	Camera camera;
 	Texture texture;
@@ -190,52 +246,24 @@ int main() {
 	raiseDisplayWindow(windowCtx, window);
 
 	{
-		const Vertex vertexData[] = {
-			{ { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f } },
-			{ {  0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f } },
-			{ {  0.5f,  0.5f, 0.0f }, { 1.0f, 1.0f } },
-			{ { -0.5f,  0.5f, 0.0f }, { 0.0f, 1.0f } }
-		};
+		GeometryPageCreateInfo createInfo{};
+		createInfo.access = PAGE_ACCESS_RANDOM;
+		createInfo.vertexCap = 2u << 5;
+		createInfo.IndexCap = 2u << 6;
+		createInfo.modelCap = 20u;
 
-		const Index indexData[] = {
-			0, 1, 2, 2, 3, 0
-		};
-
-		ModelInfo model[1]{};
-		model[0].vertexCount = 4u;
-		model[0].pVertex = vertexData;
-		model[0].indexCount = 6u;
-		model[0].pIndex = indexData;
-
-		CollectionCreateInfo createInfo{};
-		createInfo.modelCount = 1u;
-		createInfo.pModelInfos = model;
-
-		if (createCollection(renderDevice, &createInfo, &collection))
+		if (createGeometryPage(renderDevice, &createInfo, &geometry))
 			goto cleanup_6;
 	}
 
 	{
 		SceneCreateInfo createInfo{};
-		createInfo.collection = collection;
+		createInfo.geometry = geometry;
 		createInfo.instanceCount = 4u;
 		createInfo.drawCount = 10u;
 
 		if (createScene(renderDevice, &createInfo, &scratch, &scene))
 			goto cleanup_7;
-	}
-
-	{
-		InstanceData data[1];
-		data[0] = { glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) };
-
-		ObjectInstance instance{};
-		instance.model = 0u;
-		instance.instanceCount = 1u;
-		instance.pInstances = data;
-
-		if (pushObjectInstance(renderDevice, scene, &instance))
-			goto cleanup_8;
 	}
 
 	{
@@ -248,10 +276,49 @@ int main() {
 
 	{
 		TextureCreateInfo createInfo{};
-		createInfo.path = "assets/textures/seaside.png";
+		createInfo.path = "assets/textures/suzaneSkin.png";
 
 		if (createTexture(renderDevice, &createInfo, &scratch, &texture))
 			goto cleanup_9;
+	}
+
+	{
+		const Vertex vertexData[] = {
+			{ { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f } },
+			{ {  0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f } },
+			{ {  0.5f,  0.5f, 0.0f }, { 1.0f, 1.0f } },
+			{ { -0.5f,  0.5f, 0.0f }, { 0.0f, 1.0f } }
+		};
+
+		const Index indexData[] = {
+			0, 1, 2, 2, 3, 0
+		};
+
+		ModelAppendInfo model[1]{};
+		model[0].vertexCount = 4u;
+		model[0].pVertex = vertexData;
+		model[0].indexCount = 6u;
+		model[0].pIndex = indexData;
+
+		GeometryWriteInfo write{};
+		write.appendCount = 1u;
+		write.pAppendInfo = model;
+
+		if (writeGeometryPage(renderDevice, geometry, &write))
+			goto cleanup_10;
+	}
+
+	{
+		InstanceData data[1];
+		data[0] = { glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) };
+
+		ObjectInstance instance{};
+		instance.model = 0u;
+		instance.instanceCount = 1u;
+		instance.pInstances = data;
+
+		if (pushObjectInstance(renderDevice, scene, &instance))
+			goto cleanup_10;
 	}
 
 	if (beginInputEventPoll(inputDevice))
@@ -331,7 +398,7 @@ int main() {
 			goto cleanup_11;
 		}
 
-		render(renderDevice, collection, scene, texture, camera, isKeyDown(&keyField, INPUT_KEY_NUMPAD_0) ? 1u : 0u);
+		render(renderDevice, geometry, scene, texture, camera, isKeyDown(&keyField, INPUT_KEY_NUMPAD_0) ? 1u : 0u);
 
 		switch (endFrame(renderDevice)) {
 		case 0:
@@ -358,7 +425,7 @@ cleanup_8:
 	destroyScene(renderDevice, scene);
 
 cleanup_7:
-	destroyCollection(renderDevice, collection);
+	destroyGeometryPage(renderDevice, geometry);
 
 cleanup_6:
 	destroyRenderDevice(vulkanCtx, renderDevice);

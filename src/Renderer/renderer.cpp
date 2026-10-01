@@ -199,7 +199,7 @@ void getPhysicalDeviceCount(const VulkanContext context, uint32_t* const pCount)
 }
 
 void queryPerformaceOptimalDevice(const VulkanContext context, const uint32_t minIndex, int* const pIndex) noexcept {
-	const PhysicalDeviceInfo* const pDeviceEnd = mem_getSizeAllcoationEnd(context->deviceInfo);
+	const PhysicalDeviceInfo* const pDeviceEnd = mem_getSizeAllocationEnd(context->deviceInfo);
 	for (const PhysicalDeviceInfo* pDevice{ context->deviceInfo + minIndex }; pDevice != pDeviceEnd; ++pDevice) {
 		if (pDevice->properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
 			continue;
@@ -212,7 +212,7 @@ void queryPerformaceOptimalDevice(const VulkanContext context, const uint32_t mi
 }
 
 void queryBatteryOptimalDevice(const VulkanContext context, const uint32_t minIndex, int* const pIndex) noexcept {
-	const PhysicalDeviceInfo* const pDeviceEnd = mem_getSizeAllcoationEnd(context->deviceInfo);
+	const PhysicalDeviceInfo* const pDeviceEnd = mem_getSizeAllocationEnd(context->deviceInfo);
 	for (const PhysicalDeviceInfo* pDevice{ context->deviceInfo + minIndex }; pDevice != pDeviceEnd; ++pDevice) {
 		if (pDevice->properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
 			continue;
@@ -864,7 +864,8 @@ static void destroyBasePassResources(const VkDevice device, const BasePass* cons
 	vkDestroyRenderPass(device, pPass->renderPass, nullptr);
 }
 
-struct __Renderer_T {
+struct RenderDevice_T {
+	const PhysicalDeviceInfo* deviceProperties;
 	VkPhysicalDevice physicalDevice;
 	VkSurfaceKHR surface;
 
@@ -902,13 +903,15 @@ struct __Renderer_T {
 	SubmissionResource transfer;
 };
 
-int createRenderDevice(VulkanContext const context, const EmulatorCreateInfo* const pCreateInfo, mem_stack* const pScratch, __Renderer* const pRenderer) noexcept {
-	__Renderer const renderer = new(std::nothrow) __Renderer_T;
+int createRenderDevice(VulkanContext const context, const EmulatorCreateInfo* const pCreateInfo, mem_stack* const pScratch, RenderDevice* const pRenderer) noexcept {
+	RenderDevice const renderer = new(std::nothrow) RenderDevice_T;
 
 	if (!renderer)
 		return -1;
 
 	const PhysicalDeviceInfo* const pPhysicalDeviceInfo = context->deviceInfo + pCreateInfo->physicalDevice;
+	
+	renderer->deviceProperties = pPhysicalDeviceInfo;
 	renderer->physicalDevice = pPhysicalDeviceInfo->handle;
 
 #if defined(WINDOW_WIN32)
@@ -1521,7 +1524,7 @@ failure_0:
 	return -1;
 }
 
-void destroyRenderDevice(VulkanContext const context, __Renderer const renderer) noexcept {
+void destroyRenderDevice(VulkanContext const context, RenderDevice const renderer) noexcept {
 	destroySubmissionResource(renderer->device, &renderer->transfer);
 
 	mem_freeRange<uint8_t*>(renderer->region);	
@@ -1564,14 +1567,14 @@ void destroyRenderDevice(VulkanContext const context, __Renderer const renderer)
 	delete renderer;
 }
 
-int waitRenderDevice(const __Renderer renderer) noexcept {
+int waitRenderDevice(const RenderDevice renderer) noexcept {
 	if (vkDeviceWaitIdle(renderer->device) == VK_SUCCESS)
 		return 0;
 
 	return -1;
 }
 
-int configureRenderDevice(const __Renderer renderer) noexcept {
+int configureRenderDevice(const RenderDevice renderer) noexcept {
 	VkExtent2D extent;
 	uint32_t count;
 
@@ -1929,7 +1932,7 @@ static int waitStackedSubmission(const VkDevice device, const SubmissionResource
 	return 0;
 }
 
-static int updateStagingCapacity(const __Renderer renderer, const size_t size) noexcept {
+static int updateStagingCapacity(const RenderDevice renderer, const size_t size) noexcept {
 	VkBuffer buffer;
 	VmaAllocation allocation;
 
@@ -1969,78 +1972,71 @@ static int updateStagingCapacity(const __Renderer renderer, const size_t size) n
 	return 0;
 }
 
+using PageAllocationFlags = uint32_t;
+enum PageAllocationBit : PageAllocationFlags {
+	PAGE_ALLOCATION_HOST_ACCESSIBLE = 1u << 0,
+	PAGE_ALLOCATION_HOST_COHERENT = 1u << 1
+};
+
 struct Model_T {
 	uint32_t firstVertex;
 	uint32_t firstIndex;
 	uint32_t indexcount;
 };
 
-struct Collection_T {
-	Model_T* model;
+struct GeometryPage_T {
 	VkBuffer vertex;
 	VmaAllocation vertexAllocation;
 	VkBuffer index;
 	VmaAllocation indexAllocation;
+	Vertex* pVertexData;
+	Index* pIndexData;
+	uint32_t vertexCount;
+	uint32_t indexCount;
+	VkFence fence;
+	Model_T* model;
+	uint32_t modelCount;
+	PageAllocationFlags flag;
 };
 
-int createCollection(const __Renderer renderer, const CollectionCreateInfo* const pCreateInfo, Collection* const pCollection) noexcept {
-	const Collection collection = new(std::nothrow) Collection_T;
+int createGeometryPage(const RenderDevice renderer, const GeometryPageCreateInfo* const pCreateInfo, GeometryPage* const pPage) noexcept {
+	const GeometryPage page = new(std::nothrow) GeometryPage_T;
 
-	if (!collection)
+	if (!page)
 		return -1;
 	
-	const size_t modelCount = (size_t)pCreateInfo->modelCount;
-	
-	if (!modelCount)
+	if (!pCreateInfo->modelCap)
 		goto failure_0;
+
+	page->model = mem_allocateSizeRange<Model_T>(pCreateInfo->modelCap);
 		
-	collection->model = mem_allocateSizeRange<Model_T>(modelCount);
-		
-	if (!collection->model)
+	if (!page->model)
 		goto failure_0;
-		
+
+	page->modelCount = 0u;
+	page->flag = 0u;
+
 	{
-		uint32_t totalVertexCount = 0;
-		uint32_t totalIndexCount = 0;
-			
-		uint32_t maxVertexCount = 0;
-		uint32_t maxIndexCount = 0;
-
-		Model_T* pModel = collection->model;
-
-		const ModelInfo* const pModelInfoEnd = pCreateInfo->pModelInfos + modelCount;
-		for (const ModelInfo* pModelInfo{ pCreateInfo->pModelInfos }; pModelInfo != pModelInfoEnd; ++pModelInfo) {
-			pModel->firstVertex = totalVertexCount;
-			pModel->firstIndex = totalIndexCount;
-
-			pModel->indexcount = pModelInfo->indexCount;
-
-			totalVertexCount += pModelInfo->vertexCount;
-			totalIndexCount += pModelInfo->indexCount;
-
-			maxVertexCount = std::max<uint32_t>(pModelInfo->vertexCount, maxVertexCount);
-			maxIndexCount = std::max<uint32_t>(pModelInfo->indexCount, maxIndexCount);
-
-			++pModel;
-		}
-
-		const size_t maxAllocationSize = sizeof(Vertex) * maxVertexCount + sizeof(Index) * maxIndexCount;
-		
-		if (renderer->stage.count < maxAllocationSize && updateStagingCapacity(renderer, maxAllocationSize))
-			goto failure_1;
-
-		const VkDeviceSize vertexBufferSize = (VkDeviceSize)(sizeof(Vertex) * totalVertexCount);
-
 		{
-			VkBufferCreateInfo createInfo{};
-			createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-			createInfo.pNext = nullptr;
-			createInfo.flags = 0;
-			createInfo.size = vertexBufferSize;
-			createInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-			createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-			createInfo.queueFamilyIndexCount = 0u;
-			createInfo.pQueueFamilyIndices = nullptr;
+			VkBufferCreateInfo vertexBufferCreateInfo{};
+			vertexBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+			vertexBufferCreateInfo.pNext = nullptr;
+			vertexBufferCreateInfo.flags = 0;
+			vertexBufferCreateInfo.size = static_cast<VkDeviceSize>(sizeof(Vertex) * pCreateInfo->vertexCap);
+			vertexBufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+			vertexBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			vertexBufferCreateInfo.queueFamilyIndexCount = 0u;
+			vertexBufferCreateInfo.pQueueFamilyIndices = nullptr;
+
+			VkBufferCreateInfo indexBuffercreateInfo{};
+			indexBuffercreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+			indexBuffercreateInfo.pNext = nullptr;
+			indexBuffercreateInfo.flags = 0;
+			indexBuffercreateInfo.size = static_cast<VkDeviceSize>(sizeof(Index) * pCreateInfo->IndexCap);
+			indexBuffercreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+			indexBuffercreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			indexBuffercreateInfo.queueFamilyIndexCount = 0u;
+			indexBuffercreateInfo.pQueueFamilyIndices = nullptr;
 
 			VmaAllocationCreateInfo allocationCreateInfo{};
 			allocationCreateInfo.flags = 0;
@@ -2052,184 +2048,371 @@ int createCollection(const __Renderer renderer, const CollectionCreateInfo* cons
 			allocationCreateInfo.pUserData = nullptr;
 			allocationCreateInfo.priority = 0.0f;
 
-			if (vmaCreateBuffer(renderer->allocator, &createInfo, &allocationCreateInfo, &collection->vertex, &collection->vertexAllocation, nullptr) != VK_SUCCESS)
-				goto failure_1;
-		}
-
-		const VkDeviceSize indexBufferSize = (VkDeviceSize)(sizeof(Index) * totalIndexCount);
-
-		{
-			VkBufferCreateInfo createInfo{};
-			createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-			createInfo.pNext = nullptr;
-			createInfo.flags = 0;
-			createInfo.size = indexBufferSize;
-			createInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-			createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-			createInfo.queueFamilyIndexCount = 0u;
-			createInfo.pQueueFamilyIndices = nullptr;
-
-			VmaAllocationCreateInfo allocationCreateInfo{};
-			allocationCreateInfo.flags = 0;
-			allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
-			allocationCreateInfo.requiredFlags = 0;
-			allocationCreateInfo.preferredFlags = 0;
-			allocationCreateInfo.memoryTypeBits = 0;
-			allocationCreateInfo.pool = VK_NULL_HANDLE;
-			allocationCreateInfo.pUserData = nullptr;
-			allocationCreateInfo.priority = 0.0f;
-
-			if (vmaCreateBuffer(renderer->allocator, &createInfo, &allocationCreateInfo, &collection->index, &collection->indexAllocation, nullptr) != VK_SUCCESS)
-				goto failure_2;
-		}
-	}
-
-	{
-		VkDeviceSize vertexOffset = 0;
-		VkDeviceSize indexOffset = 0;
-
-		const ModelInfo* const pModelInfoEnd = pCreateInfo->pModelInfos + pCreateInfo->modelCount;
-		for (const ModelInfo* pModelInfo{ pCreateInfo->pModelInfos }; pModelInfo != pModelInfoEnd;) {
-			uint8_t* head;
-			uint8_t** pRegion;
-
-			{
-				uint32_t index;
-				if (prepareStackedSubmission(renderer->device, &renderer->transfer, &index))
-					goto failure_3;
-
-				head = index ? renderer->region[index - 1u] : renderer->stage.data;
-
-				pRegion = renderer->region + index;
-			}
-
-			const VkCommandBuffer commandBuffer = renderer->transfer.thisCommandBuffer();
-
-			if (vkResetCommandBuffer(commandBuffer, 0) != VK_SUCCESS)
-				goto failure_3;
-
-			{
-				VkCommandBufferBeginInfo beginInfo{};
-				beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-				beginInfo.pNext = nullptr;
-				beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-				beginInfo.pInheritanceInfo = nullptr;
-
-				if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
-					goto failure_3;
-			}
-
-			uint8_t* const base = head;
-
-			do {
-				const size_t vertexSize = sizeof(Vertex) * pModelInfo->vertexCount;
-				const size_t indexSize = sizeof(Index) * pModelInfo->indexCount;
+			if (pCreateInfo->access) {
+				allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
 				
-				const size_t allocationSize = vertexSize + indexSize;
-				
-				if (static_cast<size_t>(renderer->stage.end() - head) < allocationSize)
+				switch (pCreateInfo->access) {
+				case PAGE_ACCESS_NONE:
+					break;
+				case PAGE_ACCESS_SEQUENTIAL:
+					allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
 					break;
 				
-				memcpy(head, pModelInfo->pVertex, vertexSize);
+				case PAGE_ACCESS_RANDOM:
+					allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
+					break;
 
-				{
-					VkBufferCopy copy{};
-					copy.srcOffset = static_cast<VkDeviceSize>(head - renderer->stage.data);
-					copy.dstOffset = vertexOffset;
-					copy.size = vertexSize;
-
-					vkCmdCopyBuffer(commandBuffer, renderer->stagingBuffer, collection->vertex, 1u, &copy);
 				}
-
-				head += vertexSize;
-				vertexOffset += vertexSize;
-
-				memcpy(head, pModelInfo->pIndex, indexSize);
-
-				{
-					VkBufferCopy copy{};
-					copy.srcOffset = static_cast<VkDeviceSize>(head - renderer->stage.data);
-					copy.dstOffset = indexOffset;
-					copy.size = indexSize;
-
-					vkCmdCopyBuffer(commandBuffer, renderer->stagingBuffer, collection->index, 1u, &copy);
-				}
-
-				head += indexSize;
-				indexOffset += indexSize;
-
-				++pModelInfo;
-			} while (pModelInfo != pModelInfoEnd);
-
-			if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
-				goto failure_3;
-
-			if (head == base) {
-				if (waitStackedSubmission(renderer->device, &renderer->transfer))
-					goto failure_3;
-				
-				continue;
 			}
 
-			if (vmaFlushAllocation(renderer->allocator, renderer->stagingAllocation, static_cast<VkDeviceSize>(base - renderer->stage.data), static_cast<VkDeviceSize>(head - base)) != VK_SUCCESS)
-				goto failure_3;
+			VmaAllocationInfo allocationInfo;
 
-			const VkFence fence = renderer->transfer.thisFence();
+			if (vmaCreateBuffer(renderer->allocator, &vertexBufferCreateInfo, &allocationCreateInfo, &page->vertex, &page->vertexAllocation, &allocationInfo) != VK_SUCCESS)
+				goto failure_1;
 
-			if (vkResetFences(renderer->device, 1u, &fence) != VK_SUCCESS)
-				goto failure_3;
+			page->pVertexData = reinterpret_cast<Vertex*>(allocationInfo.pMappedData);
 
-			{
-				VkSubmitInfo submitInfo{};
-				submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-				submitInfo.pNext = nullptr;
-				submitInfo.waitSemaphoreCount = 0u;
-				submitInfo.pWaitSemaphores = nullptr;
-				submitInfo.pWaitDstStageMask = nullptr;
-				submitInfo.commandBufferCount = 1u;
-				submitInfo.pCommandBuffers = &commandBuffer;
-				submitInfo.signalSemaphoreCount = 0u;;
-				submitInfo.pSignalSemaphores = nullptr;
+			VkMemoryPropertyFlags properties = renderer->deviceProperties->memory.memoryTypes[allocationInfo.memoryType].propertyFlags;
 
-				if (vkQueueSubmit(renderer->queue.transfer, 1u, &submitInfo, fence) != VK_SUCCESS)
-					goto failure_3;
-			}
+			if (properties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+				page->flag |= PAGE_ALLOCATION_HOST_ACCESSIBLE;
 
-			*pRegion = head;
+			if (properties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+				page->flag |= PAGE_ALLOCATION_HOST_COHERENT;
 
-			proceedStackedSubmission(&renderer->transfer);
+			if (vmaCreateBuffer(renderer->allocator, &indexBuffercreateInfo, &allocationCreateInfo, &page->index, &page->indexAllocation, &allocationInfo) != VK_SUCCESS)
+				goto failure_2;
 
-			if (waitStackedSubmission(renderer->device, &renderer->transfer))
-				goto failure_3;
+			page->pIndexData = reinterpret_cast<Index*>(allocationInfo.pMappedData);
+
+			properties = renderer->deviceProperties->memory.memoryTypes[allocationInfo.memoryType].propertyFlags;
+
+			if (!(properties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT))
+				page->flag &= ~PAGE_ALLOCATION_HOST_ACCESSIBLE;
+
+			if (!(properties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+				page->flag &= ~PAGE_ALLOCATION_HOST_COHERENT;
 		}
 	}
 
-	*pCollection = collection;
+	page->vertexCount = 0u;
+	page->indexCount = 0u;
+
+	page->fence = VK_NULL_HANDLE;
+
+	*pPage = page;
 
 	return 0;
 
-failure_3:
-	vmaDestroyBuffer(renderer->allocator, collection->index, collection->indexAllocation);
-
 failure_2:
-	vmaDestroyBuffer(renderer->allocator, collection->vertex, collection->vertexAllocation);
+	vmaDestroyBuffer(renderer->allocator, page->vertex, page->vertexAllocation);
 
 failure_1:
-	mem_freeSizeRange<Model_T>(collection->model);
+	mem_freeSizeRange<Model_T>(page->model);
 
 failure_0:
-	delete collection;
+	delete page;
 
 	return -1;
 }
 
-void destroyCollection(const __Renderer renderer, Collection const _Collection) noexcept {
-	vmaDestroyBuffer(renderer->allocator, _Collection->index, _Collection->indexAllocation);
-	vmaDestroyBuffer(renderer->allocator, _Collection->vertex, _Collection->vertexAllocation);
+void destroyGeometryPage(const RenderDevice renderer, const GeometryPage page) noexcept {
+	vmaDestroyBuffer(renderer->allocator, page->index, page->indexAllocation);
+	vmaDestroyBuffer(renderer->allocator, page->vertex, page->vertexAllocation);
 
-	mem_freeSizeRange<Model_T>(_Collection->model);
+	mem_freeSizeRange<Model_T>(page->model);
 
-	delete _Collection;
+	delete page;
+}
+
+int writeGeometryPage(const RenderDevice renderer, const GeometryPage page, const GeometryWriteInfo* const pWriteInfo) noexcept {
+	if (page->flag & PAGE_ALLOCATION_HOST_COHERENT) {
+		if (page->fence && vkWaitForFences(renderer->device, 1u, &page->fence, VK_TRUE, UINT64_MAX) != VK_SUCCESS)
+			return -1;
+
+		const ModelUpdateInfo* const pUpdateInfoEnd = pWriteInfo->pUpdateInfo + pWriteInfo->updateCount;
+		for (const ModelUpdateInfo* pUpdateInfo{ pWriteInfo->pUpdateInfo }; pUpdateInfo != pUpdateInfoEnd; ++pUpdateInfo) {
+			void* const vertDst = page->pVertexData + page->model[pUpdateInfo->modelIndex].firstVertex + pUpdateInfo->firstVertex;
+			void* const idxDst = page->pIndexData + page->model[pUpdateInfo->modelIndex].firstIndex + pUpdateInfo->firstIndex;
+
+			memcpy(vertDst, pUpdateInfo->pVertex, sizeof(Vertex) * pUpdateInfo->vertexCount);
+			memcpy(idxDst, pUpdateInfo->pIndex, sizeof(Index) * pUpdateInfo->indexCount);
+		}
+
+		if (!pWriteInfo->appendCount)
+			return 0;
+
+		uint32_t modelCount = page->modelCount;
+
+		const ModelAppendInfo* const pAppendInfoEnd = pWriteInfo->pAppendInfo + pWriteInfo->appendCount;
+		for (const ModelAppendInfo* pAppendInfo{ pWriteInfo->pAppendInfo }; pAppendInfo != pAppendInfoEnd; ++pAppendInfo) {
+			uint32_t modelIndex = modelCount++;
+				
+			void* const vertDst = page->pVertexData + page->vertexCount;
+			void* const idxDst = page->pIndexData + page->indexCount;
+				
+			memcpy(vertDst, pAppendInfo->pVertex, sizeof(Vertex)* pAppendInfo->vertexCount);
+			memcpy(idxDst, pAppendInfo->pIndex, sizeof(Index) * pAppendInfo->indexCount);
+				
+			page->model[modelIndex] = { page->vertexCount, page->indexCount, pAppendInfo->indexCount };
+			page->vertexCount += pAppendInfo->vertexCount;
+			page->indexCount += pAppendInfo->indexCount;
+		}
+
+		page->modelCount = modelCount;
+
+		return 0;
+	}
+	
+	if (page->flag & PAGE_ALLOCATION_HOST_ACCESSIBLE) {
+		if (page->fence && vkWaitForFences(renderer->device, 1u, &page->fence, VK_TRUE, UINT64_MAX) != VK_SUCCESS)
+			return -1;
+
+		VkDeviceSize vOffset = UINT64_MAX;
+		VkDeviceSize vSize = 0u;
+		VkDeviceSize iOffset = UINT64_MAX;
+		VkDeviceSize iSize = 0u;
+
+		const ModelUpdateInfo* const pUpdateInfoEnd = pWriteInfo->pUpdateInfo + pWriteInfo->updateCount;
+		for (const ModelUpdateInfo* pUpdateInfo{ pWriteInfo->pUpdateInfo }; pUpdateInfo != pUpdateInfoEnd; ++pUpdateInfo) {
+			const uint32_t vertexOffset = page->model[pUpdateInfo->modelIndex].firstVertex + pUpdateInfo->firstVertex;
+			const uint32_t indexOffset = page->model[pUpdateInfo->modelIndex].firstIndex + pUpdateInfo->firstIndex;
+
+			void* const vertDst = page->pVertexData + vertexOffset;
+			void* const idxDst = page->pIndexData + indexOffset;
+
+			memcpy(vertDst, pUpdateInfo->pVertex, sizeof(Vertex) * pUpdateInfo->vertexCount);
+			memcpy(idxDst, pUpdateInfo->pIndex, sizeof(Index) * pUpdateInfo->indexCount);
+
+			const VkDeviceSize vertexBegin = sizeof(Vertex) * vertexOffset;
+			const VkDeviceSize vertexEnd = sizeof(Vertex) * (vertexOffset + pUpdateInfo->vertexCount);
+
+			vOffset = std::min<VkDeviceSize>(vOffset, vertexBegin);
+			vSize = std::max<VkDeviceSize>(vSize, vertexEnd - vOffset);
+
+			const VkDeviceSize indexBegin = sizeof(Index) * indexOffset;
+			const VkDeviceSize indexEnd = sizeof(Index) * (indexOffset + pUpdateInfo->indexCount);
+
+			iOffset = std::min<VkDeviceSize>(iOffset, indexBegin);
+			iSize = std::max<VkDeviceSize>(iSize, indexEnd - iOffset);
+		}
+
+		uint32_t modelCount = page->modelCount;
+
+		const ModelAppendInfo* const pAppendInfoEnd = pWriteInfo->pAppendInfo + pWriteInfo->appendCount;
+		for (const ModelAppendInfo* pAppendInfo{ pWriteInfo->pAppendInfo }; pAppendInfo != pAppendInfoEnd; ++pAppendInfo) {
+			uint32_t modelIndex = modelCount++;
+			
+			void* const vertDst = page->pVertexData + page->vertexCount;
+			void* const idxDst = page->pIndexData + page->indexCount;
+			
+			memcpy(vertDst, pAppendInfo->pVertex, sizeof(Vertex)* pAppendInfo->vertexCount);
+			memcpy(idxDst, pAppendInfo->pIndex, sizeof(Index) * pAppendInfo->indexCount);
+
+			const VkDeviceSize vertexBegin = sizeof(Vertex) * page->vertexCount;
+			const VkDeviceSize indexBegin = sizeof(Index) * page->indexCount;
+
+			page->model[modelIndex] = { page->vertexCount, page->indexCount, pAppendInfo->indexCount };
+			page->vertexCount += pAppendInfo->vertexCount;
+			page->indexCount += pAppendInfo->indexCount;
+
+			const VkDeviceSize vertexEnd = sizeof(Vertex) * page->vertexCount;
+			const VkDeviceSize indexEnd = sizeof(Index) * page->indexCount;
+
+			vOffset = std::min<VkDeviceSize>(vOffset, vertexBegin);
+			vSize = std::max<VkDeviceSize>(vSize, vertexEnd - vOffset);
+
+			iOffset = std::min<VkDeviceSize>(iOffset, indexBegin);
+			iSize = std::max<VkDeviceSize>(iSize, indexEnd - iOffset);
+		}
+
+		if (vSize && vmaFlushAllocation(renderer->allocator, page->vertexAllocation, vOffset, vSize) != VK_SUCCESS)
+			return -1;
+			
+		if (iSize && vmaFlushAllocation(renderer->allocator, page->indexAllocation, iOffset, iSize) != VK_SUCCESS)
+			return -1;
+
+		page->modelCount = modelCount;
+
+		return 0;
+	}
+
+	uint32_t transfers = pWriteInfo->updateCount + pWriteInfo->appendCount;
+	size_t allocation = 0u;
+
+	uint8_t* head;
+	uint8_t** pRegion;
+
+prepare:
+
+	if (allocation > renderer->stage.count && updateStagingCapacity(renderer, allocation))
+		return -1;
+
+	{
+		uint32_t index;
+		if (prepareStackedSubmission(renderer->device, &renderer->transfer, &index))
+			return -1;
+
+		head = index ? renderer->region[index - 1u] : renderer->stage.data;
+
+		pRegion = renderer->region + index;
+	}
+
+	const VkCommandBuffer commandBuffer = renderer->transfer.thisCommandBuffer();
+
+	if (vkResetCommandBuffer(commandBuffer, 0) != VK_SUCCESS)
+		return -1;
+
+	{
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.pNext = nullptr;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		beginInfo.pInheritanceInfo = nullptr;
+
+		if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
+			return -1;
+	}
+
+	uint8_t* const base = head;
+
+	const ModelUpdateInfo* const pUpdateInfoEnd = pWriteInfo->pUpdateInfo + pWriteInfo->updateCount;
+	for (const ModelUpdateInfo* pUpdateInfo{ pWriteInfo->pUpdateInfo }; pUpdateInfo != pUpdateInfoEnd; ++pUpdateInfo) {
+		const size_t vertexSize = sizeof(Vertex) * pUpdateInfo->vertexCount;
+		const size_t indexSize = sizeof(Index) * pUpdateInfo->indexCount;
+				
+		if (static_cast<size_t>(renderer->stage.end() - head) < vertexSize + indexSize) {
+			allocation = std::max<size_t>(vertexSize + indexSize, allocation);
+			break;
+		}
+
+		const Model_T* const pModel = page->model + pUpdateInfo->modelIndex;
+
+		memcpy(head, pUpdateInfo->pVertex, vertexSize);
+
+		{
+			VkBufferCopy copy{};
+			copy.srcOffset = static_cast<VkDeviceSize>(head - renderer->stage.data);
+			copy.dstOffset = static_cast<VkDeviceSize>(sizeof(Vertex) * (pModel->firstVertex + pUpdateInfo->firstVertex));
+			copy.size = static_cast<VkDeviceSize>(vertexSize);
+
+			vkCmdCopyBuffer(commandBuffer, renderer->stagingBuffer, page->vertex, 1u, &copy);
+		}
+
+		head += vertexSize;
+
+		memcpy(head, pUpdateInfo->pIndex, indexSize);
+
+		{
+			VkBufferCopy copy{};
+			copy.srcOffset = static_cast<VkDeviceSize>(head - renderer->stage.data);
+			copy.dstOffset = static_cast<VkDeviceSize>(sizeof(Vertex) * (pModel->firstIndex + pUpdateInfo->firstIndex));
+			copy.size = static_cast<VkDeviceSize>(indexSize);
+
+			vkCmdCopyBuffer(commandBuffer, renderer->stagingBuffer, page->index, 1u, &copy);
+		}
+
+		head += indexSize;
+
+		transfers--;
+	}
+
+	uint32_t modelCount = page->modelCount;
+
+	size_t vertexOffset = sizeof(Vertex) * page->vertexCount;
+	size_t indexOffset = sizeof(Index) * page->indexCount;
+	
+	const ModelAppendInfo* const pAppendInfoEnd = pWriteInfo->pAppendInfo + pWriteInfo->appendCount;
+	for (const ModelAppendInfo* pAppendInfo{ pWriteInfo->pAppendInfo }; pAppendInfo != pAppendInfoEnd; ++pAppendInfo) {
+		const size_t vertexSize = sizeof(Vertex) * pAppendInfo->vertexCount;
+		const size_t indexSize = sizeof(Index) * pAppendInfo->indexCount;
+		
+		if (static_cast<size_t>(renderer->stage.end() - head) < vertexSize + indexSize) {
+			allocation = std::max<size_t>(vertexSize + indexSize, allocation);
+			break;
+		}
+
+		memcpy(head, pAppendInfo->pVertex, vertexSize);
+
+		{
+			VkBufferCopy copy{};
+			copy.srcOffset = static_cast<VkDeviceSize>(head - renderer->stage.data);
+			copy.dstOffset = static_cast<VkDeviceSize>(vertexOffset);
+			copy.size = static_cast<VkDeviceSize>(vertexSize);
+
+			vkCmdCopyBuffer(commandBuffer, renderer->stagingBuffer, page->vertex, 1u, &copy);
+		}
+
+		head += vertexSize;
+		
+		memcpy(head, pAppendInfo->pIndex, indexSize);
+
+		{
+			VkBufferCopy copy{};
+			copy.srcOffset = static_cast<VkDeviceSize>(head - renderer->stage.data);
+			copy.dstOffset = static_cast<VkDeviceSize>(indexOffset);
+			copy.size = static_cast<VkDeviceSize>(indexSize);
+			
+			vkCmdCopyBuffer(commandBuffer, renderer->stagingBuffer, page->index, 1u, &copy);
+		}
+		
+		head += indexSize;
+
+		page->model[modelCount++] = { static_cast<uint32_t>(vertexOffset / sizeof(Vertex)), static_cast<uint32_t>(indexOffset / sizeof(Index)), pAppendInfo->indexCount };
+
+		vertexOffset += vertexSize;
+		indexOffset += indexSize;
+
+		transfers--;
+	}
+
+	if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
+		return -1;
+
+	if (head == base) {
+		if (waitStackedSubmission(renderer->device, &renderer->transfer))
+			return -1;
+
+		goto prepare;
+	}
+
+	if (vmaFlushAllocation(renderer->allocator, renderer->stagingAllocation, static_cast<VkDeviceSize>(base - renderer->stage.data), static_cast<VkDeviceSize>(head - base)) != VK_SUCCESS)
+		return -1;
+
+	const VkFence fence = renderer->transfer.thisFence();
+
+	if (vkResetFences(renderer->device, 1u, &fence) != VK_SUCCESS)
+		return -1;
+
+	{
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pNext = nullptr;
+		submitInfo.waitSemaphoreCount = 0u;
+		submitInfo.pWaitSemaphores = nullptr;
+		submitInfo.pWaitDstStageMask = nullptr;
+		submitInfo.commandBufferCount = 1u;
+		submitInfo.pCommandBuffers = &commandBuffer;
+		submitInfo.signalSemaphoreCount = 0u;;
+		submitInfo.pSignalSemaphores = nullptr;
+
+		if (vkQueueSubmit(renderer->queue.transfer, 1u, &submitInfo, fence) != VK_SUCCESS)
+			return -1;
+	}
+
+	*pRegion = head;
+
+	proceedStackedSubmission(&renderer->transfer);
+
+	if (waitStackedSubmission(renderer->device, &renderer->transfer))
+		return -1;
+
+	page->modelCount = modelCount;
+
+	if (transfers)
+		goto prepare;
+
+	return 0;
 }
 
 using ResourceStateFlags = uint32_t;
@@ -2249,7 +2432,7 @@ struct Texture_T {
 	VkDescriptorSet* descriptorSet;
 };
 
-int createTexture(const __Renderer renderer, const TextureCreateInfo* pCreateInfo, mem_stack* pScratch, Texture* pTexture) noexcept {
+int createTexture(const RenderDevice renderer, const TextureCreateInfo* pCreateInfo, mem_stack* pScratch, Texture* pTexture) noexcept {
 	const Texture texture = new(std::nothrow) Texture_T;
 
 	if (!texture)
@@ -2590,7 +2773,7 @@ failure_0:
 	return -1;
 }
 
-void destroyTexture(const __Renderer renderer, const Texture texture) noexcept {
+void destroyTexture(const RenderDevice renderer, const Texture texture) noexcept {
 	mem_freeRange<VkDescriptorSet>(texture->descriptorSet);
 	vkDestroyDescriptorPool(renderer->device, texture->descriptorPool, nullptr);
 	vkDestroyImageView(renderer->device, texture->imageView, nullptr);
@@ -2621,13 +2804,13 @@ struct Scene_T {
 	uint32_t indirectCommandCapacity;
 };
 
-int createScene(const __Renderer renderer, const SceneCreateInfo* const pCreateInfo, mem_stack* const pScratch, Scene* const pScene) noexcept {
+int createScene(const RenderDevice renderer, const SceneCreateInfo* const pCreateInfo, mem_stack* const pScratch, Scene* const pScene) noexcept {
 	const Scene scene = new(std::nothrow) Scene_T;
 
 	if (!scene)
 		return -1;
 
-	scene->model = pCreateInfo->collection->model;
+	scene->model = pCreateInfo->geometry->model;
 
 	scene->instance = mem_allocateRange<VkBuffer>(renderer->graphics.capacity);
 
@@ -2786,7 +2969,7 @@ int createScene(const __Renderer renderer, const SceneCreateInfo* const pCreateI
 		goto failure_8;
 
 	{
-		const uint32_t maxDrawCount = std::min<uint32_t>(pCreateInfo->instanceCount, std::max<uint32_t>(pCreateInfo->drawCount, static_cast<uint32_t>(mem_getSizeAllocationSize(pCreateInfo->collection->model) + 1u)));
+		const uint32_t maxDrawCount = std::min<uint32_t>(pCreateInfo->instanceCount, std::max<uint32_t>(pCreateInfo->drawCount, static_cast<uint32_t>(mem_getSizeAllocationSize(pCreateInfo->geometry->model) + 1u)));
 		
 		VkBufferCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -2879,7 +3062,7 @@ failure_0:
 	return -1;
 }
 
-void destroyScene(const __Renderer renderer, const Scene scene) noexcept {
+void destroyScene(const RenderDevice renderer, const Scene scene) noexcept {
 	mem_freeRange<VkDrawIndexedIndirectCommand*>(scene->indirectData);
 
 	{
@@ -2914,7 +3097,7 @@ void destroyScene(const __Renderer renderer, const Scene scene) noexcept {
 	delete scene;
 }
 
-int pushObjectInstance(const __Renderer renderer, const Scene _Scene, const ObjectInstance* const pObject) noexcept {
+int pushObjectInstance(const RenderDevice renderer, const Scene _Scene, const ObjectInstance* const pObject) noexcept {
 	const uint32_t instanceCount = pObject->instanceCount;
 	
 	if (!instanceCount)
@@ -2969,7 +3152,7 @@ struct Camera_T {
 	VkDescriptorSet* descriptorSet;
 };
 
-int createCamera(__Renderer renderer, const CameraCreateInfo* pCreateInfo, mem_stack* pScratch, Camera* pCamera) noexcept {
+int createCamera(RenderDevice renderer, const CameraCreateInfo* pCreateInfo, mem_stack* pScratch, Camera* pCamera) noexcept {
 	const Camera camera = new(std::nothrow) Camera_T;
 
 	if (!camera)
@@ -3139,7 +3322,7 @@ failure_0:
 	return -1;
 }
 
-void destroyCamera(const __Renderer renderer, const Camera camera) noexcept {
+void destroyCamera(const RenderDevice renderer, const Camera camera) noexcept {
 	mem_freeRange<VkDescriptorSet>(camera->descriptorSet);
 	vkDestroyDescriptorPool(renderer->device, camera->descriptorPool, nullptr);
 
@@ -3160,7 +3343,7 @@ void destroyCamera(const __Renderer renderer, const Camera camera) noexcept {
 	delete camera;
 }
 
-void updateCamera(const __Renderer renderer, const Camera _Camera, const CameraWrite* const pWrite) noexcept {
+void updateCamera(const RenderDevice renderer, const Camera _Camera, const CameraWrite* const pWrite) noexcept {
 	const CameraData* const pDataSrcEnd = pWrite->pData + pWrite->count;
 	
  	const CameraDataGPU* const* const ppDataEnd = _Camera->data + renderer->graphics.capacity;
@@ -3172,7 +3355,7 @@ void updateCamera(const __Renderer renderer, const Camera _Camera, const CameraW
 	}
 }
 
-int beginFrame(__Renderer renderer) noexcept {
+int beginFrame(RenderDevice renderer) noexcept {
 	uint32_t index;
 
 	if (prepareRoundedSubmission(renderer->device, &renderer->graphics, &index))
@@ -3218,7 +3401,7 @@ int beginFrame(__Renderer renderer) noexcept {
 	return 0;
 }
 
-void render(const __Renderer renderer, const Collection _Collection, const Scene _Scene, const Texture texture, const Camera camera, const uint32_t cameraIndex) noexcept {
+void render(const RenderDevice renderer, const GeometryPage _Collection, const Scene _Scene, const Texture texture, const Camera camera, const uint32_t cameraIndex) noexcept {
 	const VkCommandBuffer commandBuffer = renderer->graphics.thisCommandBuffer();
 
 	if (texture->state & RESOURCE_STATE_PENDING_TRANSFER_ACQUIRE) {
@@ -3288,7 +3471,7 @@ void render(const __Renderer renderer, const Collection _Collection, const Scene
 	vkCmdEndRenderPass(commandBuffer);
 }
 
-int endFrame(const __Renderer renderer) noexcept {
+int endFrame(const RenderDevice renderer) noexcept {
 	const VkCommandBuffer commandBuffer = renderer->graphics.thisCommandBuffer();
 
 	if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)

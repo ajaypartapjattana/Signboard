@@ -27,18 +27,34 @@ struct EmulatorCreateInfo {
 	size_t stageCapacity;
 };
 
-struct __Renderer_T;
-using __Renderer = __Renderer_T*;
+struct RenderDevice_T;
+using RenderDevice = RenderDevice_T*;
 
-int createRenderDevice(VulkanContext const context, const EmulatorCreateInfo* const pCreateInfo, mem_stack* const pScratch, __Renderer* const pRenderer) noexcept;
-void destroyRenderDevice(VulkanContext const context, __Renderer const renderer) noexcept;
+int createRenderDevice(VulkanContext const context, const EmulatorCreateInfo* const pCreateInfo, mem_stack* const pScratch, RenderDevice* const pRenderer) noexcept;
+void destroyRenderDevice(VulkanContext const context, RenderDevice const renderer) noexcept;
 
-int waitRenderDevice(const __Renderer renderer) noexcept;
+int waitRenderDevice(const RenderDevice renderer) noexcept;
 
-int configureRenderDevice(const __Renderer renderer) noexcept;
+int configureRenderDevice(const RenderDevice renderer) noexcept;
 
-struct Collection_T;
-using Collection = Collection_T*;
+struct GeometryPage_T;
+using GeometryPage = GeometryPage_T*;
+
+enum PageAccessType : uint32_t {
+	PAGE_ACCESS_NONE,
+	PAGE_ACCESS_SEQUENTIAL,
+	PAGE_ACCESS_RANDOM
+};
+
+struct GeometryPageCreateInfo {
+	PageAccessType access;
+	uint32_t modelCap;
+	size_t vertexCap;
+	size_t IndexCap;
+};
+
+int createGeometryPage(RenderDevice renderer, const GeometryPageCreateInfo* pCreateInfo, GeometryPage* pCollection) noexcept;
+void destroyGeometryPage(RenderDevice renderer, GeometryPage _Collection) noexcept;
 
 struct Vertex {
 	glm::vec3 pos;
@@ -47,20 +63,31 @@ struct Vertex {
 
 using Index = uint32_t;
 
-struct ModelInfo {
+struct ModelAppendInfo {
 	const Vertex* pVertex;
-	size_t vertexCount;
 	const Index* pIndex;
-	size_t indexCount;
+	uint32_t vertexCount;
+	uint32_t indexCount;
 };
 
-struct CollectionCreateInfo {
-	uint32_t modelCount;
-	const ModelInfo* pModelInfos;
+struct ModelUpdateInfo {
+	const Vertex* pVertex;
+	const Index* pIndex;
+	uint32_t firstVertex;
+	uint32_t firstIndex;
+	uint32_t vertexCount;
+	uint32_t indexCount;
+	uint32_t modelIndex;
 };
 
-int createCollection(__Renderer renderer, const CollectionCreateInfo* pCreateInfo, Collection* pCollection) noexcept;
-void destroyCollection(__Renderer renderer, Collection _Collection) noexcept;
+struct GeometryWriteInfo {
+	uint32_t appendCount;
+	uint32_t updateCount;
+	const ModelAppendInfo* pAppendInfo;
+	const ModelUpdateInfo* pUpdateInfo;
+};
+
+int writeGeometryPage(RenderDevice renderer, GeometryPage page, const GeometryWriteInfo* pWriteInfo) noexcept;
 
 struct Texture_T;
 using Texture = Texture_T*;
@@ -69,20 +96,20 @@ struct TextureCreateInfo {
 	const char* path;
 };
 
-int createTexture(__Renderer renderer, const TextureCreateInfo* pCreateInfo, mem_stack* pScratch, Texture* pTexture) noexcept;
-void destroyTexture(__Renderer renderer, Texture texture) noexcept;
+int createTexture(RenderDevice renderer, const TextureCreateInfo* pCreateInfo, mem_stack* pScratch, Texture* pTexture) noexcept;
+void destroyTexture(RenderDevice renderer, Texture texture) noexcept;
 
 struct Scene_T;
 using Scene = Scene_T*;
 
 struct SceneCreateInfo {
-	Collection collection;
+	GeometryPage geometry;
 	uint32_t instanceCount;
 	uint32_t drawCount;
 };
 
-int createScene(__Renderer renderer, const SceneCreateInfo* pCreateInfo, mem_stack* pScratch, Scene* pScene) noexcept;
-void destroyScene(__Renderer renderer, Scene scene) noexcept;
+int createScene(RenderDevice renderer, const SceneCreateInfo* pCreateInfo, mem_stack* pScratch, Scene* pScene) noexcept;
+void destroyScene(RenderDevice renderer, Scene scene) noexcept;
 
 using Transform = glm::mat4;
 
@@ -96,7 +123,7 @@ struct ObjectInstance {
 	const InstanceData* pInstances;
 };
 
-int pushObjectInstance(__Renderer renderer, Scene _Scene, const ObjectInstance* pObject) noexcept;
+int pushObjectInstance(RenderDevice renderer, Scene _Scene, const ObjectInstance* pObject) noexcept;
 
 struct Camera_T;
 using Camera = Camera_T*;
@@ -105,8 +132,8 @@ struct CameraCreateInfo {
 	uint32_t bindings;
 };
 
-int createCamera(__Renderer renderer, const CameraCreateInfo* pCreateInfo, mem_stack* pScratch, Camera* pCamera) noexcept;
-void destroyCamera(__Renderer renderer, Camera camera) noexcept;
+int createCamera(RenderDevice renderer, const CameraCreateInfo* pCreateInfo, mem_stack* pScratch, Camera* pCamera) noexcept;
+void destroyCamera(RenderDevice renderer, Camera camera) noexcept;
 
 struct CameraData {
 	glm::mat4 view;
@@ -119,10 +146,23 @@ struct CameraWrite {
 	const CameraData* pData;
 };
 
-void updateCamera(__Renderer renderer, Camera _Camera, const CameraWrite* pWrite) noexcept;
+struct DrawInfo	{
+	GeometryPage geometry;
+	Scene scene;
+	Texture texture;
+	uint32_t cameraIndex;
+};
 
-int beginFrame(__Renderer renderer) noexcept;
+enum DrawSequenceRecordFlag : uint32_t {
+	SEQUENCE_RECORD_STATIC,
+	SEQUENCE_RECORD_DYNAMIC
+};
 
-void render(__Renderer renderer, Collection collection, Scene scene, Texture texture, Camera camera, uint32_t cameraIndex) noexcept;
+int recordDrawSequence(RenderDevice renderer, Camera camera, uint32_t drawCount, const DrawInfo* pDrawInfo) noexcept;
 
-int endFrame(__Renderer renderer) noexcept;
+int beginFrame(RenderDevice renderer) noexcept;
+void updateCamera(RenderDevice renderer, Camera _Camera, const CameraWrite* pWrite) noexcept;
+
+void render(RenderDevice renderer, GeometryPage collection, Scene scene, Texture texture, Camera camera, uint32_t cameraIndex) noexcept;
+
+int endFrame(RenderDevice renderer) noexcept;

@@ -482,7 +482,7 @@ bool pollWindowEvents(DisplayContext const _Context, EventBuffer const _EventBuf
 	xcb_connection_t* const connection = _Context->connection;
 
 	WindowEvent* pEvent = _EventBuffer->event;
-	const WindowEvent* const pEventEnd = mem_getSizeAllcoationEnd(_EventBuffer->event);
+	const WindowEvent* const pEventEnd = mem_getSizeAllocationEnd(_EventBuffer->event);
 	while (pEvent != pEventEnd) {
 		xcb_generic_event_t* const event = xcb_poll_for_event(connection);
 
