@@ -125,15 +125,15 @@ struct ObjectInstance {
 
 int pushObjectInstance(RenderDevice renderer, Scene _Scene, const ObjectInstance* pObject) noexcept;
 
-struct Camera_T;
-using Camera = Camera_T*;
+struct CameraPage_T;
+using CameraPage = CameraPage_T*;
 
 struct CameraCreateInfo {
 	uint32_t bindings;
 };
 
-int createCamera(RenderDevice renderer, const CameraCreateInfo* pCreateInfo, mem_stack* pScratch, Camera* pCamera) noexcept;
-void destroyCamera(RenderDevice renderer, Camera camera) noexcept;
+int createCameraPage(RenderDevice renderer, const CameraCreateInfo* pCreateInfo, mem_stack* pScratch, CameraPage* pCamera) noexcept;
+void destroyCamera(RenderDevice renderer, CameraPage camera) noexcept;
 
 struct CameraData {
 	glm::mat4 view;
@@ -153,16 +153,14 @@ struct DrawInfo	{
 	uint32_t cameraIndex;
 };
 
-enum DrawSequenceRecordFlag : uint32_t {
+enum SequenceRecordFlag : uint32_t {
 	SEQUENCE_RECORD_STATIC,
 	SEQUENCE_RECORD_DYNAMIC
 };
 
-int recordDrawSequence(RenderDevice renderer, Camera camera, uint32_t drawCount, const DrawInfo* pDrawInfo) noexcept;
+int recordDrawSequence(RenderDevice renderer, CameraPage camera, uint32_t drawCount, const DrawInfo* pDrawInfo, SequenceRecordFlag flag) noexcept;
 
-int beginFrame(RenderDevice renderer) noexcept;
-void updateCamera(RenderDevice renderer, Camera _Camera, const CameraWrite* pWrite) noexcept;
+int prepareFrameWrite(RenderDevice renderer) noexcept;
+void updateCamera(RenderDevice renderer, CameraPage _Camera, const CameraWrite* pWrite) noexcept;
 
-void render(RenderDevice renderer, GeometryPage collection, Scene scene, Texture texture, Camera camera, uint32_t cameraIndex) noexcept;
-
-int endFrame(RenderDevice renderer) noexcept;
+int pushFrame(RenderDevice renderer) noexcept;

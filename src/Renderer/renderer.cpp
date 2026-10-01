@@ -261,8 +261,9 @@ struct StageRegion {
 };
 
 struct SubmissionResource {
-	uint32_t capacity;
-	uint32_t index;
+	uint16_t capacity;
+	uint16_t index;
+	uint32_t open;
 	VkCommandPool commandPool;
 	VkCommandBuffer* commandBuffer;
 	VkSemaphore* semaphore;
@@ -275,6 +276,7 @@ struct SubmissionResource {
 	inline VkSemaphore thisSemaphore() const noexcept {
 		return semaphore[index];
 	}
+
 
 	inline VkFence thisFence() const noexcept {
 		return fence[index];
@@ -350,6 +352,7 @@ static int createSubmissionResource(const VkDevice device, const uint32_t family
 
 	pResource->capacity = capacity;
 	pResource->index = 0u;
+	pResource->open = 0u;
 
 	return 0;
 
@@ -398,7 +401,7 @@ static void destroySubmissionResource(const VkDevice device, const SubmissionRes
 	vkDestroyCommandPool(device, pResource->commandPool, nullptr);
 }
 
-struct BasePass {
+struct RenderPass {
 	VkRenderPass renderPass;
 	VkClearValue clearValue[2];
 	VkSampler sampler;
@@ -409,7 +412,7 @@ struct BasePass {
 	VkPipeline pipeline;
 };
 
-static int createBasePassResources(const VkDevice device, const VkFormat colorFormat, const VkFormat depthFormat, mem_stack* const pScratch, BasePass* const pPass) noexcept {
+static int createBasePassResources(const VkDevice device, const VkFormat colorFormat, const VkFormat depthFormat, mem_stack* const pScratch, RenderPass* const pPass) noexcept {
 	{
 		VkAttachmentDescription attachment[2]{};
 		attachment[0].format = colorFormat;
@@ -604,18 +607,16 @@ static int createBasePassResources(const VkDevice device, const VkFormat colorFo
 				goto failure_6;
 			}
 
-			{
-				VkShaderModuleCreateInfo createInfo{};
-				createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-				createInfo.pNext = nullptr;
-				createInfo.flags = 0;
-				createInfo.codeSize = size;
-				createInfo.pCode = reinterpret_cast<const uint32_t*>(bin);
+			VkShaderModuleCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+			createInfo.pNext = nullptr;
+			createInfo.flags = 0;
+			createInfo.codeSize = size;
+			createInfo.pCode = reinterpret_cast<const uint32_t*>(bin);
 
-				if (vkCreateShaderModule(device, &createInfo, nullptr, &vertex) != VK_SUCCESS) {
-					pScratch->restore();
-					goto failure_6;
-				}
+			if (vkCreateShaderModule(device, &createInfo, nullptr, &vertex) != VK_SUCCESS) {
+				pScratch->restore();
+				goto failure_6;
 			}
 
 			pScratch->restore();
@@ -649,19 +650,17 @@ static int createBasePassResources(const VkDevice device, const VkFormat colorFo
 				goto failure_6;
 			}
 
-			{
-				VkShaderModuleCreateInfo createInfo{};
-				createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-				createInfo.pNext = nullptr;
-				createInfo.flags = 0;
-				createInfo.codeSize = size;
-				createInfo.pCode = reinterpret_cast<const uint32_t*>(bin);
+			VkShaderModuleCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+			createInfo.pNext = nullptr;
+			createInfo.flags = 0;
+			createInfo.codeSize = size;
+			createInfo.pCode = reinterpret_cast<const uint32_t*>(bin);
 
-				if (vkCreateShaderModule(device, &createInfo, nullptr, &fragment) != VK_SUCCESS) {
-					pScratch->restore();
-					vkDestroyShaderModule(device, vertex, nullptr);
-					goto failure_6;
-				}
+			if (vkCreateShaderModule(device, &createInfo, nullptr, &fragment) != VK_SUCCESS) {
+				pScratch->restore();
+				vkDestroyShaderModule(device, vertex, nullptr);
+				goto failure_6;
 			}
 
 			pScratch->restore();
@@ -732,7 +731,7 @@ static int createBasePassResources(const VkDevice device, const VkFormat colorFo
 		rasterizationState.depthClampEnable = VK_FALSE;
 		rasterizationState.rasterizerDiscardEnable = VK_FALSE;
 		rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
-		rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
+		rasterizationState.cullMode = VK_CULL_MODE_NONE;
 		rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		rasterizationState.depthBiasEnable = VK_FALSE;
 		rasterizationState.depthBiasConstantFactor = 0.0f;
@@ -854,7 +853,7 @@ failure_1:
 	return -1;
 }
 
-static void destroyBasePassResources(const VkDevice device, const BasePass* const pPass) noexcept {
+static void destroyBasePassResources(const VkDevice device, const RenderPass* const pPass) noexcept {
 	vkDestroyPipeline(device, pPass->pipeline, nullptr);
 	vkDestroyPipelineLayout(device, pPass->pipelineLayout, nullptr);
 	vkDestroyDescriptorSetLayout(device, pPass->textureSetLayout, nullptr);
@@ -889,10 +888,12 @@ struct RenderDevice_T {
 	VkImageView depthImageView;
 	VkFence* imageFence;
 	
-	BasePass pass;
+	VkCommandPool renderCommandPool;
+
+	RenderPass pass;
+	VkCommandBuffer* renderCommandBuffer;
 	VkFramebuffer* framebuffer;
 
-	uint32_t acquire;
 	VkSemaphore* imageAvailable;
 	SubmissionResource graphics;
 	
@@ -1352,13 +1353,41 @@ int createRenderDevice(VulkanContext const context, const EmulatorCreateInfo* co
 
 	mem_nullifyRange<VkFence>(renderer->imageFence, renderer->imageCount);
 
+	{
+		VkCommandPoolCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		createInfo.pNext = nullptr;
+		createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		createInfo.queueFamilyIndex = renderer->queueFamily.graphics;
+
+		if (vkCreateCommandPool(renderer->device, &createInfo, nullptr, &renderer->renderCommandPool) != VK_SUCCESS)	
+			goto failure_9;
+	}
+
 	if (createBasePassResources(renderer->device, renderer->format.format, renderer->depthFormat, pScratch, &renderer->pass))
-		goto failure_9;
+		goto failure_10;
+
+	renderer->renderCommandBuffer = mem_allocateRange<VkCommandBuffer>(pCreateInfo->renderProcess);
+	
+	if (!renderer->renderCommandBuffer)
+		goto failure_11;
+	
+	{
+		VkCommandBufferAllocateInfo allocateInfo{};
+		allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocateInfo.pNext = nullptr;
+		allocateInfo.commandPool = renderer->renderCommandPool;
+		allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+		allocateInfo.commandBufferCount = pCreateInfo->renderProcess;
+
+		if (vkAllocateCommandBuffers(renderer->device, &allocateInfo, renderer->renderCommandBuffer) != VK_SUCCESS)
+			goto failure_12;
+	}
 
 	renderer->framebuffer = mem_allocateRange<VkFramebuffer>(renderer->imageCount);
 
 	if (!renderer->framebuffer)
-		goto failure_10;
+		goto failure_12;
 
 	mem_nullifyRange<VkFramebuffer>(renderer->framebuffer, renderer->imageCount);
 
@@ -1384,16 +1413,14 @@ int createRenderDevice(VulkanContext const context, const EmulatorCreateInfo* co
 		while (pFramebuffer != pFramebufferEnd) {
 			attachment[0] = *pImageView++;
 			if (vkCreateFramebuffer(renderer->device, &createInfo, nullptr, pFramebuffer++) != VK_SUCCESS)
-				goto failure_11;
+				goto failure_13;
 		}
 	}
 
-	renderer->acquire = UINT32_MAX;
-	
 	renderer->imageAvailable = mem_allocateRange<VkSemaphore>(pCreateInfo->renderProcess);
 
 	if (!renderer->imageAvailable)
-		goto failure_11;
+		goto failure_13;
 
 	mem_nullifyRange<VkSemaphore>(renderer->imageAvailable, pCreateInfo->renderProcess);
 
@@ -1406,11 +1433,11 @@ int createRenderDevice(VulkanContext const context, const EmulatorCreateInfo* co
 		const VkSemaphore* const pSemaphoreEnd = renderer->imageAvailable + pCreateInfo->renderProcess;
 		for (VkSemaphore* pSemaphore{ renderer->imageAvailable }; pSemaphore != pSemaphoreEnd; ++pSemaphore)
 			if (vkCreateSemaphore(renderer->device, &createInfo, nullptr, pSemaphore) != VK_SUCCESS)
-				goto failure_12;
+				goto failure_14;
 	}
 
 	if (createSubmissionResource(renderer->device, renderer->queueFamily.graphics, pCreateInfo->renderProcess, &renderer->graphics))
-		goto failure_12;
+		goto failure_14;
 
 	{
 		VkBufferCreateInfo createInfo{};
@@ -1435,7 +1462,7 @@ int createRenderDevice(VulkanContext const context, const EmulatorCreateInfo* co
 
 		VmaAllocationInfo allocationInfo;
 		if (vmaCreateBuffer(renderer->allocator, &createInfo, &allocationCreateInfo, &renderer->stagingBuffer, &renderer->stagingAllocation, &allocationInfo) != VK_SUCCESS)
-			goto failure_13;
+			goto failure_15;
 
 		renderer->stage = { reinterpret_cast<uint8_t*>(allocationInfo.pMappedData), (size_t)allocationInfo.size };
 	}
@@ -1443,27 +1470,27 @@ int createRenderDevice(VulkanContext const context, const EmulatorCreateInfo* co
 	renderer->region = mem_allocateRange<uint8_t*>(pCreateInfo->transferProcess);
 
 	if (!renderer->region)
-		goto failure_14;
+		goto failure_16;
 
 	mem_nullifyRange<uint8_t*>(renderer->region, pCreateInfo->transferProcess);
 
 	if (createSubmissionResource(renderer->device, renderer->queueFamily.transfer, pCreateInfo->transferProcess, &renderer->transfer))
-		goto failure_15;
+		goto failure_17;
 
 	*pRenderer = renderer;
 
 	return 0;
 
-failure_15:
+failure_17:
 	mem_freeRange<uint8_t*>(renderer->region);
 	
-failure_14:
+failure_16:
 	vmaDestroyBuffer(renderer->allocator, renderer->stagingBuffer, renderer->stagingAllocation);
 
-failure_13:
+failure_15:
 	destroySubmissionResource(renderer->device, &renderer->graphics);
 
-failure_12:
+failure_14:
 	{
 		const VkSemaphore* const pSemaphoreEnd = renderer->imageAvailable + pCreateInfo->renderProcess;
 		for (const VkSemaphore* pSemaphore{ renderer->imageAvailable }; pSemaphore != pSemaphoreEnd && *pSemaphore; ++pSemaphore)
@@ -1472,7 +1499,7 @@ failure_12:
 
 	mem_freeRange<VkSemaphore>(renderer->imageAvailable);
 	
-failure_11:
+failure_13:
 	{
 		const VkFramebuffer* const pFramebufferEnd = renderer->framebuffer + renderer->imageCount;
 		for (const VkFramebuffer* pFramebuffer{ renderer->framebuffer }; pFramebuffer != pFramebufferEnd && *pFramebuffer; ++pFramebuffer)
@@ -1482,8 +1509,14 @@ failure_11:
 	
 	mem_freeRange<VkFramebuffer>(renderer->framebuffer);
 
-failure_10:
+failure_12:
+	mem_freeRange<VkCommandBuffer>(renderer->renderCommandBuffer);
+
+failure_11:
 	destroyBasePassResources(renderer->device, &renderer->pass);
+
+failure_10:
+	vkDestroyCommandPool(renderer->device, renderer->renderCommandPool, nullptr);
 
 failure_9:
 	mem_freeRange<VkFence>(renderer->imageFence);
@@ -1535,14 +1568,20 @@ void destroyRenderDevice(VulkanContext const context, RenderDevice const rendere
 	const VkSemaphore* const pSemaphoreEnd = renderer->imageAvailable + renderer->graphics.capacity;
 	for (const VkSemaphore* pSemaphore{ renderer->imageAvailable }; pSemaphore != pSemaphoreEnd && *pSemaphore; ++pSemaphore)
 		vkDestroySemaphore(renderer->device, *pSemaphore, nullptr);
+	
+	mem_freeRange<VkSemaphore>(renderer->imageAvailable);
 
 	const VkFramebuffer* const pFramebufferEnd = renderer->framebuffer + renderer->imageCount;
 	for (const VkFramebuffer* pFramebuffer{ renderer->framebuffer }; pFramebuffer != pFramebufferEnd; ++pFramebuffer)
 		vkDestroyFramebuffer(renderer->device, *pFramebuffer, nullptr);
 
-	mem_freeRange<VkSemaphore>(renderer->imageAvailable);
-	
+	mem_freeRange<VkFramebuffer>(renderer->framebuffer);
+
+	mem_freeRange<VkCommandBuffer>(renderer->renderCommandBuffer);
 	destroyBasePassResources(renderer->device, &renderer->pass);
+	
+	vkDestroyCommandPool(renderer->device, renderer->renderCommandPool, nullptr);
+	
 	mem_freeRange<VkFence>(renderer->imageFence);
 
 	vkDestroyImageView(renderer->device, renderer->depthImageView, nullptr);
@@ -3143,17 +3182,18 @@ struct CameraDataGPU {
 	CameraData external;
 };
 
-struct Camera_T {
+struct CameraPage_T {
 	VkBuffer* buffer;
 	VmaAllocation* allocation;
 	CameraDataGPU** data;
+	PageAllocationFlags flag;
 
 	VkDescriptorPool descriptorPool;
 	VkDescriptorSet* descriptorSet;
 };
 
-int createCamera(RenderDevice renderer, const CameraCreateInfo* pCreateInfo, mem_stack* pScratch, Camera* pCamera) noexcept {
-	const Camera camera = new(std::nothrow) Camera_T;
+int createCameraPage(RenderDevice renderer, const CameraCreateInfo* pCreateInfo, mem_stack* pScratch, CameraPage* pCamera) noexcept {
+	const CameraPage camera = new(std::nothrow) CameraPage_T;
 
 	if (!camera)
 		return -1;
@@ -3176,13 +3216,11 @@ int createCamera(RenderDevice renderer, const CameraCreateInfo* pCreateInfo, mem
 		goto failure_2;
 
 	{
-		const size_t size = sizeof(CameraDataGPU) * pCreateInfo->bindings;
-
 		VkBufferCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		createInfo.pNext = nullptr;
 		createInfo.flags = 0;
-		createInfo.size = (VkDeviceSize)size;
+		createInfo.size = (VkDeviceSize)(sizeof(CameraDataGPU) * pCreateInfo->bindings);
 		createInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 		createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		createInfo.queueFamilyIndexCount = 0u;
@@ -3322,7 +3360,7 @@ failure_0:
 	return -1;
 }
 
-void destroyCamera(const RenderDevice renderer, const Camera camera) noexcept {
+void destroyCamera(const RenderDevice renderer, const CameraPage camera) noexcept {
 	mem_freeRange<VkDescriptorSet>(camera->descriptorSet);
 	vkDestroyDescriptorPool(renderer->device, camera->descriptorPool, nullptr);
 
@@ -3343,7 +3381,7 @@ void destroyCamera(const RenderDevice renderer, const Camera camera) noexcept {
 	delete camera;
 }
 
-void updateCamera(const RenderDevice renderer, const Camera _Camera, const CameraWrite* const pWrite) noexcept {
+void updateCamera(const RenderDevice renderer, const CameraPage _Camera, const CameraWrite* const pWrite) noexcept {
 	const CameraData* const pDataSrcEnd = pWrite->pData + pWrite->count;
 	
  	const CameraDataGPU* const* const ppDataEnd = _Camera->data + renderer->graphics.capacity;
@@ -3355,17 +3393,147 @@ void updateCamera(const RenderDevice renderer, const Camera _Camera, const Camer
 	}
 }
 
-int beginFrame(RenderDevice renderer) noexcept {
-	uint32_t index;
+int recordDrawSequence(const RenderDevice renderer, const CameraPage camera, const uint32_t drawCount, const DrawInfo* const pDrawInfo, const SequenceRecordFlag flag) noexcept {
+	if (flag == SEQUENCE_RECORD_STATIC) {
+		if (waitRoundedSubmission(renderer->device, &renderer->graphics))
+			return -1;
+	}
+	else if (flag == SEQUENCE_RECORD_DYNAMIC) {
+		if (prepareRoundedSubmission(renderer->device, &renderer->graphics, nullptr))
+			return -1;
+	}
+	else
+		return -1;
 
+	const uint32_t baseIndex = flag == SEQUENCE_RECORD_STATIC ? 0u : renderer->graphics.index;
+	const uint32_t endIndex = baseIndex + (flag == SEQUENCE_RECORD_STATIC ? renderer->graphics.capacity : 1u);
+
+	for (uint32_t resourceIndex{ baseIndex }; resourceIndex != endIndex; ++resourceIndex) {
+		const VkCommandBuffer commandBuffer = renderer->renderCommandBuffer[resourceIndex];
+
+		if (vkResetCommandBuffer(commandBuffer, 0) != VK_SUCCESS)
+			return -1;
+
+		{
+			VkCommandBufferInheritanceInfo inheritanceInfo{};
+			inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+			inheritanceInfo.pNext = nullptr;
+			inheritanceInfo.renderPass = renderer->pass.renderPass;
+			inheritanceInfo.subpass = 0;
+			inheritanceInfo.framebuffer = VK_NULL_HANDLE;
+			inheritanceInfo.occlusionQueryEnable = VK_FALSE;
+			inheritanceInfo.queryFlags = 0;
+			inheritanceInfo.pipelineStatistics = 0;
+
+			VkCommandBufferBeginInfo beginInfo{};
+			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+			beginInfo.pNext = nullptr;
+			beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+			beginInfo.pInheritanceInfo = &inheritanceInfo;
+
+			if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
+				return -1;
+		}
+
+		VkCommandBuffer primary = VK_NULL_HANDLE;
+
+		const DrawInfo* const pDrawEnd = pDrawInfo + drawCount;
+		for (const DrawInfo* pDraw{ pDrawInfo }; pDraw != pDrawEnd; ++pDraw) {	
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer->pass.pipeline);
+
+			{
+				VkViewport viewport{};
+				viewport.x = 0.0f;
+				viewport.y = 0.0f;
+				viewport.width = renderer->extent.width;
+				viewport.height = renderer->extent.height;
+				viewport.minDepth = 0.0f;
+				viewport.maxDepth = 1.0f;
+
+				vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+			}
+			
+			const VkRect2D rect = { { 0, 0 }, { renderer->extent.width, renderer->extent.height } };
+
+			vkCmdSetScissor(commandBuffer, 0, 1, &rect);
+
+			const VkDeviceSize offset[1] = { 0u };
+			
+			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &pDraw->geometry->vertex, offset);
+			vkCmdBindIndexBuffer(commandBuffer, pDraw->geometry->index, 0u, VK_INDEX_TYPE_UINT32);
+				
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer->pass.pipelineLayout, 0u, 1u, &camera->descriptorSet[resourceIndex], 0u, nullptr);
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer->pass.pipelineLayout, 1u, 1u, &pDraw->scene->descriptorSet[resourceIndex], 0u, nullptr);
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer->pass.pipelineLayout, 2u, 1u, &pDraw->texture->descriptorSet[resourceIndex], 0u, nullptr);
+
+			vkCmdPushConstants(commandBuffer, renderer->pass.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0u, sizeof(uint32_t), &pDraw->cameraIndex);
+
+			vkCmdDrawIndexedIndirect(commandBuffer, pDraw->scene->indirect[resourceIndex], 0, pDraw->scene->indirectCommandCount, sizeof(VkDrawIndexedIndirectCommand));
+
+			if (~pDraw->texture->state & RESOURCE_STATE_PENDING_TRANSFER_ACQUIRE)
+				continue;
+
+			if (!primary) {
+				primary = renderer->graphics.commandBuffer[resourceIndex];
+
+				if (vkResetCommandBuffer(primary, 0) != VK_SUCCESS)
+					return -1;
+
+				VkCommandBufferBeginInfo beginInfo{};
+				beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+				beginInfo.pNext = nullptr;
+				beginInfo.flags = 0;
+				beginInfo.pInheritanceInfo = nullptr;
+
+				if (vkBeginCommandBuffer(primary, &beginInfo) != VK_SUCCESS)
+					return -1;
+				
+				renderer->graphics.open++;
+			}
+
+			const Texture texture = pDraw->texture;
+
+			VkImageMemoryBarrier barrier{};
+			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			barrier.pNext = nullptr;
+			barrier.srcAccessMask = 0;
+			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			barrier.srcQueueFamilyIndex = renderer->queueFamily.transfer;
+			barrier.dstQueueFamilyIndex = renderer->queueFamily.graphics;
+			barrier.image = texture->image;
+			barrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+
+			vkCmdPipelineBarrier(primary, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1u, &barrier);
+
+			texture->state &= ~RESOURCE_STATE_PENDING_TRANSFER_ACQUIRE;
+		}
+			
+		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
+			return -1;
+	}
+		
+	return 0;
+}
+
+int prepareFrameWrite(const RenderDevice renderer) noexcept {
+	if (prepareRoundedSubmission(renderer->device, &renderer->graphics, nullptr))
+		return -1;
+
+	return 0;
+}
+
+int pushFrame(const RenderDevice renderer) noexcept {
+	uint32_t index;
 	if (prepareRoundedSubmission(renderer->device, &renderer->graphics, &index))
 		return -1;
 
 	const VkSemaphore imageAvailable = renderer->imageAvailable[index];
 
-	uint32_t imageIndex;
+	uint32_t acquire;
 
-	switch (vkAcquireNextImageKHR(renderer->device, renderer->swapchain, UINT64_MAX, imageAvailable, VK_NULL_HANDLE, &imageIndex)) {
+	switch (vkAcquireNextImageKHR(renderer->device, renderer->swapchain, UINT64_MAX, imageAvailable, VK_NULL_HANDLE, &acquire)) {
 	case VK_ERROR_OUT_OF_DATE_KHR:
 		return 1;
 	case VK_SUCCESS:
@@ -3375,12 +3543,19 @@ int beginFrame(RenderDevice renderer) noexcept {
 		return -1;
 	}
 
-	VkFence imageFence = renderer->imageFence[imageIndex];
-
-	if (imageFence && vkWaitForFences(renderer->device, 1u, &imageFence, VK_TRUE, UINT64_MAX) != VK_SUCCESS)
-		return -1;
+	{
+		VkFence imageFence = renderer->imageFence[acquire];
+	
+		if (imageFence && vkWaitForFences(renderer->device, 1u, &imageFence, VK_TRUE, UINT64_MAX) != VK_SUCCESS)
+			return -1;
+	}
 
 	const VkCommandBuffer commandBuffer = renderer->graphics.thisCommandBuffer();
+
+	if (renderer->graphics.open) {
+		renderer->graphics.open--;
+		goto begin;
+	}
 
 	if (vkResetCommandBuffer(commandBuffer, 0) != VK_SUCCESS)
 		return -1;
@@ -3396,31 +3571,7 @@ int beginFrame(RenderDevice renderer) noexcept {
 			return -1;
 	}
 
-	renderer->acquire = imageIndex;
-
-	return 0;
-}
-
-void render(const RenderDevice renderer, const GeometryPage _Collection, const Scene _Scene, const Texture texture, const Camera camera, const uint32_t cameraIndex) noexcept {
-	const VkCommandBuffer commandBuffer = renderer->graphics.thisCommandBuffer();
-
-	if (texture->state & RESOURCE_STATE_PENDING_TRANSFER_ACQUIRE) {
-		VkImageMemoryBarrier barrier{};
-		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		barrier.pNext = nullptr;
-		barrier.srcAccessMask = 0;
-		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		barrier.srcQueueFamilyIndex = renderer->queueFamily.transfer;
-		barrier.dstQueueFamilyIndex = renderer->queueFamily.graphics;
-		barrier.image = texture->image;
-		barrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-
-		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1u, &barrier);
-
-		texture->state &= ~RESOURCE_STATE_PENDING_TRANSFER_ACQUIRE;
-	}
+begin:
 
 	const VkRect2D renderArea = { { 0, 0 }, renderer->extent };
 
@@ -3429,50 +3580,17 @@ void render(const RenderDevice renderer, const GeometryPage _Collection, const S
 		beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		beginInfo.pNext = nullptr;
 		beginInfo.renderPass = renderer->pass.renderPass;
-		beginInfo.framebuffer = renderer->framebuffer[renderer->acquire];
+		beginInfo.framebuffer = renderer->framebuffer[acquire];
 		beginInfo.renderArea = renderArea;
 		beginInfo.clearValueCount = 2u;
 		beginInfo.pClearValues = renderer->pass.clearValue;
 
-		vkCmdBeginRenderPass(commandBuffer, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBeginRenderPass(commandBuffer, &beginInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 	}
 
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer->pass.pipeline);
+	vkCmdExecuteCommands(commandBuffer, 1u, renderer->renderCommandBuffer + index);
 
-	{
-		VkViewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = renderer->extent.width;
-		viewport.height = renderer->extent.height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
-		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-	}
-	
-	vkCmdSetScissor(commandBuffer, 0, 1, &renderArea);
-
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer->pass.pipelineLayout, 0u, 1u, &camera->descriptorSet[renderer->graphics.index], 0u, nullptr);
-
-	vkCmdPushConstants(commandBuffer, renderer->pass.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0u, sizeof(uint32_t), &cameraIndex);
-
-	const VkDeviceSize offset[1] = { 0u };
-
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_Collection->vertex, offset);
-	vkCmdBindIndexBuffer(commandBuffer, _Collection->index, 0u, VK_INDEX_TYPE_UINT32);
-
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer->pass.pipelineLayout, 1u, 1u, &_Scene->descriptorSet[renderer->graphics.index], 0u, nullptr);
-	
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer->pass.pipelineLayout, 2u, 1u, &texture->descriptorSet[renderer->graphics.index], 0u, nullptr);
-
-	vkCmdDrawIndexedIndirect(commandBuffer, _Scene->indirect[renderer->graphics.index], 0, _Scene->indirectCommandCount, sizeof(VkDrawIndexedIndirectCommand));
-	
 	vkCmdEndRenderPass(commandBuffer);
-}
-
-int endFrame(const RenderDevice renderer) noexcept {
-	const VkCommandBuffer commandBuffer = renderer->graphics.thisCommandBuffer();
 
 	if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
 		return -1;
@@ -3482,18 +3600,18 @@ int endFrame(const RenderDevice renderer) noexcept {
 	if (vkResetFences(renderer->device, 1u, &fence) != VK_SUCCESS)
 		return -1;
 
-	const VkSemaphore imageAvailable = renderer->imageAvailable[renderer->graphics.index];
-	const VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
 	const VkSemaphore renderComplete = renderer->graphics.thisSemaphore();
-
+		
 	{
+		const VkSemaphore waitSempahore[1] = { renderer->imageAvailable[renderer->graphics.index] };
+		const VkPipelineStageFlags waitStage[1] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.pNext = nullptr;
 		submitInfo.waitSemaphoreCount = 1u;
-		submitInfo.pWaitSemaphores = &imageAvailable;
-		submitInfo.pWaitDstStageMask = &waitStage;
+		submitInfo.pWaitSemaphores = waitSempahore;
+		submitInfo.pWaitDstStageMask = waitStage;
 		submitInfo.commandBufferCount = 1u;
 		submitInfo.pCommandBuffers = &commandBuffer;
 		submitInfo.signalSemaphoreCount = 1u;
@@ -3503,7 +3621,7 @@ int endFrame(const RenderDevice renderer) noexcept {
 			return -1;
 	}
 
-	renderer->imageFence[renderer->acquire] = fence;
+	renderer->imageFence[acquire] = fence;
 
 	proceedRoundedSubmission(&renderer->graphics);
 
@@ -3516,7 +3634,7 @@ int endFrame(const RenderDevice renderer) noexcept {
 		presentInfo.swapchainCount = 1u;
 		presentInfo.pSwapchains = &renderer->swapchain;
 		presentInfo.pResults = nullptr;
-		presentInfo.pImageIndices = &renderer->acquire;
+		presentInfo.pImageIndices = &acquire;
 
 		switch (vkQueuePresentKHR(renderer->queue.present, &presentInfo)) {
 		case VK_SUCCESS:

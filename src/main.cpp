@@ -18,7 +18,7 @@ constexpr uint32_t sphereIndexDataRequirement(const uint32_t resolution) noexcep
 	return resolution * resolution * 6u;
 }
 
-constexpr void generateSphereVertexData(const uint32_t resolution, const float size, Vertex* const pVertex, uint32_t* const pIndex) noexcept {
+constexpr void generateSphereVertexData(const uint32_t resolution, const float size, Vertex* const pVertex, Index* const pIndex) noexcept {
 	const float radius = size * 0.5f;
 
 	const uint32_t segments = resolution;
@@ -106,6 +106,7 @@ constexpr void generateCubeVertexData(const float size, Vertex* const pVertex, I
 		*pIdx = *pIndexData++;
 }
 
+
 int main() {
 	mem_stack scratch;
 
@@ -123,7 +124,7 @@ int main() {
 
 	GeometryPage geometry;
 	Scene scene;
-	Camera camera;
+	CameraPage camera;
 	Texture texture;
 
 	float aspect;
@@ -248,8 +249,8 @@ int main() {
 	{
 		GeometryPageCreateInfo createInfo{};
 		createInfo.access = PAGE_ACCESS_RANDOM;
-		createInfo.vertexCap = 2u << 5;
-		createInfo.IndexCap = 2u << 6;
+		createInfo.vertexCap = 2u << 10;
+		createInfo.IndexCap = 2u << 12;
 		createInfo.modelCap = 20u;
 
 		if (createGeometryPage(renderDevice, &createInfo, &geometry))
@@ -270,13 +271,13 @@ int main() {
 		CameraCreateInfo createInfo{};
 		createInfo.bindings = 2u;
 
-		if (createCamera(renderDevice, &createInfo, &scratch, &camera))
+		if (createCameraPage(renderDevice, &createInfo, &scratch, &camera))
 			goto cleanup_8;
 	}
 
 	{
 		TextureCreateInfo createInfo{};
-		createInfo.path = "assets/textures/suzaneSkin.png";
+		createInfo.path = "assets/textures/seaside.png";
 
 		if (createTexture(renderDevice, &createInfo, &scratch, &texture))
 			goto cleanup_9;
@@ -287,7 +288,7 @@ int main() {
 			{ { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f } },
 			{ {  0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f } },
 			{ {  0.5f,  0.5f, 0.0f }, { 1.0f, 1.0f } },
-			{ { -0.5f,  0.5f, 0.0f }, { 0.0f, 1.0f } }
+			{ { -0.5f,  0.5f, 0.0f }, { 0.0f, 1.0f } },
 		};
 
 		const Index indexData[] = {
@@ -306,6 +307,8 @@ int main() {
 
 		if (writeGeometryPage(renderDevice, geometry, &write))
 			goto cleanup_10;
+
+		scratch.restore();
 	}
 
 	{
@@ -318,6 +321,17 @@ int main() {
 		instance.pInstances = data;
 
 		if (pushObjectInstance(renderDevice, scene, &instance))
+			goto cleanup_10;
+	}
+
+	{
+		DrawInfo info[1]{};
+		info[0].geometry = geometry;
+		info[0].scene = scene;
+		info[0].texture = texture;
+		info[0].cameraIndex = 0u;
+
+		if (recordDrawSequence(renderDevice, camera, 1u, info, SEQUENCE_RECORD_STATIC))
 			goto cleanup_10;
 	}
 
@@ -387,20 +401,7 @@ int main() {
 			updateCamera(renderDevice, camera, &write);
 		}
 
-		switch (beginFrame(renderDevice)) {
-		case 0:
-			break;
-		case 1:
-			events |= WINDOW_STATE_EXTENT_DIRTY_BIT;
-			continue;
-		default:
-			while(waitRenderDevice(renderDevice));
-			goto cleanup_11;
-		}
-
-		render(renderDevice, geometry, scene, texture, camera, isKeyDown(&keyField, INPUT_KEY_NUMPAD_0) ? 1u : 0u);
-
-		switch (endFrame(renderDevice)) {
+		switch (pushFrame(renderDevice)) {
 		case 0:
 			break;
 		case 1:
