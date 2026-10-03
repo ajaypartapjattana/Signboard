@@ -838,6 +838,6 @@ namespace mem {
 
 	};
 
-	inline thread_local stack scratch{16 << 20};
+	inline thread_local stack scratch{64 << 20};
 
 }

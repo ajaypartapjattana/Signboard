@@ -11,7 +11,7 @@
 
 namespace io {
 
-	template <bool(*GetChunkFn)(void* user, const uint8_t** pBegin, size_t* pSize) noexcept>
+	template <bool(*GetChunkFn)(void* user, const uint8_t** ppBegin, size_t* pSize) noexcept>
 	class BitStream {
 	private:
 		void* user;
