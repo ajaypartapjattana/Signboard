@@ -1,0 +1,38 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "Release-gcc",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/build/release-gcc/Vortx",
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
+
+        {
+            "name": "Debug-gcc",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/build/debug-gcc/Vortx",
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
+
+        {
+            "name": "relwithdebinfo-gcc",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/build/relwithdebinfo-gcc/Vortx",
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb"
+        }
+    ]
+}

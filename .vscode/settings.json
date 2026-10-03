@@ -1,0 +1,11 @@
+{
+    "cmake.sourceDirectory": "/home/ajaypartapjattana/Documents/Repos/Signboard",
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/build/debug-gcc/compile_commands.json",
+    "cmake.useCMakePresets": "always",
+
+    "C_Cpp.intelliSenseCacheSize": 4096,
+
+    "files.watcherExclude": {
+        "**/build/**": true
+    }
+}
