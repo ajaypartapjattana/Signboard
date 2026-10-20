@@ -1,12 +1,10 @@
 #include <stdio.h>
 
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/gtc/matrix_transform.hpp>
+#include <ECS/camera.h>
 
 #include <core/memory.h>
 #include <core/io/io.h>
 
-#include <Input/input.h>
 #include <Platform/display.h>
 #include <Renderer/renderer.h>
 
@@ -108,16 +106,16 @@ constexpr void generateCubeVertexData(const float size, Vertex* const pVertex, I
 
 
 int main() {
+	virmem_init();
+
 	mem_stack scratch;
 
 	if (scratch.create(32u << 20))
 		return EXIT_FAILURE;
 
-	InputDeviceSet inputDevice;
-
+	WindowInput input;
 	DisplayContext windowCtx;
 	DisplayWindow window;
-	EventBuffer eventBuffer;
 
 	VulkanContext vulkanCtx;
 	RenderDevice renderDevice;
@@ -127,80 +125,34 @@ int main() {
 	CameraPage camera;
 	Texture texture;
 
-	float aspect;
-
-	InputKeyField keyField{};
-	InputDragField dragField{};
-
-	DisplayCursor cursor{};
-
-	float fov = 45.0f;
-
-	{
-		uint32_t deviceCount;
-
-		InputDeviceDicoverControlInfo discoverInfo{};
-		discoverInfo.maxInputDevice = 10u;
-
-		if (discoverInputDevices(&discoverInfo, &deviceCount, &inputDevice))
-			goto cleanup_0;
-
-		scratch.frame();
-
-		mem_span<const char*> deviceName;
-
-		mem_stackAllocateSpan(&scratch, &deviceName, (size_t)deviceCount);
-
-		if (!deviceName.count) {
-			scratch.restore();
-			goto cleanup_1;
-		}
-
-		enumerateInputDeviceName(inputDevice, deviceCount, deviceName.data);
-
-		const char** const pNameEnd = deviceName.end();
-		for (const char** pName{ deviceName.data }; pName != pNameEnd; ++pName)
-			printf("input_device : {%s}\n", *pName);
-
-		scratch.restore();
-	}
+	PerspectiveCamera cam;
 
 	{
 		if (requestDisplayContext(&windowCtx))
-			goto cleanup_1;
+			goto cleanup_0;
 
 		{
 			WindowCreateInfo createInfo{};
-			createInfo.flags = WINDOW_CREATE_FULLSCREEN_BIT | WINDOW_CREATE_RESIZABLE_BIT;
-			createInfo.width = 800u;
-			createInfo.height = 800u;
-			createInfo.x = 0u;
-			createInfo.y = 0u;
+			createInfo.flags = WINDOW_CREATE_FULLSCREEN_BIT;
+			createInfo.geometry = { 0, 0, 800, 800 };
 			createInfo.title = "My Window";
+			createInfo.pInput = &input;
 
 			if (createDisplayWindow(windowCtx, &createInfo, &window))
-				goto cleanup_2;
+				goto cleanup_1;
 		}
-
-		aspect = getWindowAspect(window);
-
-		EventBufferCreateInfo createInfo{};
-		createInfo.size = 64u;
-			
-		if (createEventBuffer(&createInfo, &eventBuffer))
-			goto cleanup_3;
 	}
 
 	{
 		if (createVulkanContext(&scratch, &vulkanCtx))
-			goto cleanup_4;
+			goto cleanup_2;
 
 		uint32_t deviceCount;
 		getPhysicalDeviceCount(vulkanCtx, &deviceCount);
 		
 		if (!deviceCount) {
 			printf("FAILURE : no_vulkan_support.\n");
-			goto cleanup_5;
+			goto cleanup_3;
 		}
 
 		int device = -1;
@@ -219,7 +171,7 @@ int main() {
 
 		if (device == -1) {
 			printf("FAILURE : no_optimal_device_found.\n");
-			goto cleanup_5;
+			goto cleanup_3;
 		}
 
 		const char* deviceName;
@@ -241,10 +193,10 @@ int main() {
 		createInfo.stageCapacity = (size_t)16u << 20;
 
 		if (createRenderDevice(vulkanCtx, &createInfo, &scratch, &renderDevice))
-			goto cleanup_5;
+			goto cleanup_3;
 	}
 
-	raiseDisplayWindow(windowCtx, window);
+	raiseDisplayWindow(window);
 
 	{
 		GeometryPageCreateInfo createInfo{};
@@ -254,7 +206,7 @@ int main() {
 		createInfo.modelCap = 20u;
 
 		if (createGeometryPage(renderDevice, &createInfo, &geometry))
-			goto cleanup_6;
+			goto cleanup_4;
 	}
 
 	{
@@ -264,7 +216,7 @@ int main() {
 		createInfo.drawCount = 10u;
 
 		if (createScene(renderDevice, &createInfo, &scratch, &scene))
-			goto cleanup_7;
+			goto cleanup_5;
 	}
 
 	{
@@ -272,7 +224,7 @@ int main() {
 		createInfo.bindings = 2u;
 
 		if (createCameraPage(renderDevice, &createInfo, &scratch, &camera))
-			goto cleanup_8;
+			goto cleanup_6;
 	}
 
 	{
@@ -280,7 +232,7 @@ int main() {
 		createInfo.path = "assets/textures/seaside.png";
 
 		if (createTexture(renderDevice, &createInfo, &scratch, &texture))
-			goto cleanup_9;
+			goto cleanup_7;
 	}
 
 	{
@@ -306,14 +258,13 @@ int main() {
 		write.pAppendInfo = model;
 
 		if (writeGeometryPage(renderDevice, geometry, &write))
-			goto cleanup_10;
+			goto cleanup_8;
 
 		scratch.restore();
 	}
 
 	{
-		InstanceData data[1];
-		data[0] = { glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) };
+		InstanceData data[1] = { glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) };
 
 		ObjectInstance instance{};
 		instance.model = 0u;
@@ -321,7 +272,7 @@ int main() {
 		instance.pInstances = data;
 
 		if (pushObjectInstance(renderDevice, scene, &instance))
-			goto cleanup_10;
+			goto cleanup_8;
 	}
 
 	{
@@ -332,70 +283,123 @@ int main() {
 		info[0].cameraIndex = 0u;
 
 		if (recordDrawSequence(renderDevice, camera, 1u, info, SEQUENCE_RECORD_STATIC))
-			goto cleanup_10;
+			goto cleanup_8;
 	}
 
-	if (beginInputEventPoll(inputDevice))
-		goto cleanup_10;
+	cam.moveTo(glm::vec3(0.0f, 0.0f, 2.0f));
 
 	while (true) {
-		WindowStateField events = 0;
+		input.flush();
+		pollWindowEvents();
 
-		while (pollWindowEvents(windowCtx, eventBuffer))
-			resolveWindowEvents(eventBuffer, window, &events, &cursor);
-
-		if (events & WINDOW_STATE_TERMINATION_IMMINENT_BIT) {
-			while(waitRenderDevice(renderDevice));
-			break;
-		}
-			
-		if (events & WINDOW_STATE_EXTENT_DIRTY_BIT) {
-			if (configureRenderDevice(renderDevice)) {
-				while(waitRenderDevice(renderDevice));
+		WindowNotification notification = queryWindowNotification(window);
+		if (notification) {
+			if (notification & WINDOW_NOTIFY_TERMINATION_BIT) {
+				waitRenderDevice(renderDevice);
 				break;
 			}
 
-			aspect = getWindowAspect(window);
+			if (notification & WINDOW_NOTIFY_STATE_BIT) {
+				switch (getWindowState(window)) {
+				case WINDOW_STATE_UNDEFINED:
+					waitRenderDevice(renderDevice);
+					goto cleanup_8;
 
-			events &= ~WINDOW_STATE_EXTENT_DIRTY_BIT;
+				case WINDOW_STATE_MINIMIZED:
+					waitWindowEvents();
+					break;
+
+				case WINDOW_STATE_WINDOWED:
+				case WINDOW_STATE_MAXIMIZED:
+					if (configureRenderDevice(renderDevice)) {
+						waitRenderDevice(renderDevice);
+						goto cleanup_8;
+					}
+
+					DrawInfo info[1]{};
+					info[0].geometry = geometry;
+					info[0].scene = scene;
+					info[0].texture = texture;
+					info[0].cameraIndex = 0u;
+
+					if (recordDrawSequence(renderDevice, camera, 1u, info, SEQUENCE_RECORD_STATIC)) {
+						waitRenderDevice(renderDevice);
+						goto cleanup_8;
+					}
+
+					WindowGeomentry rect;
+					queryWindowGeometry(window, &rect);
+
+					cam.aspect(rect.width / (float)rect.height);
+
+					break;
+
+				}
+			}
+
+			if (notification & WINDOW_NOTIFY_INPUT_BIT) {
+				input.lapse();
+
+				if (input.isPressed(KEY_ESCAPE)) {
+					waitRenderDevice(renderDevice);
+					goto cleanup_8;
+				}
+
+				if (input.isPressed(KEY_R)) {
+					cam.moveTo(glm::vec3(0.0f, 0.0f, 2.0f));
+					cam.lookAt(glm::vec3(0.0f));
+				}
+			}
+
+			clearWindowNotification(window);
 		}
 
-		if (events & WINDOW_STATE_MINIMIZED_BIT) {
-			if (waitWindowEvents(windowCtx, eventBuffer))
-				resolveWindowEvents(eventBuffer, window, &events, &cursor);
-			else
-				break;
-		}
+		if (input.testDown()) {
+			glm::vec3 movDir(0.0f);
 
-		if (events & WINDOW_STATE_POINTER_MOTION_BIT)
-			events &= ~WINDOW_STATE_POINTER_MOTION_BIT;
+			if (input.isDown(KEY_W))
+				movDir.z -= 1.0f;
+
+			if (input.isDown(KEY_S))
+				movDir.z += 1.0f;
+
+			if (input.isDown(KEY_A))
+				movDir.x -= 1.0f;
+
+			if (input.isDown(KEY_D))
+				movDir.x += 1.0f;
+
+			if (input.isDown(KEY_SHIFT_LEFT))
+				movDir.y -= 1.0f;
+
+			if (input.isDown(KEY_CTRL_LEFT))
+				movDir.y += 1.0f;
+
+			cam.moveUniformL(movDir, 0.05f);
+
+			if (input.isDown(KEY_ARROW_UP))
+				cam.rotateL(CAMERA_RT, -0.01f);
+
+			if (input.isDown(KEY_ARROW_DOWN))
+				cam.rotateL(CAMERA_RT, 0.01f);
 			
-		pollInputs(inputDevice, &dragField, &keyField);
+			if (input.isDown(KEY_ARROW_RIGHT))
+				cam.rotateL(CAMERA_UP, -0.01f);
 
-		if (isKeyPressed(&keyField, INPUT_KEY_R)) {
-			dragField.delta[0] = 0u;
-			dragField.delta[1] = 0u;
+			if (input.isDown(KEY_ARROW_LEFT))
+				cam.rotateL(CAMERA_UP, 0.01f);
 		}
-
-		if (isKeyDown(&keyField, INPUT_KEY_ARROW_UP))
-			fov -= 0.1;
-
-		if (isKeyDown(&keyField, INPUT_KEY_ARROW_DOWN))
-			fov += 0.1;
 
 		{
-			CameraData data[2]{};
-			data[0].view = glm::lookAt(glm::vec3((float)dragField.delta[0] * fov / 5000.0f, -(float)dragField.delta[1] * fov / 5000.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-			data[0].projection = glm::perspective(glm::radians(fov), aspect, 0.1f, 100.0f);
-			data[0].projection[1][1] *= -1;
+			IVEC2D pointer = input.pointer();
 
-			data[1].view = glm::lookAt(glm::vec3((float)dragField.delta[0] * fov / 5000.0f, -(float)dragField.delta[1] * fov / 5000.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-			data[1].projection = glm::ortho(-1.5f, 1.5f, -1.5f, 1.5f, 0.1f, 100.0f);
-			data[1].projection[1][1] *= -1;
+			CameraData data[1]{};
+			data[0].view = cam.view();
+			data[0].projection = cam.project();
 
 			CameraWrite write{};
 			write.firstCamera = 0u;
-			write.count = 2u;
+			write.count = 1u;
 			write.pData = data;
 
 			updateCamera(renderDevice, camera, &write);
@@ -405,46 +409,40 @@ int main() {
 		case 0:
 			break;
 		case 1:
-			events |= WINDOW_STATE_EXTENT_DIRTY_BIT;
+			if (configureRenderDevice(renderDevice)) {
+				waitRenderDevice(renderDevice);
+				goto cleanup_8;
+			}
 			break;
 		default:
-			while(waitRenderDevice(renderDevice));
-			goto cleanup_11;
+			waitRenderDevice(renderDevice);
+			goto cleanup_8;
 		}
 	}
 
-cleanup_11:
-	endInputEventPoll(inputDevice);
-
-cleanup_10:
+cleanup_8:
 	destroyTexture(renderDevice, texture);
 
-cleanup_9:
+cleanup_7:
 	destroyCamera(renderDevice, camera);
 
-cleanup_8:
+cleanup_6:
 	destroyScene(renderDevice, scene);
 
-cleanup_7:
+cleanup_5:
 	destroyGeometryPage(renderDevice, geometry);
 
-cleanup_6:
+cleanup_4:
 	destroyRenderDevice(vulkanCtx, renderDevice);
 
-cleanup_5:
+cleanup_3:
 	destroyVulkanContext(vulkanCtx);
 
-cleanup_4:
-	destroyEventBuffer(eventBuffer);
-
-cleanup_3:
-	destroyDisplayWindow(windowCtx, window);
-
 cleanup_2:
-	destroyDisplayContext(windowCtx);
+	destroyDisplayWindow(window);
 
 cleanup_1:
-	destroyInputDeviceSet(inputDevice);
+	destroyDisplayContext(windowCtx);
 
 cleanup_0:
 	scratch.reset();

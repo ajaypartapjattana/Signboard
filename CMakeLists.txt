@@ -26,16 +26,23 @@ file(GLOB_RECURSE VORTX_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
 )
 
-set(WARNING_SUPPRESSIONS
-    -Wno-unused-parameter
-    -Wno-unused-variable
-    -Wno-missing-field-initializers
-)
+if(MSVC)
+    set(VMA_WARNING_SUPPRESSIONS
+        /wd4100
+        /wd4189
+    )
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    set(VMA_WARNING_SUPPRESSIONS
+        -Wno-unused-parameter
+        -Wno-unused-variable
+        -Wno-missing-field-initializers
+    )
+endif()
 
 set_source_files_properties(
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Renderer/vma.cpp"
     PROPERTIES
-        COMPILE_OPTIONS "${WARNING_SUPPRESSIONS}"
+        COMPILE_OPTIONS "${VMA_WARNING_SUPPRESSIONS}"
 )
 
 get_source_file_property(VMA_OPTIONS
@@ -46,6 +53,10 @@ get_source_file_property(VMA_OPTIONS
 message(STATUS "VMA COMPILE_OPTIONS = [${VMA_OPTIONS}]")
 
 add_executable(Vortx ${VORTX_SOURCES})
+
+set_property(TARGET Vortx PROPERTY
+    VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+)
 
 set(MEMORY_PLATFORM_SRC)
 
@@ -115,7 +126,9 @@ PRIVATE
 find_package(Vulkan REQUIRED)
 target_link_libraries(Vortx PRIVATE Vulkan::Vulkan)
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+if(MSVC)
+	target_compile_options(Vortx PRIVATE /W4)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(Vortx 
     PRIVATE 
         -Wall 

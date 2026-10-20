@@ -13,16 +13,16 @@ namespace io {
 		uint16_t bitDepth;
 	};
 
-	inline size_t getImageSize(const ImageInfo* const pImageInfo) noexcept {
+	inline size_t getImageSize(const ImageInfo* pImageInfo) noexcept {
 		return (((size_t)pImageInfo->bitDepth * pImageInfo->channels * pImageInfo->width) >> 3) * pImageInfo->height;
 	}
 
-	int getBinarySize(const char* const _Path, size_t* const pSize) noexcept;
-	int loadBinary(const char* const _Path, const size_t _LoadSize, void* const pDst) noexcept;
+	int getBinarySize(const char* path, size_t* pSize) noexcept;
+	int loadBinary(const char* path, size_t loadSize, void* pDst) noexcept;
 
-	int parseWavefront(const void* const pSrc, const size_t _Size) noexcept;
+	int parseWavefront(const void* pSrc, size_t size) noexcept;
 
-	int fetchPngInfo(const void* pBin, size_t _Size, ImageInfo* const pInfo) noexcept;
+	int fetchPngInfo(const void* pBin, size_t size, ImageInfo* pInfo) noexcept;
 
 	struct ImageDecodeInfo {
 		ImageInfo* imageInfo;

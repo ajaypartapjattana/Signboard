@@ -13,70 +13,550 @@
 #define NOMINMAX
 
 #include <Windows.h>
+#include <windowsx.h>
 
-static LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
-	switch (message) {
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		return 0;
+constexpr Key normalKeys[0x59] = {
+	KEY_IMP,				// 0x00
+	KEY_ESCAPE,             // 0x01
+	KEY_1,                  // 0x02
+	KEY_2,                  // 0x03
+	KEY_3,                  // 0x04
+	KEY_4,                  // 0x05
+	KEY_5,                  // 0x06
+	KEY_6,                  // 0x07
+	KEY_7,                  // 0x08
+	KEY_8,                  // 0x09
+	KEY_9,                  // 0x0A
+	KEY_0,                  // 0x0B
+	KEY_MINUS,              // 0x0C
+	KEY_EQUALS,             // 0x0D
+	KEY_BACKSPACE,          // 0x0E
+	KEY_TAB,                // 0x0F
+	KEY_Q,                  // 0x10
+	KEY_W,                  // 0x11
+	KEY_E,                  // 0x12
+	KEY_R,                  // 0x13
+	KEY_T,                  // 0x14
+	KEY_Y,                  // 0x15
+	KEY_U,                  // 0x16
+	KEY_I,                  // 0x17
+	KEY_O,                  // 0x18
+	KEY_P,                  // 0x19
+	KEY_LEFT_BRACKET,       // 0x1A
+	KEY_RIGHT_BRACKET,      // 0x1B
+	KEY_ENTER,              // 0x1C
+	KEY_CTRL_LEFT,          // 0x1D
+	KEY_A,                  // 0x1E
+	KEY_S,                  // 0x1F
+	KEY_D,                  // 0x20
+	KEY_F,                  // 0x21
+	KEY_G,                  // 0x22
+	KEY_H,                  // 0x23
+	KEY_J,                  // 0x24
+	KEY_K,                  // 0x25
+	KEY_L,                  // 0x26
+	KEY_SEMICOLON,          // 0x27
+	KEY_APOSTROPHE,         // 0x28
+	KEY_GRAVE,              // 0x29
+	KEY_SHIFT_LEFT,         // 0x2A
+	KEY_BACKSLASH,          // 0x2B
+	KEY_Z,                  // 0x2C
+	KEY_X,                  // 0x2D
+	KEY_C,                  // 0x2E
+	KEY_V,                  // 0x2F
+	KEY_B,                  // 0x30
+	KEY_N,                  // 0x31
+	KEY_M,                  // 0x32
+	KEY_COMMA,              // 0x33
+	KEY_PERIOD,             // 0x34
+	KEY_SLASH,              // 0x35
+	KEY_SHIFT_RIGHT,        // 0x36
+	KEY_NUMPAD_MULTIPLY,    // 0x37
+	KEY_ALT_LEFT,           // 0x38
+	KEY_SPACE,              // 0x39
+	KEY_CAPSLOCK,			// 0x3A
+	KEY_F1,                 // 0x3B
+	KEY_F2,                 // 0x3C
+	KEY_F3,                 // 0x3D
+	KEY_F4,                 // 0x3E
+	KEY_F5,                 // 0x3F
+	KEY_F6,                 // 0x40
+	KEY_F7,                 // 0x41
+	KEY_F8,                 // 0x42
+	KEY_F9,                 // 0x43
+	KEY_F10,                // 0x44
+	KEY_NUMLOCK,			// 0x45
+	KEY_SCROLL_LOCK,        // 0x46
+	KEY_NUMPAD_7,           // 0x47
+	KEY_NUMPAD_8,           // 0x48
+	KEY_NUMPAD_9,           // 0x49
+	KEY_NUMPAD_SUBTRACT,    // 0x4A
+	KEY_NUMPAD_4,           // 0x4B
+	KEY_NUMPAD_5,           // 0x4C
+	KEY_NUMPAD_6,           // 0x4D
+	KEY_NUMPAD_ADD,         // 0x4E
+	KEY_NUMPAD_1,           // 0x4F
+	KEY_NUMPAD_2,           // 0x50
+	KEY_NUMPAD_3,           // 0x51
+	KEY_NUMPAD_0,           // 0x52
+	KEY_NUMPAD_DECIMAL,     // 0x53
+	KEY_IMP,				// 0x54
+	KEY_IMP,				// 0x55
+	KEY_NON_US_BACKSLASH,   // 0x56
+	KEY_F11,                // 0x57
+	KEY_F12                 // 0x58
+};
 
-	default:
-		return DefWindowProcW(hwnd, message, wParam, lParam);
+constexpr Key extendedKeys[0x54] = {
+	KEY_IMP,                // 0x00
+	KEY_IMP,                // 0x01
+	KEY_IMP,                // 0x02
+	KEY_IMP,                // 0x03
+	KEY_IMP,                // 0x04
+	KEY_IMP,                // 0x05
+	KEY_IMP,                // 0x06
+	KEY_IMP,                // 0x07
+	KEY_IMP,                // 0x08
+	KEY_IMP,                // 0x09
+	KEY_IMP,                // 0x0A
+	KEY_IMP,                // 0x0B
+	KEY_IMP,                // 0x0C
+	KEY_IMP,                // 0x0D
+	KEY_IMP,                // 0x0E
+	KEY_IMP,                // 0x0F
+	KEY_IMP,                // 0x10
+	KEY_IMP,                // 0x11
+	KEY_IMP,                // 0x12
+	KEY_IMP,                // 0x13
+	KEY_IMP,                // 0x14
+	KEY_IMP,                // 0x15
+	KEY_IMP,                // 0x16
+	KEY_IMP,                // 0x17
+	KEY_IMP,                // 0x18
+	KEY_IMP,                // 0x19
+	KEY_IMP,                // 0x1A
+	KEY_IMP,                // 0x1B
+	KEY_NUMPAD_ENTER,       // 0x1C
+	KEY_CTRL_RIGHT,         // 0x1D
+	KEY_IMP,                // 0x1E
+	KEY_IMP,                // 0x1F
+	KEY_IMP,                // 0x20
+	KEY_IMP,                // 0x21
+	KEY_IMP,                // 0x22
+	KEY_IMP,                // 0x23
+	KEY_IMP,                // 0x24
+	KEY_IMP,                // 0x25
+	KEY_IMP,                // 0x26
+	KEY_IMP,                // 0x27
+	KEY_IMP,                // 0x28
+	KEY_IMP,                // 0x29
+	KEY_IMP,                // 0x2A
+	KEY_IMP,                // 0x2B
+	KEY_IMP,                // 0x2C
+	KEY_IMP,                // 0x2D
+	KEY_IMP,                // 0x2E
+	KEY_IMP,                // 0x2F
+	KEY_IMP,                // 0x30
+	KEY_IMP,                // 0x31
+	KEY_IMP,                // 0x32
+	KEY_IMP,                // 0x33
+	KEY_IMP,                // 0x34
+	KEY_NUMPAD_DIVIDE,      // 0x35
+	KEY_IMP,                // 0x36
+	KEY_PRINT_SCREEN,       // 0x37
+	KEY_ALT_RIGHT,          // 0x38
+	KEY_IMP,                // 0x39
+	KEY_IMP,                // 0x3A
+	KEY_IMP,                // 0x3B
+	KEY_IMP,                // 0x3C
+	KEY_IMP,                // 0x3D
+	KEY_IMP,                // 0x3E
+	KEY_IMP,                // 0x3F
+	KEY_IMP,                // 0x40
+	KEY_IMP,                // 0x41
+	KEY_IMP,                // 0x42
+	KEY_IMP,                // 0x43
+	KEY_IMP,                // 0x44
+	KEY_IMP,                // 0x45
+	KEY_IMP,                // 0x46
+	KEY_HOME,               // 0x47
+	KEY_ARROW_UP,           // 0x48
+	KEY_PAGE_UP,            // 0x49
+	KEY_IMP,                // 0x4A
+	KEY_ARROW_LEFT,         // 0x4B
+	KEY_IMP,                // 0x4C
+	KEY_ARROW_RIGHT,        // 0x4D
+	KEY_IMP,                // 0x4E
+	KEY_END,                // 0x4F
+	KEY_ARROW_DOWN,         // 0x50
+	KEY_PAGE_DOWN,          // 0x51
+	KEY_INSERT,             // 0x52
+	KEY_DELETE              // 0x53
+};
+
+static void inputProc(WindowInput* event, const RAWINPUT* const input) noexcept {
+	switch (input->header.dwType) {
+	case RIM_TYPEMOUSE: {
+		const RAWMOUSE* const mouse = &input->data.mouse;
+
+		if (mouse->lLastX || mouse->lLastY) {
+			if (mouse->usFlags & MOUSE_MOVE_ABSOLUTE)
+				event->point(static_cast<int32_t>(mouse->lLastX), static_cast<int32_t>(mouse->lLastY));
+			else
+				event->drag(static_cast<int32_t>(mouse->lLastX), static_cast<int32_t>(mouse->lLastY));
+		}
+
+		if (mouse->usFlags & RI_MOUSE_WHEEL)
+			event->scroll(static_cast<int32_t>(mouse->usButtonData));
+		
+		if (!mouse->usButtonFlags)
+			return;
+
+		const USHORT flags = mouse->usButtonFlags;
+
+		if (flags & RI_MOUSE_LEFT_BUTTON_DOWN)
+			event->press(BUTTON_LEFT);
+		if (flags & RI_MOUSE_LEFT_BUTTON_UP)
+			event->release(BUTTON_LEFT);
+
+		if (flags & RI_MOUSE_RIGHT_BUTTON_DOWN)
+			event->press(BUTTON_RIGHT);
+		if (flags & RI_MOUSE_RIGHT_BUTTON_UP)
+			event->release(BUTTON_RIGHT);
+
+		if (flags & RI_MOUSE_MIDDLE_BUTTON_DOWN)
+			event->press(BUTTON_MIDDLE);
+		if (flags & RI_MOUSE_MIDDLE_BUTTON_UP)
+			event->release(BUTTON_MIDDLE);
+
+		if (flags & RI_MOUSE_BUTTON_4_DOWN)
+			event->press(BUTTON_4);
+		if (flags & RI_MOUSE_BUTTON_4_UP)
+			event->release(BUTTON_4);
+
+		if (flags & RI_MOUSE_BUTTON_5_DOWN)
+			event->press(BUTTON_5);
+		if (flags & RI_MOUSE_BUTTON_5_UP)
+			event->release(BUTTON_5);
+	}
+
+		return;
+
+	case RIM_TYPEKEYBOARD: {
+		const uint16_t scanCode = input->data.keyboard.MakeCode;
+		const uint16_t flags = input->data.keyboard.Flags;
+
+		const Action action = flags & RI_KEY_BREAK ? ACTION_RELEASE : ACTION_PRESS;
+
+		if (scanCode >= 0x80)
+			return;
+
+		Key key = KEY_IMP;
+
+		if (flags & RI_KEY_E1) {
+			if (scanCode == 0x45)
+				key = KEY_PAUSE;
+		}
+		else if (flags & RI_KEY_E0) {
+			key = extendedKeys[scanCode];
+		}
+		else
+			key = normalKeys[scanCode];
+
+		if (key == KEY_IMP)
+			return;
+
+		switch (action) {
+		case ACTION_NONE:
+			return;
+		case ACTION_PRESS:
+			event->press(key);
+			return;
+		case ACTION_REPEAT:
+			event->repeat(key);
+			return;
+		case ACTION_RELEASE:
+			event->release(key);
+		}
+	}
+
+		return;
+
+	case RIM_TYPEHID:
+		return;
 	}
 }
 
-constexpr LPCWSTR className = L"RendererWindows";
+struct DisplayWindow_T {
+	HWND window;
+	void* user;
+	WindowState state;
+	WindowNotification notifs;
+	WindowGeomentry geometry;
+	WindowInput* event;
+};
 
-int createPlatformWindow(const WindowCreateInfo* const pCreateInfo, WindowHandle* const pHandle) noexcept {
-	HINSTANCE instance = GetModuleHandle(nullptr);
+static LRESULT CALLBACK windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) noexcept {
+	DisplayWindow window = reinterpret_cast<DisplayWindow>(GetWindowLongPtrA(hwnd, GWLP_USERDATA));
+
+	if (message == WM_NCCREATE) {
+		const CREATESTRUCTA* create = reinterpret_cast<const CREATESTRUCTA*>(lParam);
+
+		window = static_cast<DisplayWindow>(create->lpCreateParams);
+
+		SetWindowLongPtrA(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(window));
+	}
+
+	if (!window)
+		return DefWindowProcA(hwnd, message, wParam, lParam);
+
+	switch (message) {
+	case WM_INPUT: {
+		UINT size = 0;
+		
+		if (GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, nullptr, &size, sizeof(RAWINPUTHEADER)) == static_cast<UINT>(-1))
+			return 0;
+
+		alignas(RAWINPUT) uint8_t buffer[sizeof(RAWINPUT) + 64u];
+
+		if (size > sizeof(buffer))
+			return 0;
+
+		if (GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, buffer, &size, sizeof(RAWINPUTHEADER)) == static_cast<UINT>(-1))
+			return 0;
+
+		window->notifs |= WINDOW_NOTIFY_INPUT_BIT;
+
+		const RAWINPUT* input = reinterpret_cast<const RAWINPUT*>(buffer);
+
+		inputProc(window->event, input);
+	}
+
+		return 0;
+
+	case WM_SIZE:
+		window->notifs |= WINDOW_NOTIFY_STATE_BIT;
+
+		window->geometry.width = LOWORD(lParam);
+		window->geometry.height = HIWORD(lParam);
+
+		switch (wParam) {
+		case SIZE_RESTORED:
+			window->state = WINDOW_STATE_WINDOWED;
+			return 0;
+		case SIZE_MINIMIZED:
+			window->state = WINDOW_STATE_MINIMIZED;
+			return 0;
+		case SIZE_MAXIMIZED:
+			window->state = WINDOW_STATE_MAXIMIZED;
+			return 0;
+		default:
+			return 0;
+		}
+	case WM_MOVE:
+		window->notifs |= WINDOW_NOTIFY_MOVE_BIT;
+
+		window->geometry.x = GET_X_LPARAM(lParam);
+		window->geometry.y = GET_Y_LPARAM(lParam);
+		return 0;
+	case WM_SETFOCUS:
+		window->notifs |= WINDOW_NOTIFY_FOCUS_GAIN_BIT;
+		return 0;
+	case WM_KILLFOCUS:
+		window->notifs |= WINDOW_NOTIFY_FOCUS_LOST_BIT;
+		return 0;
+	case WM_CLOSE:
+		window->notifs |= WINDOW_NOTIFY_TERMINATION_BIT;
+		return 0;
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		return 0;
+	}
+	return DefWindowProcA(hwnd, message, wParam, lParam);
+}
+
+constexpr LPCSTR className = "VortxWindows";
+
+struct DisplayContext_T {
+	HINSTANCE instance;
+	LPCSTR className;
+};
+
+int requestDisplayContext(DisplayContext* pContext) noexcept {
+	const DisplayContext context = new(std::nothrow) DisplayContext_T;
+
+	if (!context)
+		return -1;
+
+	context->instance = GetModuleHandleA(nullptr);
 
 	{
-		WNDCLASSEXW classDesc{};
+		WNDCLASSEXA classDesc{};
 		classDesc.cbSize = sizeof(classDesc);
 		classDesc.style = CS_HREDRAW | CS_VREDRAW;
-		classDesc.lpfnWndProc = WindowProc;
+		classDesc.lpfnWndProc = windowProc;
 		classDesc.cbClsExtra = 0;
 		classDesc.cbWndExtra = 0;
-		classDesc.hInstance = instance;
+		classDesc.hInstance = context->instance;
 		classDesc.hIcon = nullptr;
-		classDesc.hCursor = LoadCursorW(nullptr, IDC_CROSS);
+		classDesc.hCursor = LoadCursorA(nullptr, IDC_CROSS);
 		classDesc.hbrBackground = nullptr;
 		classDesc.lpszMenuName = nullptr;
 		classDesc.lpszClassName = className;
 		classDesc.hIconSm = nullptr;
 
-		if (!RegisterClassExW(&classDesc))
-			return -1;
+		if (!RegisterClassExA(&classDesc))
+			goto failure_0;
 	}
 
-	HWND hwnd = CreateWindowExW(0, className, pCreateInfo->title, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, pCreateInfo->width, pCreateInfo->height, nullptr, nullptr, m_instance, nullptr);
+	context->className = className;
 
-	if(!hwnd) {
-		UnregisterClassW(className, instance);
+	*pContext = context;
+
+	return 0;
+
+failure_0:
+	delete context;
+
+	return -1;
+}
+
+void destroyDisplayContext(DisplayContext context) noexcept {
+	UnregisterClassA(context->className, context->instance);
+}
+
+int createDisplayWindow(DisplayContext context, const WindowCreateInfo* pCreateInfo, DisplayWindow* pWindow) noexcept {
+	const DisplayWindow window = new(std::nothrow) DisplayWindow_T{};
+
+	if (!window)
 		return -1;
+	
+	DWORD style;
+
+	if (pCreateInfo->flags & WINDOW_CREATE_FULLSCREEN_BIT) {
+		style = WS_POPUP;
+
+		HMONITOR monitor = MonitorFromPoint({ pCreateInfo->geometry.x, pCreateInfo->geometry.y }, MONITOR_DEFAULTTOPRIMARY);
+
+		MONITORINFO info{};
+		info.cbSize = sizeof(MONITORINFO);
+
+		if (!GetMonitorInfoA(monitor, &info))
+			goto failure_0;
+
+		window->geometry.x = static_cast<uint16_t>(info.rcMonitor.left);
+		window->geometry.y = static_cast<uint16_t>(info.rcMonitor.top);
+		window->geometry.width = static_cast<uint16_t>(info.rcMonitor.right - info.rcMonitor.left);
+		window->geometry.height = static_cast<uint16_t>(info.rcMonitor.bottom - info.rcMonitor.top);
+	}
+	else {
+		style = WS_OVERLAPPEDWINDOW;
+		
+		if (pCreateInfo->flags & WINDOW_CREATE_STATIC_GEOMETRY_BIT)
+			style &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
+
+		window->geometry = pCreateInfo->geometry;
 	}
 
-	ShowWindow(hwnd, SW_SHOW);
-	UpdateWindow(hwnd);
+	window->window = CreateWindowExA(0, context->className, pCreateInfo->title, style, window->geometry.x, window->geometry.y, window->geometry.width, window->geometry.height, nullptr, nullptr, context->instance, window);
 
-	pHandle->nativeContext = instance;
-	phandle->nativeWindow = hwnd;
+	if(!window->window)
+		goto failure_0;
+
+	{
+		RAWINPUTDEVICE inputDevice[2]{};
+		inputDevice[0].usUsagePage = 0x01;
+		inputDevice[0].usUsage = 0x06;
+		inputDevice[0].dwFlags = 0;
+		inputDevice[0].hwndTarget = window->window;
+
+		inputDevice[1].usUsagePage = 0x01;
+		inputDevice[1].usUsage = 0x02;
+		inputDevice[1].dwFlags = 0;
+		inputDevice[1].hwndTarget = window->window;
+
+		if (!RegisterRawInputDevices(inputDevice, 2u, sizeof(RAWINPUTDEVICE)))
+			goto failure_0;
+	}
+	
+	SetWindowLongPtrA(window->window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(window));
+	
+	window->event = pCreateInfo->pInput;
+
+	*pWindow = window;
+
+	return 0;
+
+failure_0:
+	delete window;
+
+	return -1;
+}
+
+void destroyDisplayWindow(DisplayWindow window) noexcept {
+	DestroyWindow(window->window);
+}
+
+void raiseDisplayWindow(DisplayWindow window) noexcept {
+	ShowWindow(window->window, SW_SHOWNORMAL);
+	SetForegroundWindow(window->window);
+	UpdateWindow(window->window);
+}
+
+void queryWindowGeometry(DisplayWindow window, WindowGeomentry* pGeometry) noexcept {
+	*pGeometry = window->geometry;
+}
+
+int setWindowGeometry(DisplayWindow window, const WindowGeomentry* pGeometry) noexcept {
+	if (!SetWindowPos(window->window, nullptr, pGeometry->x, pGeometry->y, pGeometry->width, pGeometry->height, SWP_NOZORDER | SWP_NOACTIVATE))
+		return -1;
 
 	return 0;
 }
 
-bool Platform::pollEvents() noexcept {
-	MSG msg;
+void setWindowTitle(DisplayWindow window, const char* title) noexcept {
+	SetWindowTextA(window->window, title);
+}
 
-	while (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE)) {
-		if (msg.message == WM_QUIT)
-			return false;
+float getWindowAspect(DisplayWindow window) noexcept {
+	return window->geometry.width / (float)window->geometry.height;
+}
 
-		TranslateMessage(&msg);
-		DispatchMessageW(&msg);
+void pollWindowEvents() noexcept {
+	MSG message;
+
+	while (PeekMessageA(&message, nullptr, 0, 0, PM_REMOVE)) {
+		TranslateMessage(&message);
+		DispatchMessageA(&message);
 	}
+}
 
-	return true;
+WindowNotification queryWindowNotification(DisplayWindow window) noexcept {
+	return window->notifs;
+}
+
+void clearWindowNotification(DisplayWindow window) noexcept {
+	window->notifs = 0;
+}
+
+WindowState getWindowState(DisplayWindow window) noexcept {
+	return window->state;
+}
+
+void waitWindowEvents() noexcept {
+	MSG message;
+
+	while (GetMessageA(&message, nullptr, 0, 0) > 0) {
+		TranslateMessage(&message);
+		DispatchMessageA(&message);
+
+		break;
+	}
+}
+
+void getVulkanSurfaceDependencyInfo(DisplayContext context, DisplayWindow window, VulkanSurfaceDependencyInfo* pDependencyInfo) noexcept {
+	pDependencyInfo->context = reinterpret_cast<void*>(context->instance);
+	pDependencyInfo->window = reinterpret_cast<uintptr_t>(window->window);
 }
 
 #elif defined(PLATFORM_LINUX)
@@ -345,11 +825,11 @@ struct EventBuffer_T {
 	WindowEvent* event;
 };
 
-int createEventBuffer(const EventBufferCreateInfo* const pCreateInfo, EventBuffer* const pEventBuffer) noexcept {
+int createEventBuffer(const uint32_t capacity, EventBuffer* const pEventBuffer) noexcept {
 	WindowEvent* _event = nullptr;
 
 	do {
-		_event = mem_allocateSizeRange<WindowEvent>(pCreateInfo->size);
+		_event = mem_allocateSizeRange<WindowEvent>(capacity);
 
 		if (!_event)
 			break;

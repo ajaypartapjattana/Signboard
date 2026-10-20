@@ -13,7 +13,7 @@
 #endif
 
 #include <vulkan/vulkan.h>
-#include <vk_mem_alloc.h>
+#include <vma/vk_mem_alloc.h>
 
 #include <core/io/io.h>
 #include <core/util.h>
@@ -350,7 +350,7 @@ static int createSubmissionResource(const VkDevice device, const uint32_t family
 				goto failure_3;
 	}
 
-	pResource->capacity = capacity;
+	pResource->capacity = static_cast<uint16_t>(capacity);
 	pResource->index = 0u;
 	pResource->open = 0u;
 
@@ -921,10 +921,11 @@ int createRenderDevice(VulkanContext const context, const EmulatorCreateInfo* co
 		createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
 		createInfo.pNext = nullptr;
 		createInfo.flags = 0;
-		createInfo.connection = reinterpret_cast<HINSTANCE>(pCreateInfo->windowContext);
-		createInfo.window = static_cast<HWND>(pCreateInfo->windowHandle);
+		createInfo.hinstance = reinterpret_cast<HINSTANCE>(pCreateInfo->windowContext);
+		createInfo.hwnd = reinterpret_cast<HWND>(pCreateInfo->windowHandle);
 
-		result = vkCreateWin32SurfaceKHR(context->instance, &createInfo, nullptr, &renderer->surface);
+		if (vkCreateWin32SurfaceKHR(context->instance, &createInfo, nullptr, &renderer->surface) != VK_SUCCESS)
+			goto failure_0;
 	}
 #elif defined(WINDOW_XCB)
 	{
@@ -1794,16 +1795,8 @@ int configureRenderDevice(const RenderDevice renderer) noexcept {
 		}
 	}
 
-	{
-		const VkFence* const pFenceEnd = renderer->imageFence + renderer->imageCount;
-		for (const VkFence* pFence{ renderer->imageFence }; pFence != pFenceEnd; ++pFence) {
-			if (!*pFence)
-				continue;
-
-			if (vkWaitForFences(renderer->device, 1u, pFence, VK_TRUE, UINT64_MAX) != VK_SUCCESS)
-				goto failure_6;
-		}
-	}
+	if (vkQueueWaitIdle(renderer->queue.present) != VK_SUCCESS)
+		goto failure_6;
 
 	{
 		const VkFramebuffer* const pFramebufferEnd = renderer->framebuffer + renderer->imageCount;
@@ -1896,7 +1889,7 @@ static inline void proceedRoundedSubmission(SubmissionResource* const pSubmissio
 	if (index == pSubmission->capacity)
 		pSubmission->index = 0u;
 	else 
-		pSubmission->index = index;
+		pSubmission->index = static_cast<uint16_t>(index);
 }
 
 static int prepareStackedSubmission(const VkDevice device, SubmissionResource* const pSubmission, NULLABLE uint32_t* const pIndex) noexcept {
@@ -1938,7 +1931,7 @@ next:
 		return 0;
 	}
 
-	pSubmission->index = index;
+	pSubmission->index = static_cast<uint16_t>(index);
 
 	if (pIndex)
 		*pIndex = index;
@@ -3445,8 +3438,8 @@ int recordDrawSequence(const RenderDevice renderer, const CameraPage camera, con
 				VkViewport viewport{};
 				viewport.x = 0.0f;
 				viewport.y = 0.0f;
-				viewport.width = renderer->extent.width;
-				viewport.height = renderer->extent.height;
+				viewport.width = static_cast<float>(renderer->extent.width);
+				viewport.height = static_cast<float>(renderer->extent.height);
 				viewport.minDepth = 0.0f;
 				viewport.maxDepth = 1.0f;
 
@@ -3600,10 +3593,10 @@ begin:
 	if (vkResetFences(renderer->device, 1u, &fence) != VK_SUCCESS)
 		return -1;
 
-	const VkSemaphore renderComplete = renderer->graphics.thisSemaphore();
+	const VkSemaphore renderComplete = renderer->graphics.semaphore[acquire];
 		
 	{
-		const VkSemaphore waitSempahore[1] = { renderer->imageAvailable[renderer->graphics.index] };
+		const VkSemaphore waitSempahore[1] = { imageAvailable };
 		const VkPipelineStageFlags waitStage[1] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
 		VkSubmitInfo submitInfo{};

@@ -110,7 +110,7 @@ namespace io {
 			uint8_t* _pDst = reinterpret_cast<uint8_t*>(pDst);
 			size_t remaining = _ByteCount;
 
-			const uint32_t bufferBytes = bitCount >> 3u;
+			const uint32_t bufferBytes = static_cast<uint32_t>(bitCount >> 3u);
 			
 			if (bufferBytes) {
 				size_t bufferCopy = std::min<size_t>(bufferBytes, remaining);
@@ -318,12 +318,12 @@ namespace io {
 
 		}
 
-		constexpr uint32_t bits() const noexcept {
-			return data & 0xF;
+		constexpr uint8_t bits() const noexcept {
+			return data & 0xf;
 		}
 
-		constexpr uint32_t extraBits() const noexcept {
-			return (data >> 4u) & 0xF;
+		constexpr uint8_t extraBits() const noexcept {
+			return (data >> 4u) & 0xf;
 		}
 
 		constexpr HflEntryType type() const noexcept {
@@ -417,8 +417,7 @@ namespace io {
 
 		uint32_t nextCode[16]{};
 
-		uint32_t code = 0;
-		for (uint32_t bits = 1; bits <= 15; ++bits) {
+		for (uint32_t bits = 1, code = 0; bits <= 15; ++bits) {
 			code = (code + count[bits - 1]) << 1u;
 			nextCode[bits] = code;
 		}
@@ -450,7 +449,7 @@ namespace io {
 			if (pTable[i].type() != HFL_ENTRY_TYPE_SUBTABLE_CANDIDATE_BIT)
 				continue;
 			
-			const uint32_t offset = static_cast<uint32_t>(pNext - pTable);
+			const uint16_t offset = static_cast<uint16_t>(pNext - pTable);
 
 			const uint32_t subtableBits = pTable[i].extraBits();
 
@@ -476,7 +475,7 @@ namespace io {
 
 				HflEntry* const pSubTable = pTable + Offset;
 
-				const uint32_t remaining = length - _RootBits;
+				const uint8_t remaining = length - _RootBits;
 
 				const uint32_t start = code >> _RootBits & ((1u << remaining) - 1u);
 				const uint32_t fill = 1u << (tableBits - remaining);
@@ -592,8 +591,8 @@ namespace io {
 			if (stream.endsBefore(2))
 				return -1;
 
-			uint8_t cmf = stream.read(8);
-			uint8_t flg = stream.read(8);
+			uint8_t cmf = (uint8_t)stream.read(8);
+			uint8_t flg = (uint8_t)stream.read(8);
 
 			if (cmf != 0x78)
 				return -1;
@@ -646,9 +645,9 @@ namespace io {
 					break;
 
 				case DEFLATE_BLOCK_TYPE_DYNAMIC: {
-					const uint16_t HLIT = stream.read(5) + 257u;
-					const uint16_t HDIST = stream.read(5) + 1u;
-					const uint32_t HCLEN = stream.read(4) + 4u;
+					const uint16_t HLIT = (uint16_t)stream.read(5) + 257u;
+					const uint16_t HDIST = (uint16_t)stream.read(5) + 1u;
+					const uint32_t HCLEN = (uint16_t)stream.read(4) + 4u;
 
 					memset(lengths, 0, 19u);
 

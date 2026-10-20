@@ -6,6 +6,8 @@
 
 #if defined(PLATFORM_WINDOWS)
 
+#include <Windows.h>
+
 #elif defined(PLATFORM_LINUX)
 #include <fcntl.h>
 #include <unistd.h>

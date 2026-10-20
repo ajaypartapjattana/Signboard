@@ -20,24 +20,31 @@
 
 #endif
 
-static size_t virmem_pageSize() noexcept {
-	return static_cast<size_t>(sysconf(_SC_PAGESIZE));
+static size_t pageSize, allocationGranularity;
+
+void virmem_init() noexcept {
+#if defined(PLATFORM_WINDOWS)
+	SYSTEM_INFO info{};
+	GetSystemInfo(&info);
+
+	pageSize = static_cast<size_t>(info.dwPageSize);
+	allocationGranularity = static_cast<size_t>(info.dwAllocationGranularity);
+#elif defined(PLATFORM_LINUX)
+	size_t size = static_cast<size_t>(sysconf(_SC_PAGESIZE));
+
+	pageSize = size;
+	allocationGranularity = size;
+#endif
 }
 
-static size_t virmem_allocationGranularity() noexcept {
-	return static_cast<size_t>(sysconf(_SC_PAGESIZE));
-}
-
-void* virmem_reserve(void* const _AllocHint, size_t* const pCapacity) noexcept {
-	const size_t allocGran = virmem_allocationGranularity();
-	
+void* virmem_reserve(void* allocHint, size_t* pCapacity) noexcept {
 	size_t allocSize = *pCapacity;
-	allocSize = allocSize ? alignUp(allocSize, allocGran) :allocGran;
+	allocSize = allocSize ? alignUp(allocSize, allocationGranularity) : allocationGranularity;
 
 #if defined(PLATFORM_WINDOWS)
-	void* const pAlloc = VirtualAlloc(_AllocHint, allocSize, MEM_RESERVE, PAGE_READWRITE);
+	void* const pAlloc = VirtualAlloc(allocHint, allocSize, MEM_RESERVE, PAGE_READWRITE);
 #elif defined(PLATFORM_LINUX)
-	void* const _pAlloc = mmap(_AllocHint, allocSize, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	void* const _pAlloc = mmap(allocHint, allocSize, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	void* const pAlloc = _pAlloc != MAP_FAILED ? _pAlloc : nullptr;
 #endif
 
@@ -50,17 +57,15 @@ void* virmem_reserve(void* const _AllocHint, size_t* const pCapacity) noexcept {
 	return pAlloc;
 }
 
-void* virmem_commit(void* const _Hint, size_t* const pSize) noexcept {
-	const size_t pageSize = virmem_pageSize();
-	
+void* virmem_commit(void* hint, size_t* pSize) noexcept {
 	size_t allocSize = *pSize;
 	allocSize = allocSize ? alignUp(allocSize, pageSize) : pageSize;
 
 #if defined(PLATFORM_WINDOWS)
-	void* const pAlloc = VirtualAlloc(_Hint, allocSize, MEM_COMMIT, PAGE_READWRITE);
+	void* const pAlloc = VirtualAlloc(hint, allocSize, MEM_COMMIT, PAGE_READWRITE);
 #elif defined(PLATFORM_LINUX)
-	int result = mprotect(_Hint, allocSize, PROT_READ | PROT_WRITE);
-	void* const pAlloc = result == 0 ? _Hint : nullptr;
+	int result = mprotect(hint, allocSize, PROT_READ | PROT_WRITE);
+	void* const pAlloc = result == 0 ? hint : nullptr;
 #endif
 
 	if (!pAlloc) {
@@ -72,11 +77,9 @@ void* virmem_commit(void* const _Hint, size_t* const pSize) noexcept {
 	return pAlloc;
 }
 
-void* virmem_decommit(void* const _Hint, size_t* const pSize) noexcept {
-	const size_t pageSize = virmem_pageSize();
-	
-	uint8_t* pBase = alignDown<uint8_t>(_Hint, pageSize);
-	uint8_t* pEnd = alignUp<uint8_t>(reinterpret_cast<uint8_t*>(_Hint) + *pSize, pageSize);
+void* virmem_decommit(void* hint, size_t* pSize) noexcept {
+	uint8_t* pBase = alignDown<uint8_t>(hint, pageSize);
+	uint8_t* pEnd = alignUp<uint8_t>(reinterpret_cast<uint8_t*>(hint) + *pSize, pageSize);
 
 	const size_t releaseSize = static_cast<size_t>(pEnd - pBase);
 
@@ -94,15 +97,14 @@ void* virmem_decommit(void* const _Hint, size_t* const pSize) noexcept {
 	}
 
 	*pSize = releaseSize;
-	return _Hint;
+	return hint;
 }
 
-void virmem_free(void* const pAlloc, const size_t _Size) noexcept {
+void virmem_free(void* pAlloc, size_t size) noexcept {
 #if defined(PLATFORM_WINDOWS)
 	VirtualFree(pAlloc, 0, MEM_RELEASE);
 #elif defined(PLATFORM_LINUX)
-	const size_t allocGran = virmem_allocationGranularity();
-	munmap(pAlloc, alignUp(_Size, allocGran));
+	munmap(pAlloc, alignUp(size, allocationGranularity));
 #endif
 }
 

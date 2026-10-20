@@ -2,7 +2,8 @@
 
 #include <cstdint>
 
-void* virmem_reserve(void* _AllocHint, size_t* pCapacity) noexcept;
-void* virmem_commit(void* _Hint, size_t* pSize) noexcept;
-void* virmem_decommit(void* _Hint, size_t* pSize) noexcept;
-void virmem_free(void* pAlloc, size_t _Size) noexcept;
+void virmem_init() noexcept;
+void* virmem_reserve(void* allocHint, size_t* pCapacity) noexcept;
+void* virmem_commit(void* hint, size_t* pSize) noexcept;
+void* virmem_decommit(void* hint, size_t* pSize) noexcept;
+void virmem_free(void* pAlloc, size_t size) noexcept;

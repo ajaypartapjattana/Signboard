@@ -67,23 +67,59 @@
 
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-                "CMAKE_C_COMPILER": "gcc",
-                "CMAKE_CXX_COMPILER": "g++"
-            }
-        },
-
-        {
-            "name": "release-clang",
-            "displayName": "Release - Clang",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build/release-clang",
-            
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_C_COMPILER": "clang",
                 "CMAKE_CXX_COMPILER": "clang++"
             }
-        }
+        },
+
+		{
+			"name": "release-clang",
+			"displayName": "Release - Clang",
+			"generator": "Ninja",
+			"binaryDir": "${sourceDir}/build/release-clang",
+
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Release",
+				"CMAKE_C_COMPILER": "clang",
+				"CMAKE_CXX_COMPILER": "clang++"
+			}
+		},
+
+		{
+			"name": "debug-msvc",
+			"displayName": "Debug - MSVC",
+			"generator": "Visual Studio 18 2026",
+			"binaryDir": "${sourceDir}/build/debug-msvc",
+
+			"cacheVariables": {
+				"CMAKE_CXX_STANDARD": 17,
+				"CMAKE_CXX_STANDARD_REQUIRED": "ON"
+			}
+		},
+
+		{
+			"name": "relwithdebinfo-msvc",
+			"displayName": "RelWithDebInfo - MSVC",
+			"generator": "Visual Studio 18 2026",
+			"binaryDir": "${sourceDir}/build/relwithdebinfo-msvc",
+
+			"cacheVariables": {
+				"CMAKE_CXX_STANDARD": 17,
+				"CMAKE_CXX_STANDARD_REQUIRED": "ON"
+			}
+		},
+
+		{
+			"name": "release-msvc",
+			"displayName": "Release - MSVC",
+			"generator": "Visual Studio 18 2026",
+			"binaryDir": "${sourceDir}/build/release-msvc",
+
+			"cacheVariables": {
+				"CMAKE_CXX_STANDARD": 17,
+				"CMAKE_CXX_STANDARD_REQUIRED": "ON"
+			}
+		}
     ],
 
     "buildPresets": [
@@ -112,10 +148,25 @@
             "configurePreset": "relwithdebinfo-clang"
         },
 
-        {
-            "name": "release-clang",
-            "configurePreset": "release-clang"
-        }
+		{
+			"name": "release-clang",
+			"configurePreset": "release-clang"
+		},
+
+		{
+			"name": "debug-msvc",
+			"configurePreset": "debug-msvc"
+		},
+
+		{
+			"name": "relwithdebinfo-msvc",
+			"configurePreset": "relwithdebinfo-msvc"
+		},
+
+		{
+			"name": "release-msvc",
+			"configurePreset": "release-msvc"
+		}
     ]
 }
 

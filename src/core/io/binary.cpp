@@ -12,12 +12,11 @@
 #endif
 
 #include <cassert>
+#include <cstdio>
 
-int io::getBinarySize(const char* const _Path, size_t* const pSize) noexcept {
-	assert(_Path && pSize);
-
+int io::getBinarySize(const char* path, size_t* pSize) noexcept {
 #if defined(PLATFORM_WINDOWS)
-	HANDLE file = CreateFileW(_Path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+	HANDLE file = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 	
 	if (file == INVALID_HANDLE_VALUE)
 		return -1;
@@ -34,7 +33,7 @@ int io::getBinarySize(const char* const _Path, size_t* const pSize) noexcept {
 	CloseHandle(file);
 	return 0;
 #elif defined(PLATFORM_LINUX)
-	int fileDescriptor = open(_Path, O_RDONLY);
+	int fileDescriptor = open(path, O_RDONLY);
 
 	if (fileDescriptor < 0)
 		return -1;
@@ -53,25 +52,23 @@ int io::getBinarySize(const char* const _Path, size_t* const pSize) noexcept {
 #endif
 }
 
-int io::loadBinary(const char* const _Path, const size_t _LoadSize, void* const pDst) noexcept {
-	assert(_Path && pDst);
-
+int io::loadBinary(const char* path, size_t loadSize, void* pDst) noexcept {
 #if defined(PLATFORM_WINDOWS)
-	HANDLE file = CreateFileW(_Path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+	HANDLE file = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 	
 	if (file == INVALID_HANDLE_VALUE)
 		return -1;
 
 	DWORD bytesRead = 0;
-	if (!ReadFile(file, pDst, (DWORD)*_LoadSize, &bytesRead, nullptr)) {
+	if (!ReadFile(file, pDst, static_cast<DWORD>(loadSize), &bytesRead, nullptr)) {
 		CloseHandle(file);
 		return -1;
 	}
 
 	CloseHandle(file);
-	return bytesRead == _LoadSize ? 0 : -1;
+	return bytesRead == loadSize ? 0 : -1;
 #elif defined(PLATFORM_LINUX)
-	int fileDescriptor = open(_Path, O_RDONLY);
+	int fileDescriptor = open(path, O_RDONLY);
 
 	if (fileDescriptor < 0)
 		return -1;

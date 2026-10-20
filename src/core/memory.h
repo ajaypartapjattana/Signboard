@@ -215,14 +215,14 @@ private:
 			return 0;
 
 		if (ptr8 > this->pCap)
-			return -1;
+			return 1;
 		
 		size_t commitSize = ptr8 - this->pEnd;
 
 		void* pAlloc = virmem_commit(this->pEnd, &commitSize);
 
 		if (!pAlloc)
-			return -1;
+			return 1;
 
 		this->pEnd += commitSize;
 

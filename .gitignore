@@ -1,4 +1,8 @@
-/build/
+/.vs
+/build
+/deprecated
+/diagnostics
+/out
 /build-*/
 .vscode/*.log
 compile_commands.json
