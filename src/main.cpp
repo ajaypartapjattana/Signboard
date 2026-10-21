@@ -104,7 +104,6 @@ constexpr void generateCubeVertexData(const float size, Vertex* const pVertex, I
 		*pIdx = *pIndexData++;
 }
 
-
 int main() {
 	virmem_init();
 

@@ -42,7 +42,6 @@ int createVulkanContext(mem_stack* const pScratch, VulkanContext* const pContext
 	if (!context)
 		return -1;
 
-
 	{
 		#if defined(_DEBUG)
 		constexpr std::array<const char*, 1> instanceLayers{
